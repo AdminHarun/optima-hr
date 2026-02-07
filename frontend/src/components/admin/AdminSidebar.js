@@ -39,8 +39,8 @@ import {
   AccountCircle as AccountCircleIcon
 } from '@mui/icons-material';
 
-// Optima Logo import
-import optimaLogo from '../../assets/images/logo1.png';
+// Optima Logo - using public folder for better caching
+const optimaLogo = '/logo3.png';
 
 const DRAWER_WIDTH = 280;
 

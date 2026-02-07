@@ -1,0 +1,98 @@
+import React from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Badge,
+  Avatar,
+  Box
+} from '@mui/material';
+import {
+  Notifications,
+  Settings,
+  AccountCircle
+} from '@mui/icons-material';
+
+function Header() {
+  return (
+    <AppBar 
+      position="static" 
+      sx={{ 
+        background: 'linear-gradient(135deg, rgba(52, 131, 216, 0.9), #ade065e6)', // Optima gradient
+        backdropFilter: 'blur(10px)',
+        boxShadow: '0 4px 20px rgba(28, 97, 171, 0.3)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        width: '100%'
+      }}
+    >
+      <Toolbar sx={{ minHeight: '56px !important' }}>
+        {/* Logo ve başlık */}
+        <Box display="flex" alignItems="center" sx={{ flexGrow: 1 }}>
+          <img 
+            src="/optima-logo.svg" 
+            alt="Optima Logo" 
+            style={{ height: '32px', marginRight: '12px' }}
+          />
+          <Typography variant="h6" component="div" sx={{ fontSize: '1rem' }}>
+            İnsan Kaynakları Yönetim Sistemi
+          </Typography>
+        </Box>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton 
+            color="inherit"
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                transform: 'scale(1.1)',
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <Badge badgeContent={4} color="error">
+              <Notifications />
+            </Badge>
+          </IconButton>
+          
+          <IconButton 
+            color="inherit"
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                transform: 'scale(1.1)',
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <Settings />
+          </IconButton>
+          
+          <IconButton 
+            color="inherit"
+            sx={{
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                transform: 'scale(1.1)',
+              },
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <Avatar 
+              sx={{ 
+                width: 32, 
+                height: 32, 
+                background: 'linear-gradient(135deg, #8bb94a, #1c61ab)',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+              }}
+            >
+              <AccountCircle />
+            </Avatar>
+          </IconButton>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}
+
+export default Header;

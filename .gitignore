@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+frontend/build/
+dist/
+
+# Environment files (sensitive)
+.env
+.env.local
+backend-express/.env
+
+# Keep production env template
+!.env.example
+!.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Uploads (large files)
+backend-express/uploads/*
+!backend-express/uploads/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Coverage
+coverage/
+
+# Claude local settings (contains DB passwords)
+.claude/settings.local.json

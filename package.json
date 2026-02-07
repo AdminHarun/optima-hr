@@ -1,0 +1,79 @@
+{
+  "name": "optima-hr",
+  "productName": "Optima HR",
+  "version": "1.0.0",
+  "description": "Optima HR Management System",
+  "main": "electron/main.js",
+  "author": "Optima HR",
+  "license": "MIT",
+  "homepage": ".",
+  "scripts": {
+    "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build:mac": "electron-builder --mac",
+    "electron:build:win": "electron-builder --win",
+    "electron:build:all": "electron-builder -mw",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.optimahr.desktop",
+    "productName": "Optima HR",
+    "copyright": "Copyright © 2026 Optima HR",
+    "mac": {
+      "category": "public.app-category.business",
+      "icon": "electron/assets/icon.png",
+      "target": ["dmg", "zip"],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "title": "Optima HR ${version}",
+      "background": "electron/assets/dmg-background.png"
+    },
+    "win": {
+      "icon": "electron/assets/icon.ico",
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "electron/assets"
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "https://updates.optimahr.com"
+    }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  }
+}

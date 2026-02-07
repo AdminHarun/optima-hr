@@ -1,0 +1,72 @@
+// Model associations - İlişkileri tanımla
+const InvitationLink = require('./InvitationLink');
+const ApplicantProfile = require('./ApplicantProfile');
+const JobApplication = require('./JobApplication');
+const ChatRoom = require('./ChatRoom');
+const ChatMessage = require('./ChatMessage');
+
+// InvitationLink ile ApplicantProfile ilişkisi
+InvitationLink.hasMany(ApplicantProfile, {
+  foreignKey: 'invitation_link_id',
+  as: 'profiles'
+});
+ApplicantProfile.belongsTo(InvitationLink, {
+  foreignKey: 'invitation_link_id',
+  as: 'invitation_link'
+});
+
+// InvitationLink ile JobApplication ilişkisi
+InvitationLink.hasMany(JobApplication, {
+  foreignKey: 'invitation_link_id',
+  as: 'applications'
+});
+JobApplication.belongsTo(InvitationLink, {
+  foreignKey: 'invitation_link_id',
+  as: 'invitation_link'
+});
+
+// ApplicantProfile ile JobApplication ilişkisi
+ApplicantProfile.hasMany(JobApplication, {
+  foreignKey: 'applicant_profile_id',
+  as: 'applications'
+});
+JobApplication.belongsTo(ApplicantProfile, {
+  foreignKey: 'applicant_profile_id',
+  as: 'applicant_profile'
+});
+
+// ChatRoom ilişkileri
+ChatRoom.hasMany(ChatMessage, {
+  foreignKey: 'room_id',
+  as: 'messages'
+});
+ChatMessage.belongsTo(ChatRoom, {
+  foreignKey: 'room_id',
+  as: 'room'
+});
+
+// ChatMessage self-reference for replies
+ChatMessage.hasMany(ChatMessage, {
+  foreignKey: 'reply_to_id',
+  as: 'replies'
+});
+ChatMessage.belongsTo(ChatMessage, {
+  foreignKey: 'reply_to_id',
+  as: 'reply_to'
+});
+
+// Management Models
+const Site = require('./Site');
+const AdminUser = require('./AdminUser');
+const AuditLog = require('./AuditLog');
+
+module.exports = {
+  InvitationLink,
+  ApplicantProfile,
+  JobApplication,
+  ChatRoom,
+  ChatMessage,
+  Site,
+  AdminUser,
+  AuditLog
+};

@@ -1,0 +1,204 @@
+// src/components/Sidebar.js
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Drawer,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Typography,
+  Box
+} from '@mui/material';
+import {
+  Dashboard,
+  People,
+  AttachMoney,
+  BeachAccess,
+  Work,
+  Description,
+  Chat,
+  AccountBox
+} from '@mui/icons-material';
+import logo from '../assets/images/logo1.png';
+
+const drawerWidth = 320;
+
+const menuItems = [
+  { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+  { text: 'Çalışanlar', icon: <People />, path: '/employees' },
+  { text: 'Bordro', icon: <AttachMoney />, path: '/payroll' },
+  { text: 'İzinler', icon: <BeachAccess />, path: '/leaves' },
+  { text: 'İşe Alım', icon: <Work />, path: '/recruitment' },
+  { text: 'Belgeler', icon: <Description />, path: '/documents' },
+  { text: 'Mesajlar', icon: <Chat />, path: '/chat' },
+  { text: 'Profil Yönetimi', icon: <AccountBox />, path: '/profiles' }
+];
+
+function Sidebar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleMenuClick = (path) => {
+    navigate(path);
+  };
+
+  return (
+    <Drawer
+      variant="permanent"
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          backgroundColor: 'transparent',
+          border: 'none',
+          overflow: 'visible',
+          position: 'relative'
+        },
+      }}
+    >
+      {/* Glassmorphism efekti için yeni Box */}
+      <Box
+        sx={{
+          height: '100vh',
+          margin: '0px', // Sol üst köşede boşluk olmasın
+          borderRadius: '0 20px 20px 0', // Sadece sağ köşeler yuvarlak
+          overflow: 'hidden',
+          position: 'relative',
+          
+          // Liquid Glass efekti (Optima logo renklerine göre)
+          backdropFilter: 'url(#liquid-prism-intense) blur(10px)',
+          WebkitBackdropFilter: 'url(#liquid-prism-intense) blur(10px)',
+          background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.15), rgba(139, 185, 74, 0.15))', // Optima mavi-yeşil
+          border: '1px solid rgba(28, 97, 171, 0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 8px 32px 0 rgba(28, 97, 171, 0.2)',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'scale(1.02)',
+            boxShadow: '0 12px 40px 0 rgba(28, 97, 171, 0.3)',
+          }
+        }}
+      >
+        {/* İçerik */}
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            p: 3,
+          }}
+        >
+          {/* Logo ve Başlık */}
+          <Box sx={{ mb: 4, textAlign: 'center' }}>
+            <img 
+              src={logo} 
+              alt="Şirket Logo" 
+              style={{
+                width: '250px',
+                height: '100px',
+                objectFit: 'contain',
+                marginBottom: '10px',
+                filter: 'drop-shadow(0 4px 8px rgba(28, 97, 171, 0.3))'
+              }}
+            />
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'rgba(30, 41, 59, 0.7)',
+                fontSize: '0.80rem',
+                display: 'block',
+                mt: 1
+              }}
+            >
+              İnsan Kaynakları Yönetim Sistemi
+            </Typography>
+          </Box>
+          
+          {/* Menü Listesi */}
+          <List sx={{ px: 1 }}>
+            {menuItems.map((item) => (
+              <ListItemButton
+                key={item.text}
+                onClick={() => handleMenuClick(item.path)}
+                selected={location.pathname === item.path}
+                sx={{
+                  borderRadius: '12px',
+                  mb: 1,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  
+                  // Normal durum
+                  '&:not(.Mui-selected)': {
+                    color: 'rgba(30, 41, 59, 0.8)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                      transform: 'translateX(5px)',
+                      '& .MuiListItemIcon-root': {
+                        transform: 'scale(1.1)',
+                      }
+                    },
+                  },
+                  
+                  // Seçili durum (Optima renkleri)
+                  '&.Mui-selected': {
+                    background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)', // Optima mavi-yeşil
+                    color: 'white',
+                    boxShadow: '0 4px 20px 0 rgba(28, 97, 171, 0.4)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #8bb94a 0%, #1c61ab 100%)', // Ters gradient
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'white',
+                    }
+                  },
+                }}
+              >
+                <ListItemIcon 
+                  sx={{ 
+                    color: 'inherit', 
+                    minWidth: 50, // Daha geniş alan
+                    fontSize: '1.5rem', // İkonları büyüt
+                    transition: 'transform 0.3s ease'
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={item.text}
+                  primaryTypographyProps={{
+                    fontSize: '1.1rem', // Biraz daha büyük font
+                    fontWeight: location.pathname === item.path ? 600 : 400
+                  }}
+                />
+                
+                {/* Aktif gösterge */}
+                {location.pathname === item.path && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      right: 0,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '3px',
+                      height: '70%',
+                      backgroundColor: 'white',
+                      borderRadius: '3px 0 0 3px',
+                    }}
+                  />
+                )}
+              </ListItemButton>
+            ))}
+          </List>
+        </Box>
+      </Box>
+    </Drawer>
+  );
+}
+
+export default Sidebar;

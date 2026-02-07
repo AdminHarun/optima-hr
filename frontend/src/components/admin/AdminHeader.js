@@ -1,0 +1,593 @@
+// Admin Header - Sohbetler ve Bildirimler ile genişletilmiş
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import SiteSelector from './SiteSelector';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Badge,
+  Menu,
+  MenuItem,
+  Avatar,
+  Box,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Button,
+  List,
+  ListItem,
+  ListItemAvatar
+} from '@mui/material';
+import {
+  Notifications as NotificationsIcon,
+  Logout as LogoutIcon,
+  Person as PersonIcon,
+  Chat as ChatIcon,
+  Mail as MailIcon,
+  Close as CloseIcon,
+  CheckCircle as CheckCircleIcon,
+  Info as InfoIcon,
+  VideoCall as VideoCallIcon,
+  CalendarToday as CalendarIcon,
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon
+} from '@mui/icons-material';
+
+function AdminHeader() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { currentUser, logout, hasPermission, PERMISSIONS } = useEmployeeAuth();
+  
+  // Menu states
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
+  
+  // Bildirim context'inden gercek zamanli okunmamis mesaj sayisi
+  const { unreadCount: unreadMessages, markAsRead } = useNotifications();
+  const unreadMails = 0;
+
+  const handleProfileMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleProfileMenuClose();
+    const result = logout();
+    if (result.success) {
+      navigate('/admin/login');
+    }
+  };
+
+  const handleProfile = () => {
+    handleProfileMenuClose();
+    navigate('/admin/profile');
+  };
+
+
+  const handleNotificationOpen = () => {
+    setNotificationDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setNotificationDialogOpen(false);
+  };
+
+  const getRoleDisplayName = (role) => {
+    const roleNames = {
+      'SUPER_ADMIN': 'Super Admin',
+      'ADMIN': 'Admin',
+      'HR_MANAGER': 'HR Muduru',
+      'HR': 'Insan Kaynaklari',
+      'HR_EXPERT': 'HR Uzmani',
+      'RECRUITER': 'Ise Alim Uzmani',
+      'HR_ASSISTANT': 'HR Asistani',
+      'USER': 'Kullanici'
+    };
+    return roleNames[role] || role;
+  };
+
+  const getRoleColor = (role) => {
+    const colors = {
+      'SUPER_ADMIN': 'error',
+      'ADMIN': 'primary',
+      'HR_MANAGER': 'success',
+      'HR': 'success',
+      'HR_EXPERT': 'info',
+      'RECRUITER': 'success',
+      'HR_ASSISTANT': 'warning',
+      'USER': 'default'
+    };
+    return colors[role] || 'default';
+  };
+
+  // Real notifications from localStorage
+  const getNotifications = () => {
+    const sc = localStorage.getItem('optima_current_site') || 'FXB';
+    const applications = JSON.parse(localStorage.getItem(`applications_${sc}`) || '[]');
+    const notifications = [];
+    
+    // Son 24 saatteki başvuruları bildirim olarak göster
+    const now = new Date();
+    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
+    
+    applications.forEach(app => {
+      const appDate = new Date(app.submittedAt);
+      if (appDate > dayAgo) {
+        const timeDiff = now - appDate;
+        const minutes = Math.floor(timeDiff / 60000);
+        const hours = Math.floor(minutes / 60);
+        
+        let timeStr = '';
+        if (minutes < 60) {
+          timeStr = `${minutes} dk önce`;
+        } else if (hours < 24) {
+          timeStr = `${hours} saat önce`;
+        }
+        
+        notifications.push({
+          id: app.id,
+          type: 'application',
+          icon: <InfoIcon color="primary" />,
+          title: 'Yeni başvuru geldi',
+          message: `${app.firstName} ${app.lastName} adlı kişiden yeni başvuru.`,
+          time: timeStr,
+          read: false
+        });
+      }
+    });
+    
+    return notifications;
+  };
+  
+  const notifications = getNotifications();
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Chrome tarzı tab componenti
+  const ChromeTab = ({ label, icon, badge, isActive, onClick }) => (
+    <Box
+      onClick={onClick}
+      sx={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        px: 2,
+        py: 1,
+        minWidth: 120,
+        height: 36,
+        cursor: 'pointer',
+        userSelect: 'none',
+        
+        // Arka plan ve köşeler
+        background: isActive 
+          ? 'rgba(255, 255, 255, 0.95)' 
+          : 'rgba(255, 255, 255, 0.1)',
+        borderRadius: '10px 10px 0 0',
+        
+        // Kenarlık
+        borderTop: isActive ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid transparent',
+        borderLeft: isActive ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid transparent',
+        borderRight: isActive ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid transparent',
+        
+        // Hover efekti
+        '&:hover': {
+          background: isActive 
+            ? 'rgba(255, 255, 255, 0.95)'
+            : 'rgba(255, 255, 255, 0.2)',
+        },
+        
+        // Geçiş animasyonu
+        transition: 'all 0.2s ease',
+        
+        // Aktif tab'ın alt tarafını header ile birleştir
+        marginBottom: isActive ? '-1px' : 0,
+        zIndex: isActive ? 2 : 1,
+        
+        // Chrome tab şekli için pseudo elements
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          bottom: 0,
+          left: -8,
+          width: 8,
+          height: 8,
+          background: 'transparent',
+          borderBottomRightRadius: '8px',
+          boxShadow: isActive ? '4px 4px 0 0 rgba(255, 255, 255, 0.95)' : 'none',
+          display: isActive ? 'block' : 'none'
+        },
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: 0,
+          right: -8,
+          width: 8,
+          height: 8,
+          background: 'transparent',
+          borderBottomLeftRadius: '8px',
+          boxShadow: isActive ? '-4px 4px 0 0 rgba(255, 255, 255, 0.95)' : 'none',
+          display: isActive ? 'block' : 'none'
+        }
+      }}
+    >
+      {/* İkon */}
+      <Box sx={{ 
+        color: isActive ? '#1c61ab' : 'white',
+        display: 'flex',
+        alignItems: 'center'
+      }}>
+        {icon}
+      </Box>
+      
+      {/* Label */}
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          color: isActive ? '#1c61ab' : 'white',
+          fontWeight: isActive ? 600 : 500,
+          fontSize: '0.9rem'
+        }}
+      >
+        {label}
+      </Typography>
+      
+      {/* Badge */}
+      {badge > 0 && (
+        <Badge 
+          badgeContent={badge} 
+          color="error"
+          sx={{ 
+            '& .MuiBadge-badge': { 
+              fontSize: '0.65rem',
+              height: 16,
+              minWidth: 16,
+              right: -6,
+              top: 6
+            }
+          }}
+        />
+      )}
+      
+    </Box>
+  );
+
+  if (!currentUser) {
+    return null;
+  }
+
+  return (
+    <>
+      <AppBar
+        position="sticky"
+        sx={{
+          background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.95), rgba(139, 185, 74, 0.95))',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 4px 20px rgba(28, 97, 171, 0.2)'
+        }}
+      >
+        <Toolbar sx={{ justifyContent: 'space-between', px: 3, pl: { xs: 3, md: 10 }, minHeight: '56px !important', WebkitAppRegion: 'drag' }}>
+          {/* Sol Taraf - Site Seçici + Chrome Tarzı Tab'lar */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            gap: 2,
+            height: '100%',
+            WebkitAppRegion: 'no-drag'
+          }}>
+            {/* Geri / İleri Butonları */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+              <IconButton
+                size="small"
+                onClick={() => {
+                  if (window.history.length > 1) {
+                    window.history.back();
+                  } else {
+                    navigate('/admin/dashboard');
+                  }
+                }}
+                sx={{
+                  color: 'rgba(255,255,255,0.7)',
+                  '&:hover': { color: 'white', background: 'rgba(255,255,255,0.1)' },
+                  width: 30, height: 30
+                }}
+              >
+                <ArrowBackIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => window.history.forward()}
+                sx={{
+                  color: 'rgba(255,255,255,0.7)',
+                  '&:hover': { color: 'white', background: 'rgba(255,255,255,0.1)' },
+                  width: 30, height: 30
+                }}
+              >
+                <ArrowForwardIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+            <SiteSelector />
+            <ChromeTab
+              label="Mesajlar"
+              icon={<ChatIcon sx={{ fontSize: 18 }} />}
+              badge={unreadMessages}
+              isActive={location.pathname === '/admin/chat'}
+              onClick={() => { markAsRead(); navigate('/admin/chat'); }}
+            />
+            
+            <ChromeTab
+              label="Mail"
+              icon={<MailIcon sx={{ fontSize: 18 }} />}
+              badge={unreadMails}
+              isActive={location.pathname === '/admin/mail'}
+              onClick={() => navigate('/admin/mail')}
+            />
+            
+            <ChromeTab
+              label="Aramalar"
+              icon={<VideoCallIcon sx={{ fontSize: 18 }} />}
+              badge={0}
+              isActive={location.pathname === '/admin/calls'}
+              onClick={() => navigate('/admin/calls')}
+            />
+
+            <ChromeTab
+              label="Takvim"
+              icon={<CalendarIcon sx={{ fontSize: 18 }} />}
+              badge={0}
+              isActive={location.pathname === '/admin/calendar'}
+              onClick={() => navigate('/admin/calendar')}
+            />
+            
+            {/* Yeni tab ekle butonu (Chrome gibi) */}
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'white',
+                ml: 1,
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.15)'
+                }
+              }}
+            >
+              {/* <AddIcon sx={{ fontSize: 18 }} /> */}
+            </Box>
+          </Box>
+
+          {/* Sağ Taraf - Bildirimler ve Profil */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, WebkitAppRegion: 'no-drag' }}>
+
+            {/* Bildirimler */}
+            <IconButton 
+              color="inherit" 
+              onClick={handleNotificationOpen}
+              sx={{
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Badge badgeContent={unreadCount} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+
+            {/* Kullanıcı Profili */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              
+              {/* Kullanıcı Bilgileri */}
+              <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'white' }}>
+                  {currentUser.firstName} {currentUser.lastName}
+                </Typography>
+                <Chip
+                  size="small"
+                  label={getRoleDisplayName(currentUser.role)}
+                  color={getRoleColor(currentUser.role)}
+                  sx={{ 
+                    height: '18px', 
+                    fontSize: '10px',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    color: 'white'
+                  }}
+                />
+              </Box>
+
+              {/* Avatar */}
+              <IconButton
+                onClick={handleProfileMenuOpen}
+                sx={{
+                  padding: 0,
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.3)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <Avatar 
+                  sx={{ 
+                    width: 40, 
+                    height: 40,
+                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    fontWeight: 'bold'
+                  }}
+                  src={currentUser.avatar}
+                >
+                  {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
+                </Avatar>
+              </IconButton>
+            </Box>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Profil Menüsü */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleProfileMenuClose}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 280,
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(28, 97, 171, 0.1)',
+            boxShadow: '0 8px 32px rgba(28, 97, 171, 0.2)'
+          }
+        }}
+      >
+        <Box sx={{ p: 2, pb: 1 }}>
+          <Typography variant="body1" fontWeight="bold">
+            {currentUser.firstName} {currentUser.lastName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {currentUser.email}
+          </Typography>
+          <Chip
+            size="small"
+            label={getRoleDisplayName(currentUser.role)}
+            color={getRoleColor(currentUser.role)}
+            sx={{ mt: 1, fontSize: '11px' }}
+          />
+        </Box>
+        
+        <Divider />
+        
+        <MenuItem onClick={handleProfile}>
+          <ListItemIcon>
+            <PersonIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Profilim</ListItemText>
+        </MenuItem>
+        
+        <Divider />
+        
+        <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+          <ListItemIcon>
+            <LogoutIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Çıkış Yap</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Bildirimler Dialog */}
+      <Dialog
+        open={notificationDialogOpen}
+        onClose={handleDialogClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(20px)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          pb: 1
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <NotificationsIcon sx={{ color: '#1c61ab' }} />
+            <Typography variant="h6" fontWeight="bold">
+              Bildirimler
+            </Typography>
+            <Badge badgeContent={unreadCount} color="error" />
+          </Box>
+          
+          <IconButton onClick={handleDialogClose}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        
+        <DialogContent>
+          <List>
+            {notifications.map((notification) => (
+              <ListItem
+                key={notification.id}
+                sx={{
+                  mb: 1,
+                  borderRadius: '12px',
+                  background: notification.read 
+                    ? 'rgba(0,0,0,0.02)'
+                    : 'rgba(28, 97, 171, 0.05)',
+                  border: notification.read 
+                    ? '1px solid rgba(0,0,0,0.05)'
+                    : '1px solid rgba(28, 97, 171, 0.1)',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    background: 'rgba(28, 97, 171, 0.08)',
+                    transform: 'translateY(-1px)'
+                  }
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar sx={{ 
+                    background: 'transparent',
+                    width: 40,
+                    height: 40
+                  }}>
+                    {notification.icon}
+                  </Avatar>
+                </ListItemAvatar>
+                
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="body2" fontWeight="bold">
+                      {notification.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {notification.time}
+                    </Typography>
+                  </Box>
+                  
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {notification.message}
+                  </Typography>
+                  
+                  {!notification.read && (
+                    <Chip
+                      size="small"
+                      label="Yeni"
+                      color="primary"
+                      sx={{ mt: 1, height: 20, fontSize: '10px' }}
+                    />
+                  )}
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+export default AdminHeader;

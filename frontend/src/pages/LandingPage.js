@@ -106,7 +106,7 @@ const LandingPage = () => {
                     src="/firstlogo.png"
                     alt="Optima HR"
                     style={{
-                      height: isMobile ? 60 : 80,
+                      height: isMobile ? 80 : 120,
                       filter: 'brightness(0) invert(1)'
                     }}
                   />
@@ -418,7 +418,7 @@ const LandingPage = () => {
                   src="/firstlogo.png"
                   alt="Optima HR"
                   style={{
-                    height: 50,
+                    height: 70,
                     filter: 'brightness(0) invert(1)'
                   }}
                 />

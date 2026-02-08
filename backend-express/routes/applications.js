@@ -449,17 +449,13 @@ router.get('/profile/:applicantId', async (req, res) => {
       include: [
         {
           model: InvitationLink,
-          as: 'invitation_link'
+          as: 'invitation_link',
+          required: false
         },
         {
           model: JobApplication,
           as: 'applications',
-          include: [
-            {
-              model: ApplicationDocument,
-              as: 'documents'
-            }
-          ]
+          required: false
         }
       ]
     });
@@ -506,8 +502,7 @@ router.get('/profile/:applicantId', async (req, res) => {
         hasReference: application.has_reference,
         referenceName: application.reference_name,
         status: application.status,
-        submittedAt: application.submitted_at,
-        documents: application.documents
+        submittedAt: application.submitted_at
       } : null,
       invitationLink: profile.invitation_link ? {
         token: profile.invitation_link.token,
@@ -533,11 +528,13 @@ router.get('/profiles/all', async (req, res) => {
       include: [
         {
           model: InvitationLink,
-          as: 'invitation_link'
+          as: 'invitation_link',
+          required: false
         },
         {
           model: JobApplication,
-          as: 'applications'
+          as: 'applications',
+          required: false
         }
       ],
       order: [['profile_created_at', 'DESC']]
@@ -586,11 +583,13 @@ router.get('/', async (req, res) => {
       include: [
         {
           model: ApplicantProfile,
-          as: 'applicant_profile'
+          as: 'applicant_profile',
+          required: false
         },
         {
           model: InvitationLink,
-          as: 'invitation_link'
+          as: 'invitation_link',
+          required: false
         }
       ],
       order: [['submitted_at', 'DESC']]

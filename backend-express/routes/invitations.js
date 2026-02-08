@@ -40,24 +40,39 @@ router.get('/', async (req, res) => {
       whereClause.site_code = siteCode;
     }
 
-    const invitations = await InvitationLink.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: ApplicantProfile,
-          as: 'profiles',
-          include: [
-            {
-              model: JobApplication,
-              as: 'applications'
-            }
-          ]
-        }
-      ],
-      order: [['created_at', 'DESC']]
-    });
+    let invitations = [];
+    let includeProfiles = true;
 
-    console.log(`✅ Found ${invitations.length} invitations`);
+    // Önce association'larla dene, başarısız olursa basit sorgu yap
+    try {
+      invitations = await InvitationLink.findAll({
+        where: whereClause,
+        include: [
+          {
+            model: ApplicantProfile,
+            as: 'profiles',
+            required: false,
+            include: [
+              {
+                model: JobApplication,
+                as: 'applications',
+                required: false
+              }
+            ]
+          }
+        ],
+        order: [['created_at', 'DESC']]
+      });
+    } catch (includeError) {
+      console.warn('⚠️ Association query failed, falling back to simple query:', includeError.message);
+      includeProfiles = false;
+      invitations = await InvitationLink.findAll({
+        where: whereClause,
+        order: [['created_at', 'DESC']]
+      });
+    }
+
+    console.log(`✅ Found ${invitations.length} invitations (with profiles: ${includeProfiles})`);
 
     // LocalStorage formatına uyumlu dönüştür
     const formattedInvitations = invitations.map(inv => ({
@@ -78,9 +93,9 @@ router.get('/', async (req, res) => {
       form_submitted_ip: inv.form_completed_ip ? inv.form_completed_ip.toString() : null,
       click_count: inv.click_count,
 
-      // Profil ve başvuru bilgileri
-      profiles: inv.profiles,
-      applications: inv.profiles?.flatMap(p => p.applications) || []
+      // Profil ve başvuru bilgileri (varsa)
+      profiles: includeProfiles ? (inv.profiles || []) : [],
+      applications: includeProfiles ? (inv.profiles?.flatMap(p => p.applications) || []) : []
     }));
 
     console.log('📤 Sending response:', JSON.stringify(formattedInvitations).substring(0, 100));
@@ -88,7 +103,7 @@ router.get('/', async (req, res) => {
     console.log('✅ Response sent successfully');
   } catch (error) {
     console.error('❌ Error fetching invitations:', error);
-    res.status(500).json({ error: 'Davet linkleri alınamadı' });
+    res.status(500).json({ error: 'Davet linkleri alınamadı', details: error.message });
   }
 });
 

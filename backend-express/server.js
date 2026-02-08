@@ -140,6 +140,22 @@ const startServer = async () => {
       console.log('⚠️ Site code migration note:', migrationErr.message);
     }
 
+    // Initialize core tables (applicant_profiles, job_applications)
+    try {
+      const { InvitationLink, ApplicantProfile, JobApplication, ChatRoom, ChatMessage } = require('./models/associations');
+
+      // Create tables if they don't exist (order matters for foreign keys)
+      console.log('🔄 Checking core tables...');
+      await InvitationLink.sync({ alter: false });
+      await ApplicantProfile.sync({ alter: false });
+      await JobApplication.sync({ alter: false });
+      await ChatRoom.sync({ alter: false });
+      await ChatMessage.sync({ alter: false });
+      console.log('✅ Core tables initialized');
+    } catch (coreErr) {
+      console.log('⚠️ Core tables note:', coreErr.message);
+    }
+
     // Initialize management tables (AdminUser, AuditLog, Site)
     try {
       const AdminUser = require('./models/AdminUser');

@@ -84,6 +84,8 @@ app.use((error, req, res, next) => {
 // Start server
 const startServer = async () => {
   try {
+    console.log('🚀 Server v1.0.1 starting - chat_rooms migration included');
+
     // Test database connection
     await testConnection();
 

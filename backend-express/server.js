@@ -146,18 +146,74 @@ const startServer = async () => {
 
       // Create tables if they don't exist (order matters for foreign keys)
       console.log('🔄 Checking core tables...');
-      await InvitationLink.sync({ alter: false });
-      await ApplicantProfile.sync({ alter: false });
-      await JobApplication.sync({ alter: false });
-      await ChatRoom.sync({ alter: false });
-      await ChatMessage.sync({ alter: false });
-      console.log('✅ Core tables initialized');
-
-      // Run manual column migration to add any missing columns
-      const { addMissingColumns } = require('./scripts/addMissingColumns');
-      await addMissingColumns(sequelize);
+      await InvitationLink.sync({ force: false });
+      await ApplicantProfile.sync({ force: false });
+      await JobApplication.sync({ force: false });
+      await ChatRoom.sync({ force: false });
+      await ChatMessage.sync({ force: false });
+      console.log('✅ Core tables synced');
     } catch (coreErr) {
       console.log('⚠️ Core tables note:', coreErr.message);
+    }
+
+    // Add missing columns to job_applications table
+    try {
+      console.log('🔄 Adding missing columns to job_applications...');
+      const jobAppColumns = [
+        ['tc_number', 'VARCHAR(11)'],
+        ['birth_date', 'DATE'],
+        ['address', 'TEXT'],
+        ['city', 'VARCHAR(100)'],
+        ['district', 'VARCHAR(100)'],
+        ['postal_code', 'VARCHAR(10)'],
+        ['education_level', 'VARCHAR(50)'],
+        ['university', 'VARCHAR(200)'],
+        ['department', 'VARCHAR(200)'],
+        ['graduation_year', 'INTEGER'],
+        ['gpa', 'DECIMAL(5,2)'],
+        ['has_sector_experience', 'BOOLEAN DEFAULT false'],
+        ['experience_level', 'VARCHAR(50)'],
+        ['last_company', 'VARCHAR(200)'],
+        ['last_position', 'VARCHAR(200)'],
+        ['internet_download', 'INTEGER'],
+        ['internet_upload', 'INTEGER'],
+        ['typing_speed', 'INTEGER'],
+        ['processor', 'VARCHAR(100)'],
+        ['ram', 'VARCHAR(50)'],
+        ['os', 'VARCHAR(100)'],
+        ['source', 'VARCHAR(100)'],
+        ['has_reference', 'BOOLEAN DEFAULT false'],
+        ['reference_name', 'VARCHAR(200)'],
+        ['kvkk_approved', 'BOOLEAN DEFAULT false'],
+        ['status', 'VARCHAR(50) DEFAULT \'submitted\''],
+        ['reject_reason', 'TEXT'],
+        ['submitted_ip', 'INET'],
+        ['submitted_location', 'JSONB'],
+        ['cv_file_path', 'VARCHAR(500)'],
+        ['cv_file_name', 'VARCHAR(255)'],
+        ['internet_test_file_path', 'VARCHAR(500)'],
+        ['internet_test_file_name', 'VARCHAR(255)'],
+        ['typing_test_file_path', 'VARCHAR(500)'],
+        ['typing_test_file_name', 'VARCHAR(255)'],
+        ['token', 'VARCHAR(32)'],
+        ['profileId', 'INTEGER'],
+        ['applicant_profile_id', 'INTEGER'],
+        ['invitation_link_id', 'INTEGER'],
+        ['site_code', 'VARCHAR(50)'],
+        ['submitted_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'],
+        ['updated_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP']
+      ];
+
+      for (const [col, type] of jobAppColumns) {
+        try {
+          await sequelize.query(`ALTER TABLE job_applications ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+        } catch (e) {
+          // Silently ignore if column already exists
+        }
+      }
+      console.log('✅ job_applications columns checked');
+    } catch (colErr) {
+      console.log('⚠️ Column migration note:', colErr.message);
     }
 
     // Initialize management tables (AdminUser, AuditLog, Site)

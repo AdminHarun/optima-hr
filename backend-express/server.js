@@ -158,69 +158,12 @@ const startServer = async () => {
       console.log('⚠️ Core tables note:', coreErr.message);
     }
 
-    // Add missing chat_rooms columns (MUST run even if sync fails)
+    // Run comprehensive chat tables migration
     try {
-      console.log('🔄 Checking chat_rooms columns...');
-      // Create ENUM type if not exists
-      await sequelize.query(`
-        DO $$ BEGIN
-          CREATE TYPE enum_chat_rooms_room_type AS ENUM ('applicant', 'admin', 'group');
-        EXCEPTION
-          WHEN duplicate_object THEN null;
-        END $$;
-      `);
-      // Add ALL missing columns
-      const chatRoomColumns = [
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_type enum_chat_rooms_room_type DEFAULT 'applicant'",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS site_code VARCHAR(50)",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS applicant_id BIGINT",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS applicant_email VARCHAR(255)",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS applicant_name VARCHAR(255)",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_name VARCHAR(255)",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS last_message_id INTEGER",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMP WITH TIME ZONE",
-        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS metadata JSONB"
-      ];
-      for (const sql of chatRoomColumns) {
-        try {
-          await sequelize.query(sql);
-        } catch (e) {
-          // Column might already exist
-        }
-      }
-      console.log('✅ chat_rooms columns ensured');
-    } catch (chatColErr) {
-      console.log('⚠️ chat_rooms column note:', chatColErr.message);
-    }
-
-    // Fix chat_messages column types
-    try {
-      console.log('🔄 Fixing chat_messages columns...');
-      // Fix room_id type (VARCHAR -> INTEGER)
-      await sequelize.query(`
-        ALTER TABLE chat_messages
-        ALTER COLUMN room_id TYPE INTEGER USING room_id::INTEGER
-      `).catch(() => {});
-      // Add missing columns
-      const chatMessageColumns = [
-        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false",
-        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE",
-        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT false",
-        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP WITH TIME ZONE",
-        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reactions JSONB",
-        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS metadata JSONB"
-      ];
-      for (const sql of chatMessageColumns) {
-        try {
-          await sequelize.query(sql);
-        } catch (e) {
-          // Column might already exist
-        }
-      }
-      console.log('✅ chat_messages columns fixed');
-    } catch (msgErr) {
-      console.log('⚠️ chat_messages fix note:', msgErr.message);
+      const { syncChatTables } = require('./migrations/syncChatTables');
+      await syncChatTables(sequelize);
+    } catch (chatMigrationErr) {
+      console.log('⚠️ Chat migration note:', chatMigrationErr.message);
     }
 
     // Initialize employee tables

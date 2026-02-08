@@ -13,7 +13,12 @@ const getClientIP = (req) => {
            req.socket.remoteAddress ||
            (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
            req.ip ||
-           'unknown';
+           null;
+
+  // Virgülle ayrılmış listeden ilk IP'yi al
+  if (ip && ip.includes(',')) {
+    ip = ip.split(',')[0].trim();
+  }
 
   // IPv6 localhost'u IPv4'e çevir
   if (ip === '::1' || ip === '::ffff:127.0.0.1') {
@@ -21,11 +26,11 @@ const getClientIP = (req) => {
   }
 
   // IPv6 formatını temizle
-  if (ip.startsWith('::ffff:')) {
+  if (ip && ip.startsWith('::ffff:')) {
     ip = ip.substring(7);
   }
 
-  return ip;
+  return ip || null;
 };
 
 // Tüm invitation linklerini getir (Admin paneli için)

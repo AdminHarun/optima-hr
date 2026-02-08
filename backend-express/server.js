@@ -146,34 +146,34 @@ const startServer = async () => {
 
       // Create tables if they don't exist (order matters for foreign keys)
       console.log('🔄 Checking core tables...');
-      await InvitationLink.sync({ force: false });
-      await ApplicantProfile.sync({ force: false });
-      await JobApplication.sync({ force: false });
-      await ChatRoom.sync({ force: false });
-      await ChatMessage.sync({ force: false });
+      try { await InvitationLink.sync({ force: false }); } catch (e) { console.log('⚠️ InvitationLink sync:', e.message); }
+      try { await ApplicantProfile.sync({ force: false }); } catch (e) { console.log('⚠️ ApplicantProfile sync:', e.message); }
+      try { await JobApplication.sync({ force: false }); } catch (e) { console.log('⚠️ JobApplication sync:', e.message); }
+      try { await ChatRoom.sync({ force: false }); } catch (e) { console.log('⚠️ ChatRoom sync:', e.message); }
+      try { await ChatMessage.sync({ force: false }); } catch (e) { console.log('⚠️ ChatMessage sync:', e.message); }
       console.log('✅ Core tables synced');
-
-      // Add missing chat_rooms columns (for existing tables)
-      console.log('🔄 Checking chat_rooms columns...');
-      try {
-        // Create ENUM type if not exists
-        await sequelize.query(`
-          DO $$ BEGIN
-            CREATE TYPE enum_chat_rooms_room_type AS ENUM ('applicant', 'admin', 'group');
-          EXCEPTION
-            WHEN duplicate_object THEN null;
-          END $$;
-        `);
-        // Add room_type column if not exists
-        await sequelize.query(`
-          ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_type enum_chat_rooms_room_type DEFAULT 'applicant'
-        `);
-        console.log('✅ chat_rooms.room_type column ensured');
-      } catch (chatColErr) {
-        console.log('⚠️ chat_rooms column note:', chatColErr.message);
-      }
     } catch (coreErr) {
       console.log('⚠️ Core tables note:', coreErr.message);
+    }
+
+    // Add missing chat_rooms columns (MUST run even if sync fails)
+    try {
+      console.log('🔄 Checking chat_rooms columns...');
+      // Create ENUM type if not exists
+      await sequelize.query(`
+        DO $$ BEGIN
+          CREATE TYPE enum_chat_rooms_room_type AS ENUM ('applicant', 'admin', 'group');
+        EXCEPTION
+          WHEN duplicate_object THEN null;
+        END $$;
+      `);
+      // Add room_type column if not exists
+      await sequelize.query(`
+        ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_type enum_chat_rooms_room_type DEFAULT 'applicant'
+      `);
+      console.log('✅ chat_rooms.room_type column ensured');
+    } catch (chatColErr) {
+      console.log('⚠️ chat_rooms column note:', chatColErr.message);
     }
 
     // Initialize employee tables

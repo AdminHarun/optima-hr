@@ -198,7 +198,8 @@ router.post('/submit', upload.fields([
       include: [
         {
           model: ApplicantProfile,
-          as: 'profiles'
+          as: 'profiles',
+          required: false
         }
       ]
     });
@@ -368,7 +369,7 @@ router.post('/submit', upload.fields([
       });
     }
 
-    res.status(500).json({ error: 'Başvuru gönderilemedi' });
+    res.status(500).json({ error: 'Başvuru gönderilemedi', details: error.message });
   }
 });
 

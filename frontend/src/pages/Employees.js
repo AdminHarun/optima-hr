@@ -971,369 +971,441 @@ function Employees() {
         </Table>
       </TableContainer>
 
-      {/* Yeni/Düzenle Dialog - Stepper Form */}
-      <Dialog 
-        open={openDialog} 
-        onClose={handleCloseDialog} 
-        maxWidth="md" 
+      {/* Yeni/Düzenle Dialog - Modern Tasarım */}
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            overflow: 'visible'
+            borderRadius: '24px',
+            overflow: 'hidden',
+            boxShadow: '0 24px 48px rgba(28, 97, 171, 0.2)'
           }
         }}
       >
-        <DialogTitle sx={{
-          background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
+        {/* Header */}
+        <Box sx={{
+          background: 'linear-gradient(135deg, #1c61ab 0%, #2d7dd2 50%, #8bb94a 100%)',
           color: 'white',
-          fontWeight: 600
+          p: 3,
+          position: 'relative'
         }}>
-          {isEditMode ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
           <IconButton
             onClick={handleCloseDialog}
-            sx={{ 
-              position: 'absolute', 
-              right: 8, 
-              top: 8,
-              color: 'white'
+            sx={{
+              position: 'absolute',
+              right: 16,
+              top: 16,
+              color: 'white',
+              bgcolor: 'rgba(255,255,255,0.1)',
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
             }}
           >
-            <DeleteIcon />
+            <PersonOffIcon />
           </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          <Stepper activeStep={activeStep} orientation="vertical">
-            {/* Adım 1: Kişisel Bilgiler */}
-            <Step>
-              <StepLabel>
-                <Typography fontWeight={600}>Kişisel Bilgiler</Typography>
-              </StepLabel>
-              <StepContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Ad *"
-                      name="first_name"
-                      value={formData.first_name}
-                      onChange={handleInputChange}
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Soyad *"
-                      name="last_name"
-                      value={formData.last_name}
-                      onChange={handleInputChange}
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Sistem Adı *"
-                      name="employee_id"
-                      value={formData.employee_id}
-                      onChange={handleInputChange}
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                      placeholder="örn: ad.soyad"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Doğum Tarihi"
-                      name="birth_date"
-                      type="date"
-                      value={formData.birth_date}
-                      onChange={handleInputChange}
-                      InputLabelProps={{ shrink: true }}
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="İşe Başlama Tarihi *"
-                      name="hire_date"
-                      type="date"
-                      value={formData.hire_date}
-                      onChange={handleInputChange}
-                      InputLabelProps={{ shrink: true }}
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
-                      <Button
-                        variant="contained"
-                        onClick={handleNextStep}
-                        disabled={!isStepValid()}
-                        sx={{
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #155090, #7aa042)'
-                          },
-                          '&:disabled': {
-                            background: '#ccc'
-                          }
-                        }}
-                      >
-                        Devam Et
-                      </Button>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </StepContent>
-            </Step>
 
-            {/* Adım 2: İletişim ve Adres */}
-            <Step>
-              <StepLabel>
-                <Typography fontWeight={600}>İletişim ve Adres Bilgileri</Typography>
-              </StepLabel>
-              <StepContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="E-posta *"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Telefon *"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      placeholder="05XX XXX XX XX"
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={8}>
-                    <TextField
-                      fullWidth
-                      label="Adres"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Şehir"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Acil Durum Kişisi"
-                      name="emergency_contact"
-                      value={formData.emergency_contact}
-                      onChange={handleInputChange}
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Acil Durum Telefonu"
-                      name="emergency_phone"
-                      value={formData.emergency_phone}
-                      onChange={handleInputChange}
-                      placeholder="05XX XXX XX XX"
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
-                      <Button onClick={handleBackStep} sx={{ borderRadius: '12px' }}>
-                        Geri
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={handleNextStep}
-                        disabled={!isStepValid()}
-                        sx={{
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #155090, #7aa042)'
-                          },
-                          '&:disabled': {
-                            background: '#ccc'
-                          }
-                        }}
-                      >
-                        Devam Et
-                      </Button>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </StepContent>
-            </Step>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar sx={{
+              width: 56,
+              height: 56,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              border: '2px solid rgba(255,255,255,0.3)'
+            }}>
+              <PersonIcon sx={{ fontSize: 28 }} />
+            </Avatar>
+            <Box>
+              <Typography variant="h5" fontWeight={700}>
+                {isEditMode ? 'Çalışan Düzenle' : 'Yeni Çalışan Ekle'}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                {isEditMode ? 'Mevcut bilgileri güncelleyin' : 'Tüm alanları doldurun'}
+              </Typography>
+            </Box>
+          </Box>
 
-            {/* Adım 3: İş Bilgileri */}
-            <Step>
-              <StepLabel>
-                <Typography fontWeight={600}>İş Bilgileri</Typography>
-              </StepLabel>
-              <StepContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth required>
-                      <InputLabel>Pozisyon</InputLabel>
-                      <Select
-                        name="position"
-                        value={formData.position}
-                        onChange={handleInputChange}
-                        label="Pozisyon"
-                        sx={{ borderRadius: '12px' }}
-                      >
-                        {Object.entries(positions).map(([key, value]) => (
-                          <MenuItem key={key} value={key}>{value}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth required>
-                      <InputLabel>Departman</InputLabel>
-                      <Select
-                        name="department"
-                        value={formData.department}
-                        onChange={handleInputChange}
-                        label="Departman"
-                        sx={{ borderRadius: '12px' }}
-                      >
-                        {Object.entries(departments).map(([key, dept]) => (
-                          <MenuItem key={key} value={key}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Box sx={{ 
-                                width: 10, 
-                                height: 10, 
-                                borderRadius: '50%', 
-                                bgcolor: dept.color 
-                              }} />
-                              {dept.name}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Görev Tanımı *"
-                      name="job_title"
-                      value={formData.job_title}
-                      onChange={handleInputChange}
-                      required
-                      InputProps={{ sx: { borderRadius: '12px' } }}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
-                      <Button onClick={handleBackStep} sx={{ borderRadius: '12px' }}>
-                        Geri
-                      </Button>
-                      <Button
-                        variant="contained"
-                        onClick={handleNextStep}
-                        disabled={!isStepValid()}
-                        sx={{
-                          borderRadius: '12px',
-                          background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #155090, #7aa042)'
-                          },
-                          '&:disabled': {
-                            background: '#ccc'
-                          }
-                        }}
-                      >
-                        Devam Et
-                      </Button>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </StepContent>
-            </Step>
+          {/* Progress Steps */}
+          <Box sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: 1,
+            mt: 3,
+            mb: -1
+          }}>
+            {['Kişisel', 'İletişim', 'İş', 'Finansal'].map((label, index) => (
+              <Box
+                key={index}
+                onClick={() => index <= activeStep && setActiveStep(index)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 2,
+                  py: 1,
+                  borderRadius: '20px',
+                  bgcolor: activeStep === index
+                    ? 'white'
+                    : activeStep > index
+                      ? 'rgba(255,255,255,0.3)'
+                      : 'rgba(255,255,255,0.1)',
+                  color: activeStep === index ? '#1c61ab' : 'white',
+                  cursor: index <= activeStep ? 'pointer' : 'default',
+                  transition: 'all 0.3s ease',
+                  '&:hover': index <= activeStep ? {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  } : {}
+                }}
+              >
+                <Box sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: activeStep === index
+                    ? '#1c61ab'
+                    : activeStep > index
+                      ? '#8bb94a'
+                      : 'transparent',
+                  color: 'white',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  border: activeStep < index ? '2px solid rgba(255,255,255,0.5)' : 'none'
+                }}>
+                  {activeStep > index ? '✓' : index + 1}
+                </Box>
+                <Typography variant="body2" fontWeight={activeStep === index ? 600 : 400}>
+                  {label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
-            {/* Adım 4: Finansal ve Belgeler */}
-            <Step>
-              <StepLabel>
-                <Typography fontWeight={600}>Finansal Bilgiler ve Belgeler</Typography>
-              </StepLabel>
-              <StepContent>
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12} sm={6}>
+        <DialogContent sx={{ p: 4 }}>
+          {/* Adım 1: Kişisel Bilgiler */}
+          {activeStep === 0 && (
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 3, color: '#1c61ab' }}>
+                Kişisel Bilgiler
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Ad"
+                    name="first_name"
+                    value={formData.first_name}
+                    onChange={handleInputChange}
+                    required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><PersonIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Soyad"
+                    name="last_name"
+                    value={formData.last_name}
+                    onChange={handleInputChange}
+                    required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><PersonIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Sistem Adı (Otomatik oluşturulur)"
+                    name="employee_id"
+                    value={formData.employee_id}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="ad.soyad"
+                    helperText="Ad ve soyad girince otomatik oluşur"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><BadgeIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Doğum Tarihi"
+                    name="birth_date"
+                    type="date"
+                    value={formData.birth_date}
+                    onChange={handleInputChange}
+                    InputLabelProps={{ shrink: true }}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><CalendarIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="İşe Başlama Tarihi"
+                    name="hire_date"
+                    type="date"
+                    value={formData.hire_date}
+                    onChange={handleInputChange}
+                    InputLabelProps={{ shrink: true }}
+                    required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><CalendarIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Adım 2: İletişim */}
+          {activeStep === 1 && (
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 3, color: '#1c61ab' }}>
+                İletişim Bilgileri
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="E-posta"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><EmailIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Telefon"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="05XX XXX XX XX"
+                    required
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><PhoneIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Adres"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    multiline
+                    rows={2}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><LocationIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Şehir"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    InputProps={{ sx: { borderRadius: '12px' } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Acil Durum Kişisi"
+                    name="emergency_contact"
+                    value={formData.emergency_contact}
+                    onChange={handleInputChange}
+                    InputProps={{ sx: { borderRadius: '12px' } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField
+                    fullWidth
+                    label="Acil Durum Tel."
+                    name="emergency_phone"
+                    value={formData.emergency_phone}
+                    onChange={handleInputChange}
+                    InputProps={{ sx: { borderRadius: '12px' } }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Adım 3: İş Bilgileri */}
+          {activeStep === 2 && (
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 3, color: '#1c61ab' }}>
+                İş Bilgileri
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Pozisyon</InputLabel>
+                    <Select
+                      name="position"
+                      value={formData.position}
+                      onChange={handleInputChange}
+                      label="Pozisyon"
+                      sx={{ borderRadius: '12px' }}
+                    >
+                      {Object.entries(positions).map(([key, value]) => (
+                        <MenuItem key={key} value={key}>{value}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Departman</InputLabel>
+                    <Select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleInputChange}
+                      label="Departman"
+                      sx={{ borderRadius: '12px' }}
+                    >
+                      {Object.entries(departments).map(([key, dept]) => (
+                        <MenuItem key={key} value={key}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <Box sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: '50%',
+                              bgcolor: dept.color
+                            }} />
+                            {dept.name}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="Görev Tanımı"
+                    name="job_title"
+                    value={formData.job_title}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Örn: Kıdemli Yazılım Geliştirici"
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><WorkIcon color="action" /></InputAdornment>,
+                      sx: { borderRadius: '12px' }
+                    }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          )}
+
+          {/* Adım 4: Finansal */}
+          {activeStep === 3 && (
+            <Box>
+              <Typography variant="h6" fontWeight={600} sx={{ mb: 3, color: '#1c61ab' }}>
+                Finansal Bilgiler
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Card sx={{
+                    p: 2,
+                    borderRadius: '16px',
+                    bgcolor: '#f0f7ff',
+                    border: '1px solid #e3f2fd'
+                  }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      Net Maaş
+                    </Typography>
                     <TextField
                       fullWidth
-                      label="Net Maaş (USD)"
                       name="net_salary"
                       value={formData.net_salary}
                       onChange={handleInputChange}
                       type="number"
+                      variant="standard"
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                        sx: { borderRadius: '12px' }
+                        startAdornment: <Typography variant="h5" sx={{ mr: 1, color: '#1c61ab' }}>$</Typography>,
+                        disableUnderline: true,
+                        sx: { fontSize: '2rem', fontWeight: 700, color: '#1c61ab' }
                       }}
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Card sx={{
+                    p: 2,
+                    borderRadius: '16px',
+                    bgcolor: '#f0fff4',
+                    border: '1px solid #c8e6c9'
+                  }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      USDT TRC-20 Adresi
+                    </Typography>
                     <TextField
                       fullWidth
-                      label="USDT TRC-20 Adresi"
                       name="usdt_address"
                       value={formData.usdt_address}
                       onChange={handleInputChange}
                       placeholder="TRX..."
-                      InputProps={{ sx: { borderRadius: '12px' } }}
+                      variant="standard"
+                      InputProps={{
+                        startAdornment: <WalletIcon sx={{ mr: 1, color: '#8bb94a' }} />,
+                        disableUnderline: true,
+                        sx: { fontSize: '0.9rem' }
+                      }}
                     />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                  </Card>
+                </Grid>
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 2 }} />
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 2
+                  }}>
+                    <Typography variant="subtitle1" fontWeight={600}>
                       Belgeler
                     </Typography>
                     <Button
                       variant="outlined"
                       component="label"
                       startIcon={<UploadIcon />}
+                      size="small"
                       sx={{
-                        borderRadius: '12px',
+                        borderRadius: '20px',
                         borderColor: '#1c61ab',
-                        color: '#1c61ab',
-                        '&:hover': {
-                          borderColor: '#8bb94a',
-                          backgroundColor: 'rgba(139,185,74,0.05)'
-                        }
+                        color: '#1c61ab'
                       }}
                     >
-                      Belge Yükle
+                      Belge Ekle
                       <input
                         type="file"
                         hidden
@@ -1341,65 +1413,99 @@ function Employees() {
                         onChange={handleDocumentUpload}
                       />
                     </Button>
-                    
-                    {formData.documents?.length > 0 && (
-                      <List dense sx={{ mt: 2 }}>
-                        {formData.documents.map(doc => (
-                          <ListItem 
-                            key={doc.id}
-                            sx={{
-                              bgcolor: '#f8f9fa',
-                              borderRadius: '8px',
-                              mb: 1
-                            }}
-                          >
-                            <ListItemIcon>
-                              {getFileIcon(doc.type)}
-                            </ListItemIcon>
-                            <ListItemText 
-                              primary={doc.name}
-                              secondary={`${(doc.size / 1024).toFixed(2)} KB`}
-                            />
-                            <ListItemSecondaryAction>
-                              <IconButton 
-                                edge="end" 
-                                onClick={() => handleDocumentDelete(doc.id)}
-                                size="small"
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          </ListItem>
-                        ))}
-                      </List>
-                    )}
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
-                      <Button onClick={handleBackStep} sx={{ borderRadius: '12px' }}>
-                        Geri
-                      </Button>
-                      <Button 
-                        variant="contained"
-                        onClick={handleSave}
-                        sx={{
-                          borderRadius: '12px',
-                          px: 3,
-                          background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
-                          '&:hover': {
-                            background: 'linear-gradient(135deg, #155090, #7aa042)'
-                          }
-                        }}
-                      >
-                        {isEditMode ? 'Güncelle' : 'Kaydet'}
-                      </Button>
+                  </Box>
+
+                  {formData.documents?.length > 0 ? (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {formData.documents.map(doc => (
+                        <Chip
+                          key={doc.id}
+                          label={doc.name}
+                          onDelete={() => handleDocumentDelete(doc.id)}
+                          icon={getFileIcon(doc.type)}
+                          sx={{
+                            borderRadius: '8px',
+                            bgcolor: '#f5f5f5'
+                          }}
+                        />
+                      ))}
                     </Box>
-                  </Grid>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 3 }}>
+                      Henüz belge eklenmedi
+                    </Typography>
+                  )}
                 </Grid>
-              </StepContent>
-            </Step>
-          </Stepper>
+              </Grid>
+            </Box>
+          )}
         </DialogContent>
+
+        {/* Footer Actions */}
+        <DialogActions sx={{
+          p: 3,
+          borderTop: '1px solid #f0f0f0',
+          gap: 2
+        }}>
+          {activeStep > 0 && (
+            <Button
+              onClick={handleBackStep}
+              sx={{
+                borderRadius: '12px',
+                px: 3
+              }}
+            >
+              Geri
+            </Button>
+          )}
+          <Box sx={{ flex: 1 }} />
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              borderRadius: '12px',
+              px: 3
+            }}
+          >
+            İptal
+          </Button>
+          {activeStep < 3 ? (
+            <Button
+              variant="contained"
+              onClick={handleNextStep}
+              disabled={!isStepValid()}
+              sx={{
+                borderRadius: '12px',
+                px: 4,
+                background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #155090, #7aa042)'
+                },
+                '&:disabled': {
+                  background: '#e0e0e0'
+                }
+              }}
+            >
+              Devam Et
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              onClick={handleSave}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
+              sx={{
+                borderRadius: '12px',
+                px: 4,
+                background: 'linear-gradient(135deg, #8bb94a, #1c61ab)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #7aa042, #155090)'
+                }
+              }}
+            >
+              {isEditMode ? 'Güncelle' : 'Kaydet'}
+            </Button>
+          )}
+        </DialogActions>
       </Dialog>
 
       {/* Profil ve Belge Önizleme Dialogları buraya devam edecek... */}

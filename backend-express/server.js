@@ -169,11 +169,27 @@ const startServer = async () => {
           WHEN duplicate_object THEN null;
         END $$;
       `);
-      // Add room_type column if not exists
-      await sequelize.query(`
-        ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_type enum_chat_rooms_room_type DEFAULT 'applicant'
-      `);
-      console.log('✅ chat_rooms.room_type column ensured');
+      // Add ALL missing columns
+      const chatRoomColumns = [
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_type enum_chat_rooms_room_type DEFAULT 'applicant'",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS site_code VARCHAR(50)",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS applicant_id BIGINT",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS applicant_email VARCHAR(255)",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS applicant_name VARCHAR(255)",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS room_name VARCHAR(255)",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS last_message_id INTEGER",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS last_message_at TIMESTAMP WITH TIME ZONE",
+        "ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS metadata JSONB"
+      ];
+      for (const sql of chatRoomColumns) {
+        try {
+          await sequelize.query(sql);
+        } catch (e) {
+          // Column might already exist
+        }
+      }
+      console.log('✅ chat_rooms columns ensured');
     } catch (chatColErr) {
       console.log('⚠️ chat_rooms column note:', chatColErr.message);
     }

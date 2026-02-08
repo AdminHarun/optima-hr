@@ -741,6 +741,45 @@ router.get('/by-profile/:profileId', async (req, res) => {
   }
 });
 
+// Profilleri getir (kısa yol - /profiles/all ile aynı)
+router.get('/profiles', async (req, res) => {
+  try {
+    const siteCode = req.headers['x-site-id'] || null;
+    const limit = parseInt(req.query.limit) || 100;
+    const where = {};
+    if (siteCode) where.site_code = siteCode;
+
+    const profiles = await ApplicantProfile.findAll({
+      where,
+      order: [['profile_created_at', 'DESC']],
+      limit
+    });
+
+    const formattedProfiles = profiles.map(p => ({
+      id: p.id,
+      firstName: p.first_name,
+      lastName: p.last_name,
+      email: p.email,
+      phone: p.phone,
+      chatToken: p.chat_token,
+      sessionToken: p.session_token,
+      createdAt: p.profile_created_at,
+      siteCode: p.site_code,
+      profileCreatedIp: p.profile_created_ip,
+      profileCreatedLocation: p.profile_created_location,
+      deviceInfo: p.device_info,
+      vpnScore: p.vpn_score,
+      isVpn: p.is_vpn,
+      securityQuestion: p.security_question
+    }));
+
+    res.json(formattedProfiles);
+  } catch (error) {
+    console.error('Error fetching profiles:', error);
+    res.status(500).json({ error: 'Profiller alınamadı', details: error.message });
+  }
+});
+
 // Tek başvuru detayı getir
 router.get('/:id', async (req, res) => {
   try {

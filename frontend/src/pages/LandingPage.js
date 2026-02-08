@@ -103,7 +103,7 @@ const LandingPage = () => {
                 {/* Logo */}
                 <Box sx={{ mb: 4 }}>
                   <img
-                    src="/logo3.png"
+                    src="/firstlogo.png"
                     alt="Optima HR"
                     style={{
                       height: isMobile ? 60 : 80,
@@ -415,7 +415,7 @@ const LandingPage = () => {
             <Grid item xs={12} md={4}>
               <Box sx={{ mb: 3 }}>
                 <img
-                  src="/logo3.png"
+                  src="/firstlogo.png"
                   alt="Optima HR"
                   style={{
                     height: 50,

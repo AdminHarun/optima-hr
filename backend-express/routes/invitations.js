@@ -269,7 +269,7 @@ router.get('/validate/:token', async (req, res) => {
     });
   } catch (error) {
     console.error('Error validating invitation:', error);
-    res.status(500).json({ error: 'Token doğrulanamadı' });
+    res.status(500).json({ error: 'Token doğrulanamadı', details: error.message });
   }
 });
 

@@ -541,22 +541,11 @@ function ApplicationFormSimple() {
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
               Bu başvuru linki daha önce kullanılmış ve geçerliliğini yitirmiştir.
+              Yeni bir başvuru yapmak için İnsan Kaynakları departmanı ile iletişime geçiniz.
             </Typography>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/')}
-              sx={{
-                bgcolor: '#1c61ab',
-                '&:hover': { bgcolor: '#154a8a' },
-                borderRadius: 3,
-                px: 4,
-                py: 1.5,
-                textTransform: 'none',
-                fontWeight: 600
-              }}
-            >
-              Ana Sayfaya Dön
-            </Button>
+            <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
+              ik@optimahrms.com
+            </Typography>
           </CardContent>
         </Card>
       </Box>

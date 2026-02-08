@@ -5,30 +5,31 @@ const ChatMessage = require('../models/ChatMessage');
 const ApplicantProfile = require('../models/ApplicantProfile');
 const { Op } = require('sequelize');
 const multer = require('multer');
+const r2Storage = require('../services/r2StorageService');
 
 // Site code helper
 const getSiteCode = (req) => req.headers['x-site-id'] || null;
 const path = require('path');
 const fs = require('fs');
 
-// Multer konfigürasyonu - dosya yükleme
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads/chat');
-    // Klasör yoksa oluştur
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    // Güvenli dosya adı oluştur
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9]/g, '_');
-    cb(null, `${baseName}_${uniqueSuffix}${ext}`);
-  }
-});
+// Multer konfigürasyonu - R2 aktifse memoryStorage, değilse diskStorage
+const storage = r2Storage.isR2Enabled()
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: function (req, file, cb) {
+        const uploadDir = path.join(__dirname, '../uploads/chat');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9]/g, '_');
+        cb(null, `${baseName}_${uniqueSuffix}${ext}`);
+      }
+    });
 
 const upload = multer({
   storage: storage,
@@ -218,8 +219,32 @@ router.get('/rooms/:roomId/messages/', async (req, res) => {
       // String identifier - look up the room
       const parts = roomId.split('_');
       if (parts[0] === 'applicant' && parts[1]) {
-        const room = await ChatRoom.findOne({ where: { room_type: 'applicant', applicant_id: parseInt(parts[1]) } });
-        if (!room) return res.status(404).json({ error: 'Chat room not found' });
+        const applicantId = parseInt(parts[1]);
+        let room = await ChatRoom.findOne({ where: { room_type: 'applicant', applicant_id: applicantId } });
+
+        // Room yoksa otomatik oluştur
+        if (!room) {
+          console.log('🔧 Chat room not found, creating automatically for applicant:', applicantId);
+          try {
+            // Applicant bilgilerini al
+            const ApplicantProfile = require('../models/ApplicantProfile');
+            const profile = await ApplicantProfile.findByPk(applicantId);
+
+            room = await ChatRoom.create({
+              room_type: 'applicant',
+              applicant_id: applicantId,
+              applicant_email: profile?.email || `applicant_${applicantId}@temp.com`,
+              applicant_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+              room_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+              site_code: profile?.site_code || null,
+              is_active: true
+            });
+            console.log('✅ Chat room created automatically:', room.id);
+          } catch (createError) {
+            console.error('❌ Failed to create chat room:', createError.message);
+            return res.status(404).json({ error: 'Chat room not found and could not be created' });
+          }
+        }
         dbRoomId = room.id;
       } else {
         return res.status(400).json({ error: 'Invalid room identifier' });
@@ -260,7 +285,28 @@ router.get('/messages/', async (req, res) => {
       if (isNaN(resolvedRoomId)) {
         const parts = room.split('_');
         if (parts[0] === 'applicant' && parts[1]) {
-          const foundRoom = await ChatRoom.findOne({ where: { room_type: 'applicant', applicant_id: parseInt(parts[1]) } });
+          const applicantId = parseInt(parts[1]);
+          let foundRoom = await ChatRoom.findOne({ where: { room_type: 'applicant', applicant_id: applicantId } });
+
+          // Room yoksa otomatik oluştur
+          if (!foundRoom) {
+            try {
+              const ApplicantProfile = require('../models/ApplicantProfile');
+              const profile = await ApplicantProfile.findByPk(applicantId);
+              foundRoom = await ChatRoom.create({
+                room_type: 'applicant',
+                applicant_id: applicantId,
+                applicant_email: profile?.email || `applicant_${applicantId}@temp.com`,
+                applicant_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+                room_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+                site_code: profile?.site_code || null,
+                is_active: true
+              });
+              console.log('✅ Chat room auto-created in messages endpoint:', foundRoom.id);
+            } catch (e) {
+              console.error('❌ Failed to auto-create room:', e.message);
+            }
+          }
           resolvedRoomId = foundRoom ? foundRoom.id : -1;
         }
       }
@@ -363,14 +409,27 @@ router.post('/messages/mark_read/', async (req, res) => {
   }
 });
 
-// Upload file (single file)
+// Upload file (single file) - R2 veya lokal
 router.post('/upload/file/', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/chat/${req.file.filename}`;
+    const useR2 = r2Storage.isR2Enabled();
+    let fileUrl, fileKey;
+
+    if (useR2) {
+      // R2'ye yükle
+      const key = r2Storage.generateSafeKey(req.file.originalname, 'chat');
+      await r2Storage.uploadFile(req.file.buffer, key, req.file.mimetype);
+      fileKey = key;
+      fileUrl = r2Storage.getPublicUrl(key) || `/chat/api/download/${encodeURIComponent(key)}`;
+    } else {
+      // Lokal dosya
+      fileUrl = `/uploads/chat/${req.file.filename}`;
+      fileKey = req.file.filename;
+    }
 
     res.json({
       success: true,
@@ -379,7 +438,8 @@ router.post('/upload/file/', upload.single('file'), async (req, res) => {
         name: req.file.originalname,
         size: req.file.size,
         mime_type: req.file.mimetype,
-        filename: req.file.filename
+        filename: fileKey,
+        storage: useR2 ? 'r2' : 'local'
       }
     });
   } catch (error) {
@@ -388,20 +448,38 @@ router.post('/upload/file/', upload.single('file'), async (req, res) => {
   }
 });
 
-// Upload multiple files
+// Upload multiple files - R2 veya lokal
 router.post('/upload/files/', upload.array('files', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    const files = req.files.map(file => ({
-      url: `/uploads/chat/${file.filename}`,
-      name: file.originalname,
-      size: file.size,
-      mime_type: file.mimetype,
-      filename: file.filename
-    }));
+    const useR2 = r2Storage.isR2Enabled();
+    const files = [];
+
+    for (const file of req.files) {
+      let fileUrl, fileKey;
+
+      if (useR2) {
+        const key = r2Storage.generateSafeKey(file.originalname, 'chat');
+        await r2Storage.uploadFile(file.buffer, key, file.mimetype);
+        fileKey = key;
+        fileUrl = r2Storage.getPublicUrl(key) || `/chat/api/download/${encodeURIComponent(key)}`;
+      } else {
+        fileUrl = `/uploads/chat/${file.filename}`;
+        fileKey = file.filename;
+      }
+
+      files.push({
+        url: fileUrl,
+        name: file.originalname,
+        size: file.size,
+        mime_type: file.mimetype,
+        filename: fileKey,
+        storage: useR2 ? 'r2' : 'local'
+      });
+    }
 
     res.json({
       success: true,
@@ -413,17 +491,29 @@ router.post('/upload/files/', upload.array('files', 10), async (req, res) => {
   }
 });
 
-// Download file
-router.get('/download/:filename', (req, res) => {
+// Download file - R2 veya lokal
+router.get('/download/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
-    const filePath = path.join(__dirname, '../uploads/chat', filename);
+    const decodedFilename = decodeURIComponent(filename);
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found' });
+    // R2 key mi kontrol et (chat/ ile başlıyorsa)
+    const isR2Key = decodedFilename.startsWith('chat/');
+
+    if (isR2Key && r2Storage.isR2Enabled()) {
+      // R2'den signed URL oluştur ve yönlendir
+      const signedUrl = await r2Storage.getSignedDownloadUrl(decodedFilename, 3600);
+      res.redirect(signedUrl);
+    } else if (isR2Key) {
+      return res.status(500).json({ error: 'R2 yapılandırması eksik' });
+    } else {
+      // Lokal dosya
+      const filePath = path.join(__dirname, '../uploads/chat', decodedFilename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      res.download(filePath);
     }
-
-    res.download(filePath);
   } catch (error) {
     console.error('Error downloading file:', error);
     res.status(500).json({ error: 'Failed to download file' });

@@ -50,8 +50,8 @@ function AdminHeader() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   
-  // Bildirim context'inden gercek zamanli okunmamis mesaj sayisi
-  const { unreadCount: unreadMessages, markAsRead } = useNotifications();
+  // Bildirim context'inden gercek zamanli bildirimler
+  const { unreadCount: unreadMessages, notifications: contextNotifications, markAsRead } = useNotifications();
   const unreadMails = 0;
 
   const handleProfileMenuOpen = (event) => {
@@ -112,46 +112,37 @@ function AdminHeader() {
     return colors[role] || 'default';
   };
 
-  // Real notifications from localStorage
-  const getNotifications = () => {
-    const sc = localStorage.getItem('optima_current_site') || 'FXB';
-    const applications = JSON.parse(localStorage.getItem(`applications_${sc}`) || '[]');
-    const notifications = [];
-    
-    // Son 24 saatteki başvuruları bildirim olarak göster
+  // Context'ten gelen bildirimleri formatlayarak göster
+  const formatTimeAgo = (timestamp) => {
     const now = new Date();
-    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
-    
-    applications.forEach(app => {
-      const appDate = new Date(app.submittedAt);
-      if (appDate > dayAgo) {
-        const timeDiff = now - appDate;
-        const minutes = Math.floor(timeDiff / 60000);
-        const hours = Math.floor(minutes / 60);
-        
-        let timeStr = '';
-        if (minutes < 60) {
-          timeStr = `${minutes} dk önce`;
-        } else if (hours < 24) {
-          timeStr = `${hours} saat önce`;
-        }
-        
-        notifications.push({
-          id: app.id,
-          type: 'application',
-          icon: <InfoIcon color="primary" />,
-          title: 'Yeni başvuru geldi',
-          message: `${app.firstName} ${app.lastName} adlı kişiden yeni başvuru.`,
-          time: timeStr,
-          read: false
-        });
-      }
-    });
-    
-    return notifications;
+    const date = new Date(timestamp);
+    const diffMs = now - date;
+    const minutes = Math.floor(diffMs / 60000);
+    const hours = Math.floor(minutes / 60);
+
+    if (minutes < 60) {
+      return `${minutes} dk önce`;
+    } else if (hours < 24) {
+      return `${hours} saat önce`;
+    } else {
+      return `${Math.floor(hours / 24)} gün önce`;
+    }
   };
-  
-  const notifications = getNotifications();
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'chat':
+        return <ChatIcon color="primary" />;
+      case 'application':
+        return <InfoIcon color="warning" />;
+      case 'profile':
+        return <PersonIcon color="secondary" />;
+      default:
+        return <InfoIcon color="primary" />;
+    }
+  };
+
+  const notifications = contextNotifications || [];
   const unreadCount = notifications.filter(n => !n.read).length;
 
   // Chrome tarzı tab componenti
@@ -508,9 +499,9 @@ function AdminHeader() {
           }
         }}
       >
-        <DialogTitle sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <DialogTitle sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
           pb: 1
         }}>
@@ -521,13 +512,32 @@ function AdminHeader() {
             </Typography>
             <Badge badgeContent={unreadCount} color="error" />
           </Box>
-          
-          <IconButton onClick={handleDialogClose}>
-            <CloseIcon />
-          </IconButton>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {unreadCount > 0 && (
+              <Button
+                size="small"
+                onClick={() => markAsRead()}
+                sx={{ textTransform: 'none', fontSize: '12px' }}
+              >
+                Tümünü Okundu İşaretle
+              </Button>
+            )}
+            <IconButton onClick={handleDialogClose}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </DialogTitle>
         
         <DialogContent>
+          {notifications.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 6 }}>
+              <NotificationsIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
+              <Typography color="text.secondary">
+                Henüz bildirim yok
+              </Typography>
+            </Box>
+          ) : (
           <List>
             {notifications.map((notification) => (
               <ListItem
@@ -549,41 +559,46 @@ function AdminHeader() {
                 }}
               >
                 <ListItemAvatar>
-                  <Avatar sx={{ 
+                  <Avatar sx={{
                     background: 'transparent',
                     width: 40,
                     height: 40
                   }}>
-                    {notification.icon}
+                    {getNotificationIcon(notification.type)}
                   </Avatar>
                 </ListItemAvatar>
-                
+
                 <Box sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography variant="body2" fontWeight="bold">
                       {notification.title}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {notification.time}
+                      {formatTimeAgo(notification.timestamp)}
                     </Typography>
                   </Box>
-                  
+
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {notification.message}
                   </Typography>
-                  
+
                   {!notification.read && (
                     <Chip
                       size="small"
                       label="Yeni"
                       color="primary"
                       sx={{ mt: 1, height: 20, fontSize: '10px' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsRead(notification.id);
+                      }}
                     />
                   )}
                 </Box>
               </ListItem>
             ))}
           </List>
+          )}
         </DialogContent>
       </Dialog>
     </>

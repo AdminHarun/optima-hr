@@ -24,6 +24,7 @@ import ApplicantChat from './pages/ApplicantChat';
 import ApplicantProfile from './pages/ApplicantProfile';
 import ApplicantCabinet from './pages/ApplicantCabinet';
 import ApplicantLogin from './pages/ApplicantLogin';
+import LandingPage from './pages/LandingPage';
 
 // Admin Pages (Employee System)
 import AdminLogin from './pages/admin/AdminLogin';
@@ -350,8 +351,8 @@ function App() {
                         </EmployeeAuthProvider>
                     } />
                     
-                    {/* DEFAULT REDIRECT */}
-                    <Route path="/" element={<Navigate to="/admin/login" replace />} />
+                    {/* LANDING PAGE */}
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
                     
                     {/* 404 */}

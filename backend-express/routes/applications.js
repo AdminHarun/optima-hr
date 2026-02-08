@@ -6,6 +6,7 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const { InvitationLink, ApplicantProfile, JobApplication } = require('../models/associations');
 const TokenService = require('../services/tokenService');
+const r2Storage = require('../services/r2StorageService');
 
 // IP adresi alma helper
 const getClientIP = (req) => {
@@ -37,21 +38,23 @@ const getClientIP = (req) => {
   return ip || null;
 };
 
-// Multer konfigürasyonu - Dosya yükleme
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads', 'applications');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const fileExtension = path.extname(file.originalname);
-    cb(null, `${req.body.token || 'unknown'}-${file.fieldname}-${uniqueSuffix}${fileExtension}`);
-  }
-});
+// Multer konfigürasyonu - R2 aktifse memoryStorage, değilse diskStorage
+const storage = r2Storage.isR2Enabled()
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '..', 'uploads', 'applications');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const fileExtension = path.extname(file.originalname);
+        cb(null, `${req.body.token || 'unknown'}-${file.fieldname}-${uniqueSuffix}${fileExtension}`);
+      }
+    });
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = {
@@ -293,20 +296,48 @@ router.post('/submit', upload.fields([
       profileId: profile.id
     });
 
-    // Dosya yollarını application'a ekle
+    // Dosya yollarını application'a ekle (R2 veya lokal)
     const fileUpdates = {};
     if (files) {
+      const useR2 = r2Storage.isR2Enabled();
+
+      // CV dosyası
       if (files.cv && files.cv[0]) {
-        fileUpdates.cv_file_path = files.cv[0].path;
-        fileUpdates.cv_file_name = files.cv[0].originalname;
+        const file = files.cv[0];
+        if (useR2) {
+          const key = `applications/cv/${formData.token}-${Date.now()}${path.extname(file.originalname)}`;
+          await r2Storage.uploadFile(file.buffer, key, file.mimetype);
+          fileUpdates.cv_file_path = key;
+        } else {
+          fileUpdates.cv_file_path = file.path;
+        }
+        fileUpdates.cv_file_name = file.originalname;
       }
+
+      // Internet test dosyası
       if (files.internetTest && files.internetTest[0]) {
-        fileUpdates.internet_test_file_path = files.internetTest[0].path;
-        fileUpdates.internet_test_file_name = files.internetTest[0].originalname;
+        const file = files.internetTest[0];
+        if (useR2) {
+          const key = `applications/internet-test/${formData.token}-${Date.now()}${path.extname(file.originalname)}`;
+          await r2Storage.uploadFile(file.buffer, key, file.mimetype);
+          fileUpdates.internet_test_file_path = key;
+        } else {
+          fileUpdates.internet_test_file_path = file.path;
+        }
+        fileUpdates.internet_test_file_name = file.originalname;
       }
+
+      // Typing test dosyası
       if (files.typingTest && files.typingTest[0]) {
-        fileUpdates.typing_test_file_path = files.typingTest[0].path;
-        fileUpdates.typing_test_file_name = files.typingTest[0].originalname;
+        const file = files.typingTest[0];
+        if (useR2) {
+          const key = `applications/typing-test/${formData.token}-${Date.now()}${path.extname(file.originalname)}`;
+          await r2Storage.uploadFile(file.buffer, key, file.mimetype);
+          fileUpdates.typing_test_file_path = key;
+        } else {
+          fileUpdates.typing_test_file_path = file.path;
+        }
+        fileUpdates.typing_test_file_name = file.originalname;
       }
     }
 
@@ -946,6 +977,62 @@ router.post('/get-security-question', async (req, res) => {
   } catch (error) {
     console.error('Error getting security question:', error);
     res.status(500).json({ error: 'Guvenlik sorusu alinamadi' });
+  }
+});
+
+// Dosya indir (R2 veya lokal)
+router.get('/file/:type/:applicationId', async (req, res) => {
+  try {
+    const { type, applicationId } = req.params;
+
+    const application = await JobApplication.findByPk(applicationId);
+    if (!application) {
+      return res.status(404).json({ error: 'Başvuru bulunamadı' });
+    }
+
+    // Dosya yolunu belirle
+    let filePath, fileName;
+    switch (type) {
+      case 'cv':
+        filePath = application.cv_file_path;
+        fileName = application.cv_file_name;
+        break;
+      case 'internet-test':
+        filePath = application.internet_test_file_path;
+        fileName = application.internet_test_file_name;
+        break;
+      case 'typing-test':
+        filePath = application.typing_test_file_path;
+        fileName = application.typing_test_file_name;
+        break;
+      default:
+        return res.status(400).json({ error: 'Geçersiz dosya tipi' });
+    }
+
+    if (!filePath) {
+      return res.status(404).json({ error: 'Dosya bulunamadı' });
+    }
+
+    // R2 key mi yoksa lokal path mi kontrol et
+    const isR2Key = filePath.startsWith('applications/');
+
+    if (isR2Key && r2Storage.isR2Enabled()) {
+      // R2'den signed URL oluştur
+      const signedUrl = await r2Storage.getSignedDownloadUrl(filePath, 3600);
+      res.redirect(signedUrl);
+    } else if (isR2Key) {
+      // R2 key var ama R2 aktif değil
+      return res.status(500).json({ error: 'R2 yapılandırması eksik' });
+    } else {
+      // Lokal dosya
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Dosya bulunamadı' });
+      }
+      res.download(filePath, fileName || path.basename(filePath));
+    }
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    res.status(500).json({ error: 'Dosya indirilemedi' });
   }
 });
 

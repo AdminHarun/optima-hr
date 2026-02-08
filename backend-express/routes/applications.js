@@ -523,22 +523,35 @@ router.get('/profiles/all', async (req, res) => {
     const where = {};
     if (siteCode) where.site_code = siteCode;
 
-    const profiles = await ApplicantProfile.findAll({
-      where,
-      include: [
-        {
-          model: InvitationLink,
-          as: 'invitation_link',
-          required: false
-        },
-        {
-          model: JobApplication,
-          as: 'applications',
-          required: false
-        }
-      ],
-      order: [['profile_created_at', 'DESC']]
-    });
+    let profiles = [];
+    let includeAssociations = true;
+
+    // Önce association'larla dene, başarısız olursa basit sorgu yap
+    try {
+      profiles = await ApplicantProfile.findAll({
+        where,
+        include: [
+          {
+            model: InvitationLink,
+            as: 'invitation_link',
+            required: false
+          },
+          {
+            model: JobApplication,
+            as: 'applications',
+            required: false
+          }
+        ],
+        order: [['profile_created_at', 'DESC']]
+      });
+    } catch (includeError) {
+      console.warn('⚠️ Association query failed, falling back to simple query:', includeError.message);
+      includeAssociations = false;
+      profiles = await ApplicantProfile.findAll({
+        where,
+        order: [['profile_created_at', 'DESC']]
+      });
+    }
 
     const formattedProfiles = profiles.map(p => ({
       id: p.id,
@@ -550,10 +563,10 @@ router.get('/profiles/all', async (req, res) => {
       sessionToken: p.session_token,
       createdAt: p.profile_created_at,
       siteCode: p.site_code,
-      invitationLink: p.invitation_link,
-      applications: p.applications,
-      hasApplication: p.applications && p.applications.length > 0,
-      applicationStatus: p.applications?.[0]?.status || null,
+      invitationLink: includeAssociations ? p.invitation_link : null,
+      applications: includeAssociations ? p.applications : [],
+      hasApplication: includeAssociations ? (p.applications && p.applications.length > 0) : false,
+      applicationStatus: includeAssociations ? (p.applications?.[0]?.status || null) : null,
       // Cihaz ve ag bilgileri
       profileCreatedIp: p.profile_created_ip,
       profileCreatedLocation: p.profile_created_location,
@@ -567,7 +580,7 @@ router.get('/profiles/all', async (req, res) => {
     res.json(formattedProfiles);
   } catch (error) {
     console.error('Error fetching profiles:', error);
-    res.status(500).json({ error: 'Profiller alınamadı' });
+    res.status(500).json({ error: 'Profiller alınamadı', details: error.message });
   }
 });
 
@@ -578,30 +591,43 @@ router.get('/', async (req, res) => {
     const where = {};
     if (siteCode) where.site_code = siteCode;
 
-    const applications = await JobApplication.findAll({
-      where,
-      include: [
-        {
-          model: ApplicantProfile,
-          as: 'applicant_profile',
-          required: false
-        },
-        {
-          model: InvitationLink,
-          as: 'invitation_link',
-          required: false
-        }
-      ],
-      order: [['submitted_at', 'DESC']]
-    });
+    let applications = [];
+    let includeAssociations = true;
+
+    // Önce association'larla dene, başarısız olursa basit sorgu yap
+    try {
+      applications = await JobApplication.findAll({
+        where,
+        include: [
+          {
+            model: ApplicantProfile,
+            as: 'applicant_profile',
+            required: false
+          },
+          {
+            model: InvitationLink,
+            as: 'invitation_link',
+            required: false
+          }
+        ],
+        order: [['submitted_at', 'DESC']]
+      });
+    } catch (includeError) {
+      console.warn('⚠️ Association query failed, falling back to simple query:', includeError.message);
+      includeAssociations = false;
+      applications = await JobApplication.findAll({
+        where,
+        order: [['submitted_at', 'DESC']]
+      });
+    }
 
     // LocalStorage formatına uyumlu dönüştür
     const formattedApplications = applications.map(app => ({
       id: app.id,
-      firstName: app.applicant_profile?.first_name,
-      lastName: app.applicant_profile?.last_name,
-      email: app.applicant_profile?.email,
-      phone: app.applicant_profile?.phone,
+      firstName: includeAssociations ? app.applicant_profile?.first_name : null,
+      lastName: includeAssociations ? app.applicant_profile?.last_name : null,
+      email: includeAssociations ? app.applicant_profile?.email : null,
+      phone: includeAssociations ? app.applicant_profile?.phone : null,
       tcNumber: app.tc_number,
       birthDate: app.birth_date,
       address: app.address,
@@ -630,13 +656,13 @@ router.get('/', async (req, res) => {
       submittedAt: app.submitted_at,
       token: app.token,
       profileId: app.profileId,
-      invitationLink: app.invitation_link
+      invitationLink: includeAssociations ? app.invitation_link : null
     }));
 
     res.json(formattedApplications);
   } catch (error) {
     console.error('Error fetching applications:', error);
-    res.status(500).json({ error: 'Başvurular alınamadı' });
+    res.status(500).json({ error: 'Başvurular alınamadı', details: error.message });
   }
 });
 

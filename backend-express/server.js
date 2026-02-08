@@ -156,6 +156,17 @@ const startServer = async () => {
       console.log('⚠️ Core tables note:', coreErr.message);
     }
 
+    // Initialize employee tables
+    try {
+      const { Employee, EmployeeDocument } = require('./models');
+      console.log('🔄 Checking employee tables...');
+      await Employee.sync({ force: false });
+      await EmployeeDocument.sync({ force: false });
+      console.log('✅ Employee tables synced');
+    } catch (empErr) {
+      console.log('⚠️ Employee tables note:', empErr.message);
+    }
+
     // Add missing columns to job_applications table
     try {
       console.log('🔄 Adding missing columns to job_applications...');

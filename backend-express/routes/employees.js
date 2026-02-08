@@ -16,19 +16,31 @@ router.get('/', async (req, res) => {
     const where = {};
     addSiteFilter(where, siteCode);
 
-    const employees = await Employee.findAll({
-      where,
-      include: [{
-        model: EmployeeDocument,
-        as: 'documents',
-      }],
-      order: [['created_at', 'DESC']],
-    });
+    let employees = [];
+
+    // Önce association ile dene, başarısız olursa basit sorgu yap
+    try {
+      employees = await Employee.findAll({
+        where,
+        include: [{
+          model: EmployeeDocument,
+          as: 'documents',
+          required: false,
+        }],
+        order: [['created_at', 'DESC']],
+      });
+    } catch (includeError) {
+      console.warn('⚠️ Employee association query failed, trying simple query:', includeError.message);
+      employees = await Employee.findAll({
+        where,
+        order: [['created_at', 'DESC']],
+      });
+    }
 
     res.json(employees);
   } catch (error) {
     console.error('Employee list error:', error);
-    res.status(500).json({ error: 'Çalışan listesi yüklenirken hata oluştu' });
+    res.status(500).json({ error: 'Çalışan listesi yüklenirken hata oluştu', details: error.message });
   }
 });
 

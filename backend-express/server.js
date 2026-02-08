@@ -196,7 +196,7 @@ const startServer = async () => {
         ['typing_test_file_path', 'VARCHAR(500)'],
         ['typing_test_file_name', 'VARCHAR(255)'],
         ['token', 'VARCHAR(32)'],
-        ['profileId', 'INTEGER'],
+        ['profile_id', 'INTEGER'],
         ['applicant_profile_id', 'INTEGER'],
         ['invitation_link_id', 'INTEGER'],
         ['site_code', 'VARCHAR(50)'],

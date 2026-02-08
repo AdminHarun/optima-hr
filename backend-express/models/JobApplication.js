@@ -232,6 +232,7 @@ const JobApplication = sequelize.define('JobApplication', {
   profileId: {
     type: DataTypes.INTEGER,
     allowNull: true,
+    field: 'profile_id',
     comment: 'LocalStorage uyumluluğu için profile ID'
   }
 }, {

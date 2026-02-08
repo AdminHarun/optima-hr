@@ -194,6 +194,35 @@ const startServer = async () => {
       console.log('⚠️ chat_rooms column note:', chatColErr.message);
     }
 
+    // Fix chat_messages column types
+    try {
+      console.log('🔄 Fixing chat_messages columns...');
+      // Fix room_id type (VARCHAR -> INTEGER)
+      await sequelize.query(`
+        ALTER TABLE chat_messages
+        ALTER COLUMN room_id TYPE INTEGER USING room_id::INTEGER
+      `).catch(() => {});
+      // Add missing columns
+      const chatMessageColumns = [
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false",
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE",
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT false",
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMP WITH TIME ZONE",
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reactions JSONB",
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS metadata JSONB"
+      ];
+      for (const sql of chatMessageColumns) {
+        try {
+          await sequelize.query(sql);
+        } catch (e) {
+          // Column might already exist
+        }
+      }
+      console.log('✅ chat_messages columns fixed');
+    } catch (msgErr) {
+      console.log('⚠️ chat_messages fix note:', msgErr.message);
+    }
+
     // Initialize employee tables
     try {
       const { Employee, EmployeeDocument } = require('./models');

@@ -144,14 +144,18 @@ const startServer = async () => {
     try {
       const { InvitationLink, ApplicantProfile, JobApplication, ChatRoom, ChatMessage } = require('./models/associations');
 
-      // Create tables if they don't exist and add missing columns (order matters for foreign keys)
-      console.log('🔄 Checking core tables and columns...');
-      await InvitationLink.sync({ alter: true });
-      await ApplicantProfile.sync({ alter: true });
-      await JobApplication.sync({ alter: true });
-      await ChatRoom.sync({ alter: true });
-      await ChatMessage.sync({ alter: true });
-      console.log('✅ Core tables initialized and synced');
+      // Create tables if they don't exist (order matters for foreign keys)
+      console.log('🔄 Checking core tables...');
+      await InvitationLink.sync({ alter: false });
+      await ApplicantProfile.sync({ alter: false });
+      await JobApplication.sync({ alter: false });
+      await ChatRoom.sync({ alter: false });
+      await ChatMessage.sync({ alter: false });
+      console.log('✅ Core tables initialized');
+
+      // Run manual column migration to add any missing columns
+      const { addMissingColumns } = require('./scripts/addMissingColumns');
+      await addMissingColumns(sequelize);
     } catch (coreErr) {
       console.log('⚠️ Core tables note:', coreErr.message);
     }

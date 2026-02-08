@@ -167,7 +167,7 @@ const startServer = async () => {
       console.log('⚠️ Employee tables note:', empErr.message);
     }
 
-    // Add missing columns to job_applications table
+    // Add missing columns and fix constraints on job_applications table
     try {
       console.log('🔄 Adding missing columns to job_applications...');
       const jobAppColumns = [
@@ -222,6 +222,17 @@ const startServer = async () => {
           // Silently ignore if column already exists
         }
       }
+
+      // Remove NOT NULL constraints from optional columns
+      const optionalColumns = ['job_title', 'first_name', 'last_name', 'email', 'phone'];
+      for (const col of optionalColumns) {
+        try {
+          await sequelize.query(`ALTER TABLE job_applications ALTER COLUMN ${col} DROP NOT NULL`);
+        } catch (e) {
+          // Column might not exist or already nullable
+        }
+      }
+
       console.log('✅ job_applications columns checked');
     } catch (colErr) {
       console.log('⚠️ Column migration note:', colErr.message);

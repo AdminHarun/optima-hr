@@ -1,9 +1,30 @@
 // R2 Storage Service - Cloudflare R2 ile S3-uyumlu dosya depolama
-const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+
+// AWS SDK'yı güvenli bir şekilde yüklemeyi dene
+let S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand, getSignedUrl;
+let sdkAvailable = false;
+
+try {
+  const s3Module = require('@aws-sdk/client-s3');
+  S3Client = s3Module.S3Client;
+  PutObjectCommand = s3Module.PutObjectCommand;
+  GetObjectCommand = s3Module.GetObjectCommand;
+  DeleteObjectCommand = s3Module.DeleteObjectCommand;
+  HeadObjectCommand = s3Module.HeadObjectCommand;
+
+  const presignerModule = require('@aws-sdk/s3-request-presigner');
+  getSignedUrl = presignerModule.getSignedUrl;
+
+  sdkAvailable = true;
+  console.log('✅ AWS SDK yüklendi - R2 desteği aktif');
+} catch (error) {
+  console.log('⚠️ AWS SDK bulunamadı - R2 devre dışı, lokal depolama kullanılacak');
+  sdkAvailable = false;
+}
 
 // R2 credentials kontrolü
 const isR2Enabled = () => {
+  if (!sdkAvailable) return false;
   return !!(process.env.R2_ACCOUNT_ID &&
             process.env.R2_ACCESS_KEY_ID &&
             process.env.R2_SECRET_ACCESS_KEY);
@@ -13,6 +34,7 @@ const isR2Enabled = () => {
 let s3Client = null;
 
 const getS3Client = () => {
+  if (!sdkAvailable) return null;
   if (!s3Client && isR2Enabled()) {
     s3Client = new S3Client({
       region: 'auto',

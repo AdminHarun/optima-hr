@@ -40,7 +40,7 @@ import {
 } from '@mui/icons-material';
 
 // Optima Logo import
-import optimaLogo from '../../assets/images/logo1.png';
+import optimaLogo from '../../assets/images/firstlogo.png';
 
 const DRAWER_WIDTH = 280;
 

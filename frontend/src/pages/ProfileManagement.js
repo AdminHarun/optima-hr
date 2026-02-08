@@ -295,35 +295,44 @@ function ProfileManagement() {
     console.log('IP/MAC Analizi:', { ipMap, macMap, suspicious });
   };
   
+  // Basit hash fonksiyonu (djb2 algoritması)
+  const simpleHash = (str) => {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) + hash) + str.charCodeAt(i);
+      hash = hash & hash; // 32-bit integer'a çevir
+    }
+    return Math.abs(hash).toString(16).toUpperCase();
+  };
+
   // Gelişmiş cihaz parmak izi oluştur (VPN'e dayanıklı)
   const generateDeviceFingerprint = (deviceInfo) => {
     if (!deviceInfo) return null;
-    
+
+    // Canvas fingerprint'ten sadece unique kısmı al (prefix'i atla)
+    let canvasHash = 'no_canvas';
+    if (deviceInfo.canvasFingerprint && deviceInfo.canvasFingerprint.length > 50) {
+      // "data:image/png;base64," prefix'ini atla ve son 100 karakteri al
+      const canvasData = deviceInfo.canvasFingerprint.slice(-100);
+      canvasHash = simpleHash(canvasData);
+    }
+
     // Çoklu katman parmak izi (IP değişse bile aynı cihazı tespit eder)
     const primaryFingerprint = [
-      deviceInfo.canvasFingerprint || 'no_canvas', // En güçlü
+      canvasHash,
       deviceInfo.webglFingerprint || 'no_webgl',
       deviceInfo.audioFingerprint || 'no_audio',
-      deviceInfo.userAgent || '',
       deviceInfo.screenResolution || '',
       deviceInfo.screenColorDepth || '',
       deviceInfo.timezone || '',
-      deviceInfo.language || '',
       deviceInfo.platform || '',
       deviceInfo.hardwareConcurrency || '',
-      deviceInfo.deviceMemory || '',
-      deviceInfo.maxTouchPoints || '',
-      (deviceInfo.plugins || []).map(p => p.name).sort().join(','),
-      deviceInfo.timezoneOffset || ''
+      deviceInfo.deviceMemory || ''
     ].join('|');
-    
-    // Hash oluştur
-    try {
-      return btoa(unescape(encodeURIComponent(primaryFingerprint))).substring(0, 24);
-    } catch (error) {
-      console.warn('Fingerprint oluşturma hatası:', error);
-      return primaryFingerprint.replace(/[^a-zA-Z0-9]/g, '').substring(0, 24);
-    }
+
+    // Hash oluştur ve kısa ID döndür
+    const hash = simpleHash(primaryFingerprint);
+    return `DEV-${hash.substring(0, 8)}`;
   };
   
   // Cihaz benzerlik skoru hesapla (0-100)

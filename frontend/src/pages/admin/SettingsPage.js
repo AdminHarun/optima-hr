@@ -2060,16 +2060,10 @@ export default function SettingsPage() {
         boxShadow: '0 4px 20px rgba(28, 97, 171, 0.2)'
       }}>
         <IconButton
-          onClick={() => {
-            if (window.history.length > 1) {
-              window.history.back();
-            } else {
-              navigate('/admin/dashboard');
-            }
-          }}
+          onClick={() => navigate('/admin/dashboard')}
           sx={{ color: 'white', WebkitAppRegion: 'no-drag', '&:hover': { background: 'rgba(255,255,255,0.15)' } }}
         >
-          <ArrowBackIcon />
+          <CloseIcon />
         </IconButton>
         <SettingsIcon sx={{ color: 'rgba(255,255,255,0.8)', fontSize: 22 }} />
         <Typography sx={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>

@@ -155,6 +155,10 @@ const VideoCallModal = ({
         callFrameRef.current = callFrame;
 
         // Event listeners
+        callFrame.on('joining-meeting', () => {
+          console.log('Joining Daily.co meeting...');
+        });
+
         callFrame.on('joined-meeting', (event) => {
           console.log('Joined Daily.co meeting:', event);
           setIsLoading(false);
@@ -168,6 +172,9 @@ const VideoCallModal = ({
 
         callFrame.on('participant-joined', (event) => {
           console.log('Participant joined:', event);
+          // Participant katildiginda loading'i kapat (fallback)
+          setIsLoading(false);
+          setHasJoined(true);
           setParticipants(prev => {
             const exists = prev.some(p => p.session_id === event.participant.session_id);
             if (!exists) {
@@ -184,9 +191,23 @@ const VideoCallModal = ({
 
         callFrame.on('participant-updated', (event) => {
           console.log('Participant updated:', event);
+          // Participant update olunca da loading'i kapat (fallback)
+          setIsLoading(false);
+          setHasJoined(true);
           setParticipants(prev => prev.map(p =>
             p.session_id === event.participant.session_id ? event.participant : p
           ));
+        });
+
+        // Camera/mic izni alindiktan sonra loading'i kapat
+        callFrame.on('camera-error', (event) => {
+          console.log('Camera error:', event);
+        });
+
+        callFrame.on('started-camera', () => {
+          console.log('Camera started');
+          setIsLoading(false);
+          setHasJoined(true);
         });
 
         callFrame.on('left-meeting', () => {
@@ -205,6 +226,20 @@ const VideoCallModal = ({
           url: dailyUrl,
           userName: currentUserName
         });
+
+        console.log('Daily.co join called successfully');
+
+        // Safety timeout - 3 saniye sonra loading'i kapat
+        setTimeout(() => {
+          setIsLoading(prev => {
+            if (prev) {
+              console.log('Safety timeout: hiding loading screen');
+              setHasJoined(true);
+              return false;
+            }
+            return prev;
+          });
+        }, 3000);
 
       } catch (error) {
         console.error('Failed to initialize Daily.co:', error);

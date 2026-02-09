@@ -896,26 +896,20 @@ export default function SettingsPage() {
   const handleAuditSort = createSortHandler(setAuditSort);
 
   // ============================================================
-  // TABLE HEADER STYLE
+  // TABLE HEADER STYLE (InvitationsPage uyumlu minimal stil)
   // ============================================================
   const headerCellSx = {
-    background: COLORS.headerGradient,
-    color: '#fff',
     fontWeight: 700,
-    fontSize: '0.82rem',
-    borderBottom: 'none',
-    whiteSpace: 'nowrap',
+    fontSize: '0.85rem',
     py: 1.5,
-    '& .MuiTableSortLabel-root': { color: '#fff !important' },
-    '& .MuiTableSortLabel-icon': { color: '#fff !important' },
+    whiteSpace: 'nowrap',
+    color: '#1a1a2e',
   };
 
   const rowHoverSx = {
-    transition: 'all 0.2s ease',
+    transition: 'all 0.15s ease',
     '&:hover': {
-      backgroundColor: 'rgba(28, 97, 171, 0.04)',
-      boxShadow: '0 2px 8px rgba(28, 97, 171, 0.1)',
-      transform: 'translateY(-1px)',
+      backgroundColor: 'rgba(28, 97, 171, 0.02)',
     },
   };
 
@@ -980,13 +974,13 @@ export default function SettingsPage() {
       </Box>
 
       {/* Table */}
-      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)', border: '1px solid rgba(28, 97, 171, 0.08)', overflow: 'hidden' }}>
-        <Table>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Table size="small">
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ bgcolor: 'rgba(28, 97, 171, 0.04)' }}>
               <TableCell padding="checkbox" sx={headerCellSx}>
                 <Checkbox
-                  sx={{ color: '#fff', '&.Mui-checked': { color: '#fff' } }}
+                  sx={{ color: COLORS.primary, '&.Mui-checked': { color: COLORS.primary } }}
                   indeterminate={selectedSites.length > 0 && selectedSites.length < paginatedSites.length}
                   checked={paginatedSites.length > 0 && selectedSites.length === paginatedSites.length}
                   onChange={(e) => setSelectedSites(e.target.checked ? paginatedSites.map(s => s.id) : [])}
@@ -1162,12 +1156,12 @@ export default function SettingsPage() {
       </Box>
 
       {/* Table */}
-      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)', border: '1px solid rgba(28, 97, 171, 0.08)', overflow: 'hidden' }}>
-        <Table>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Table size="small">
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ bgcolor: 'rgba(28, 97, 171, 0.04)' }}>
               <TableCell padding="checkbox" sx={headerCellSx}>
-                <Checkbox sx={{ color: '#fff', '&.Mui-checked': { color: '#fff' } }}
+                <Checkbox sx={{ color: COLORS.primary, '&.Mui-checked': { color: COLORS.primary } }}
                   indeterminate={selectedUsers.length > 0 && selectedUsers.length < paginatedUsers.length}
                   checked={paginatedUsers.length > 0 && selectedUsers.length === paginatedUsers.length}
                   onChange={(e) => setSelectedUsers(e.target.checked ? paginatedUsers.map(u => u.id) : [])} />
@@ -1495,10 +1489,10 @@ export default function SettingsPage() {
       </Box>
 
       {/* Table */}
-      <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)', border: '1px solid rgba(28, 97, 171, 0.08)', overflow: 'hidden' }}>
-        <Table>
+      <TableContainer component={Paper} sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Table size="small">
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ bgcolor: 'rgba(28, 97, 171, 0.04)' }}>
               <TableCell sx={{ ...headerCellSx, width: 40 }} />
               <TableCell sx={headerCellSx}>
                 <TableSortLabel active={auditSort.field === 'created_at'} direction={auditSort.field === 'created_at' ? auditSort.order : 'asc'} onClick={() => handleAuditSort('created_at')}>
@@ -1976,11 +1970,11 @@ export default function SettingsPage() {
                 <TableContainer>
                   <Table size="small">
                     <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem', color: COLORS.primary, py: 1 }}>Tarih</TableCell>
-                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem', color: COLORS.primary, py: 1 }}>Islem</TableCell>
-                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem', color: COLORS.primary, py: 1 }}>Kullanici</TableCell>
-                        <TableCell sx={{ fontWeight: 700, fontSize: '0.78rem', color: COLORS.primary, py: 1 }}>IP</TableCell>
+                      <TableRow sx={{ bgcolor: 'rgba(28, 97, 171, 0.04)' }}>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1a1a2e', py: 1.5 }}>Tarih</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1a1a2e', py: 1.5 }}>Islem</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1a1a2e', py: 1.5 }}>Kullanici</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#1a1a2e', py: 1.5 }}>IP</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>

@@ -395,10 +395,24 @@ router.post('/messages/mark_read/', async (req, res) => {
         { where: { id: { [Op.in]: message_ids } } }
       );
     } else if (room_id) {
+      // room_id "applicant_4" gibi string olabilir, integer'a cevir
+      let roomIdInt = room_id;
+      if (typeof room_id === 'string' && room_id.startsWith('applicant_')) {
+        const applicantId = parseInt(room_id.split('_')[1]);
+        const room = await ChatRoom.findOne({
+          where: { room_type: 'applicant', applicant_id: applicantId }
+        });
+        if (room) {
+          roomIdInt = room.id;
+        } else {
+          return res.json({ success: true }); // Room yok, sessizce gec
+        }
+      }
+
       // Mark all messages in room as read
       await ChatMessage.update(
         { status: 'read', read_at: new Date() },
-        { where: { room_id, status: { [Op.ne]: 'read' } } }
+        { where: { room_id: roomIdInt, status: { [Op.ne]: 'read' } } }
       );
     }
 

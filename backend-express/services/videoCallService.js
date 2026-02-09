@@ -84,7 +84,36 @@ class VideoCallService {
 
     try {
       await pool.query(createTableQuery);
-      console.log('✅ Video call tables initialized');
+
+      // Migration: Eski jitsi kolonlarini daily kolonlarina cevir
+      const migrationQueries = `
+        -- Eski jitsi_room_name varsa daily_room_name'e rename et
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='video_calls' AND column_name='jitsi_room_name') THEN
+            ALTER TABLE video_calls RENAME COLUMN jitsi_room_name TO daily_room_name;
+          END IF;
+        END $$;
+
+        -- daily_room_url kolonu yoksa ekle
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='video_calls' AND column_name='daily_room_url') THEN
+            ALTER TABLE video_calls ADD COLUMN daily_room_url VARCHAR(500);
+          END IF;
+        END $$;
+
+        -- daily_room_name kolonu yoksa ekle
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='video_calls' AND column_name='daily_room_name') THEN
+            ALTER TABLE video_calls ADD COLUMN daily_room_name VARCHAR(255);
+          END IF;
+        END $$;
+      `;
+
+      await pool.query(migrationQueries);
+      console.log('✅ Video call tables initialized and migrated');
     } catch (error) {
       console.error('❌ Error initializing video call tables:', error);
       throw error;

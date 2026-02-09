@@ -160,28 +160,28 @@ function SiteSelector() {
               minWidth: 280,
               maxWidth: 320,
               borderRadius: 3,
-              background: 'rgba(255, 255, 255, 0.15)',
+              background: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+              border: '1px solid rgba(28, 97, 171, 0.15)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(28, 97, 171, 0.1)',
               overflow: 'hidden'
             }
           }}
         >
           {/* Header */}
-          <Box sx={{ px: 2.5, py: 2, bgcolor: 'rgba(255, 255, 255, 0.1)' }}>
+          <Box sx={{ px: 2.5, py: 2, bgcolor: 'rgba(28, 97, 171, 0.05)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SwapIcon sx={{ color: '#fff', fontSize: 20 }} />
-              <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#fff' }}>
+              <SwapIcon sx={{ color: '#1c61ab', fontSize: 20 }} />
+              <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#1a1a2e' }}>
                 Site Değiştir
               </Typography>
             </Box>
-            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
               {sites.length} site mevcut
             </Typography>
           </Box>
 
-          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.15)' }} />
+          <Divider />
 
           {/* Site List */}
           <Box sx={{ py: 1, maxHeight: 320, overflow: 'auto' }}>
@@ -200,15 +200,15 @@ function SiteSelector() {
                     py: 1.5,
                     borderRadius: 2,
                     transition: 'all 0.2s ease',
-                    bgcolor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                    bgcolor: isActive ? 'rgba(28, 97, 171, 0.08)' : 'transparent',
                     '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.15)',
+                      bgcolor: 'rgba(28, 97, 171, 0.05)',
                       transform: 'translateX(4px)'
                     },
                     '&.Mui-selected': {
-                      bgcolor: 'rgba(255, 255, 255, 0.2)',
+                      bgcolor: 'rgba(28, 97, 171, 0.08)',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.25)'
+                        bgcolor: 'rgba(28, 97, 171, 0.12)'
                       }
                     }
                   }}
@@ -220,9 +220,8 @@ function SiteSelector() {
                         height: 36,
                         fontSize: 13,
                         fontWeight: 700,
-                        background: 'rgba(255, 255, 255, 0.2)',
-                        color: '#fff',
-                        border: '2px solid rgba(255, 255, 255, 0.3)'
+                        background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
+                        color: '#fff'
                       }}
                     >
                       {getSiteInitials(site.name)}
@@ -235,7 +234,7 @@ function SiteSelector() {
                         variant="body2"
                         sx={{
                           fontWeight: isActive ? 600 : 500,
-                          color: '#fff'
+                          color: isActive ? '#1c61ab' : '#1a1a2e'
                         }}
                       >
                         {site.name}
@@ -250,8 +249,8 @@ function SiteSelector() {
                             height: 18,
                             fontSize: '0.65rem',
                             fontWeight: 600,
-                            bgcolor: 'rgba(255, 255, 255, 0.15)',
-                            color: '#fff',
+                            bgcolor: 'rgba(28, 97, 171, 0.1)',
+                            color: '#1c61ab',
                             '& .MuiChip-label': { px: 1 }
                           }}
                         />
@@ -270,7 +269,7 @@ function SiteSelector() {
                   {isActive && (
                     <CheckIcon
                       sx={{
-                        color: '#fff',
+                        color: '#1c61ab',
                         fontSize: 20,
                         ml: 1
                       }}
@@ -282,10 +281,10 @@ function SiteSelector() {
           </Box>
 
           {/* Footer */}
-          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.15)' }} />
-          <Box sx={{ px: 2.5, py: 1.5, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
-            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.6)' }}>
-              Site değiştirmek tüm verileri günceller
+          <Divider />
+          <Box sx={{ px: 2.5, py: 1.5, bgcolor: 'rgba(28, 97, 171, 0.03)' }}>
+            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>
+              💡 Site değiştirmek tüm verileri günceller
             </Typography>
           </Box>
         </Menu>

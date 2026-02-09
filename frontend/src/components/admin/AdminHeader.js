@@ -267,70 +267,11 @@ function AdminHeader() {
           boxShadow: '0 4px 20px rgba(28, 97, 171, 0.2)'
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: 3, pl: { xs: 2, md: 3 }, minHeight: '56px !important', WebkitAppRegion: 'drag' }}>
-          {/* Sol Taraf - Site Seçici + Chrome Tarzı Tab'lar */}
-          <Box sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            height: '100%',
-            WebkitAppRegion: 'no-drag'
-          }}>
-            {/* Site Seçici - Sola hizalı ve yukarı kaydırılmış */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, mt: -0.5 }}>
-              <SiteSelector />
-            </Box>
-            <ChromeTab
-              label="Mesajlar"
-              icon={<ChatIcon sx={{ fontSize: 18 }} />}
-              badge={unreadMessages}
-              isActive={location.pathname === '/admin/chat'}
-              onClick={() => { markAsRead(); navigate('/admin/chat'); }}
-            />
-            
-            <ChromeTab
-              label="Mail"
-              icon={<MailIcon sx={{ fontSize: 18 }} />}
-              badge={unreadMails}
-              isActive={location.pathname === '/admin/mail'}
-              onClick={() => navigate('/admin/mail')}
-            />
-            
-            <ChromeTab
-              label="Aramalar"
-              icon={<VideoCallIcon sx={{ fontSize: 18 }} />}
-              badge={0}
-              isActive={location.pathname === '/admin/calls'}
-              onClick={() => navigate('/admin/calls')}
-            />
-
-            <ChromeTab
-              label="Takvim"
-              icon={<CalendarIcon sx={{ fontSize: 18 }} />}
-              badge={0}
-              isActive={location.pathname === '/admin/calendar'}
-              onClick={() => navigate('/admin/calendar')}
-            />
-            
-            {/* Yeni tab ekle butonu (Chrome gibi) */}
-            <Box
-              sx={{
-                width: 28,
-                height: 28,
-                borderRadius: '6px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: 'white',
-                ml: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.15)'
-                }
-              }}
-            >
-              {/* <AddIcon sx={{ fontSize: 18 }} /> */}
-            </Box>
+        {/* Üst Satır - Site Seçici ve Profil */}
+        <Toolbar sx={{ justifyContent: 'space-between', px: 3, pl: { xs: 2, md: 3 }, minHeight: '48px !important', WebkitAppRegion: 'drag' }}>
+          {/* Sol Taraf - Site Seçici */}
+          <Box sx={{ WebkitAppRegion: 'no-drag' }}>
+            <SiteSelector />
           </Box>
 
           {/* Sağ Taraf - Bildirimler ve Profil */}
@@ -402,6 +343,48 @@ function AdminHeader() {
             </Box>
           </Box>
         </Toolbar>
+
+        {/* Alt Satır - Chrome Tarzı Tab'lar */}
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          px: 3,
+          pb: 0,
+          gap: 1,
+          WebkitAppRegion: 'no-drag'
+        }}>
+          <ChromeTab
+            label="Mesajlar"
+            icon={<ChatIcon sx={{ fontSize: 18 }} />}
+            badge={unreadMessages}
+            isActive={location.pathname === '/admin/chat'}
+            onClick={() => { markAsRead(); navigate('/admin/chat'); }}
+          />
+
+          <ChromeTab
+            label="Mail"
+            icon={<MailIcon sx={{ fontSize: 18 }} />}
+            badge={unreadMails}
+            isActive={location.pathname === '/admin/mail'}
+            onClick={() => navigate('/admin/mail')}
+          />
+
+          <ChromeTab
+            label="Aramalar"
+            icon={<VideoCallIcon sx={{ fontSize: 18 }} />}
+            badge={0}
+            isActive={location.pathname === '/admin/calls'}
+            onClick={() => navigate('/admin/calls')}
+          />
+
+          <ChromeTab
+            label="Takvim"
+            icon={<CalendarIcon sx={{ fontSize: 18 }} />}
+            badge={0}
+            isActive={location.pathname === '/admin/calendar'}
+            onClick={() => navigate('/admin/calendar')}
+          />
+        </Box>
       </AppBar>
 
       {/* Profil Menüsü */}

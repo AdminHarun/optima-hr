@@ -217,13 +217,12 @@ function ApplicantChat() {
         break;
 
       case 'video_call_ready':
-        // Jitsi room ready
-        console.log('📞 Video call ready:', data);
-        console.log('🔥 CRITICAL: Backend sent room_name:', data.room_name);
+        // Daily.co room ready
+        console.log('Video call ready:', data);
         setActiveCall({
           call_id: data.call_id,
-          jitsi_url: data.jitsi_url,
-          room_name: data.room_name  // ⭐ CRITICAL: Must pass this to VideoCallModal
+          daily_url: data.daily_url,
+          room_name: data.room_name
         });
         setIncomingCall(null);
         break;
@@ -718,8 +717,7 @@ function ApplicantChat() {
         onReject={handleRejectCall}
       />
 
-      {/* Video Call Modal - Jitsi with Optima branding */}
-      {/* ⭐ CRITICAL: Pass backend-provided room name to ensure both parties join same Jitsi room */}
+      {/* Video Call Modal - Daily.co */}
       <VideoCallModal
         open={!!activeCall}
         onClose={handleEndCall}
@@ -730,11 +728,11 @@ function ApplicantChat() {
         currentUserAvatar={null}
         currentUserEmail={applicantInfo?.email}
         participantId="admin"
-        participantName="İnsan Kaynakları"
+        participantName="Insan Kaynaklari"
         participantAvatar={null}
         participantEmail="hr@optima.com"
         isModerator={false}
-        jitsiRoomName={activeCall?.room_name}
+        dailyUrl={activeCall?.daily_url}
       />
     </Box>
   );

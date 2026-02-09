@@ -411,15 +411,15 @@ const ChatContainer = ({
         break;
 
       case 'video_call_ready':
-        // Her iki taraf: Jitsi odası hazır
-        console.log('📞 Video call ready:', data);
-        console.log('🔥 CRITICAL: Backend sent room_name:', data.room_name);
+        // Daily.co room ready
+        console.log('Video call ready:', data);
         setActiveCall({
           call_id: data.call_id,
-          jitsi_url: data.jitsi_url,
-          room_name: data.room_name  // ⭐ CRITICAL: Must pass this to VideoCallModal
+          daily_url: data.daily_url,
+          room_name: data.room_name,
+          participant_ip: data.participant_ip // IP address for admin
         });
-        setIncomingCall(null); // Bildirimi kapat
+        setIncomingCall(null);
         break;
 
       case 'video_call_ended':
@@ -777,8 +777,7 @@ const ChatContainer = ({
         onReject={handleRejectCall}
       />
 
-      {/* Video Call Modal - Jitsi with Optima branding */}
-      {/* ⭐ CRITICAL: Pass backend-provided room name to ensure both parties join same Jitsi room */}
+      {/* Video Call Modal - Daily.co */}
       <VideoCallModal
         open={!!activeCall}
         onClose={handleEndCall}
@@ -793,7 +792,8 @@ const ChatContainer = ({
         participantAvatar={participantAvatar}
         participantEmail={participantEmail}
         isModerator={currentUserType === 'admin'}
-        jitsiRoomName={activeCall?.room_name}
+        dailyUrl={activeCall?.daily_url}
+        participantIp={activeCall?.participant_ip}
       />
 
       {/* Forward Message Modal */}

@@ -320,7 +320,7 @@ function ApplicantCabinet() {
         setIncomingCall({ call_id: data.call_id, caller_name: data.caller_name, caller_type: data.caller_type, room_id: data.room_id });
         break;
       case 'video_call_ready':
-        setActiveCall({ call_id: data.call_id, jitsi_url: data.jitsi_url, room_name: data.room_name });
+        setActiveCall({ call_id: data.call_id, daily_url: data.daily_url, room_name: data.room_name });
         setIncomingCall(null);
         break;
       case 'video_call_ended':
@@ -863,7 +863,7 @@ function ApplicantCabinet() {
         participantAvatar={null}
         participantEmail="hr@optima.com"
         isModerator={false}
-        jitsiRoomName={activeCall?.room_name}
+        dailyUrl={activeCall?.daily_url}
       />
 
       {/* Cikis Onay Dialogu */}

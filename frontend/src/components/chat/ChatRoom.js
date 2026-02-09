@@ -114,7 +114,7 @@ const ChatRoom = ({
     // Already handled in MessageToolbar
   }, []);
 
-  // Video call handlers - Rocket.Chat /jitsi command equivalent
+  // Video call handlers - starts Daily.co call
   const handleVideoCallClick = useCallback(() => {
     if (!currentUserId || !participantId) {
       console.error('Missing required user info for video call');
@@ -533,7 +533,7 @@ const ChatRoom = ({
         </>
       )}
 
-      {/* Video Call Modal - Rocket.Chat Jitsi integration */}
+      {/* Video Call Modal - Daily.co integration */}
       {showVideoCallModal && activeCall && (
         <VideoCallModal
           open={showVideoCallModal}

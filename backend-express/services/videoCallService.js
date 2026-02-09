@@ -35,8 +35,9 @@ class VideoCallService {
         participant_name VARCHAR(255),
         participant_email VARCHAR(255),
 
-        -- Call details
-        jitsi_room_name VARCHAR(255),
+        -- Call details (Daily.co)
+        daily_room_name VARCHAR(255),
+        daily_room_url VARCHAR(500),
         moderator_id VARCHAR(255),
 
         -- Recording info
@@ -103,7 +104,8 @@ class VideoCallService {
     participantId,
     participantName,
     participantEmail,
-    jitsiRoomName,
+    dailyRoomName,
+    dailyRoomUrl,
     moderatorId
   }) {
     const query = `
@@ -111,9 +113,9 @@ class VideoCallService {
         call_id, room_id, room_name,
         initiator_id, initiator_name, initiator_email,
         participant_id, participant_name, participant_email,
-        jitsi_room_name, moderator_id, status
+        daily_room_name, daily_room_url, moderator_id, status
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'calling')
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'calling')
       RETURNING *
     `;
 
@@ -128,7 +130,8 @@ class VideoCallService {
         participantId,
         participantName,
         participantEmail,
-        jitsiRoomName,
+        dailyRoomName,
+        dailyRoomUrl,
         moderatorId
       ]);
 

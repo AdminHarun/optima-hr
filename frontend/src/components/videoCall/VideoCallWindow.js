@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import DailyIframe from '@daily-co/daily-js';
 import { Dialog, IconButton, Box, Typography, Paper, Chip } from '@mui/material';
-import { Close, Videocam, AccessTime, CallEnd } from '@mui/icons-material';
+import { Videocam, AccessTime, CallEnd } from '@mui/icons-material';
 
 const VideoCallWindow = ({ callData, onClose }) => {
   const [open, setOpen] = useState(!!callData);
   const [duration, setDuration] = useState(0);
+  const containerRef = useRef(null);
+  const callFrameRef = useRef(null);
 
   useEffect(() => {
     setOpen(!!callData);
@@ -17,7 +20,58 @@ const VideoCallWindow = ({ callData, onClose }) => {
     }
   }, [callData]);
 
+  // Initialize Daily.co when callData changes
+  useEffect(() => {
+    if (!callData?.daily_url || !containerRef.current) return;
+
+    const initDaily = async () => {
+      try {
+        const callFrame = DailyIframe.createFrame(containerRef.current, {
+          iframeStyle: {
+            width: '100%',
+            height: '100%',
+            border: 'none',
+            borderRadius: '12px'
+          },
+          showLeaveButton: true,
+          showFullscreenButton: true
+        });
+
+        callFrameRef.current = callFrame;
+
+        callFrame.on('left-meeting', () => {
+          handleClose();
+        });
+
+        await callFrame.join({ url: callData.daily_url });
+      } catch (error) {
+        console.error('Failed to initialize Daily.co:', error);
+      }
+    };
+
+    initDaily();
+
+    return () => {
+      if (callFrameRef.current) {
+        try {
+          callFrameRef.current.destroy();
+        } catch (e) {
+          console.error('Error destroying call frame:', e);
+        }
+        callFrameRef.current = null;
+      }
+    };
+  }, [callData?.daily_url]);
+
   const handleClose = () => {
+    if (callFrameRef.current) {
+      try {
+        callFrameRef.current.destroy();
+      } catch (e) {
+        console.error('Error destroying call frame:', e);
+      }
+      callFrameRef.current = null;
+    }
     setOpen(false);
     if (onClose) {
       onClose();
@@ -34,7 +88,7 @@ const VideoCallWindow = ({ callData, onClose }) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!callData?.jitsi_url) return null;
+  if (!callData?.daily_url) return null;
 
   return (
     <Dialog
@@ -79,7 +133,7 @@ const VideoCallWindow = ({ callData, onClose }) => {
             }}>
               <Videocam sx={{ fontSize: 24, color: '#5a9fd4' }} />
               <Typography variant="h6" fontWeight="600" sx={{ color: '#2d3748', fontSize: '16px' }}>
-                Görüntülü Görüşme
+                Goruntulu Gorusme
               </Typography>
             </Box>
             <Chip
@@ -116,20 +170,19 @@ const VideoCallWindow = ({ callData, onClose }) => {
           </IconButton>
         </Paper>
 
-        {/* Jitsi iFrame */}
-        <Box sx={{ flex: 1, position: 'relative', bgcolor: '#ffffff', borderRadius: '12px', m: 1.5, overflow: 'hidden', boxShadow: '0 2px 12px rgba(100, 150, 200, 0.08)' }}>
-          <iframe
-            src={callData.jitsi_url}
-            allow="camera; microphone; display-capture; fullscreen"
-            title="Video Call"
-            style={{
-              width: '100%',
-              height: '100%',
-              border: 'none',
-              borderRadius: '12px'
-            }}
-          />
-        </Box>
+        {/* Daily.co Container */}
+        <Box
+          ref={containerRef}
+          sx={{
+            flex: 1,
+            position: 'relative',
+            bgcolor: '#ffffff',
+            borderRadius: '12px',
+            m: 1.5,
+            overflow: 'hidden',
+            boxShadow: '0 2px 12px rgba(100, 150, 200, 0.08)'
+          }}
+        />
 
         {/* Footer Branding */}
         <Paper sx={{

@@ -68,13 +68,20 @@ class ChatWebSocketService {
 
     const clientId = `${userType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Get client IP address
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                     req.headers['x-real-ip'] ||
+                     req.socket.remoteAddress ||
+                     'Unknown';
+
     // Store client info
     this.clients.set(clientId, {
       ws,
       roomId,
       userType,
       userId: null, // Will be set on authentication
-      lastActivity: new Date()
+      lastActivity: new Date(),
+      ip: clientIp // Store IP for video call participant info
     });
 
     // Add client to room
@@ -609,7 +616,8 @@ class ChatWebSocketService {
         participantId: applicantId,
         participantName: roomData.applicant_name || `Applicant ${applicantId}`,
         participantEmail: roomData.applicant_email,
-        jitsiRoomName: null, // Will be set when accepted
+        dailyRoomName: null, // Will be set when accepted
+        dailyRoomUrl: null
         moderatorId: client.userType === 'admin' ? 'admin' : null
       });
 
@@ -693,53 +701,99 @@ class ChatWebSocketService {
         // Mark call as accepted (calling -> active)
         await videoCallService.acceptCall(call_id);
 
-        // Generate Jitsi room
-        const jitsiRoomName = `optima-call-${call_id}`;
-        const jitsiUrl = `https://meet.jit.si/${jitsiRoomName}`;
+        // Generate Daily.co room
+        const dailycoService = require('./dailycoService');
+        const roomName = `optima-call-${call_id}`;
 
-        // Update video call with Jitsi room name
-        const { Pool } = require('pg');
-        const pool = new Pool({
-          host: process.env.DB_HOST || '172.22.207.103',
-          port: process.env.DB_PORT || 5432,
-          database: process.env.DB_NAME || 'optima_hr',
-          user: process.env.DB_USER || 'postgres',
-          password: process.env.DB_PASSWORD || '12345'
-        });
+        try {
+          // Create Daily.co room
+          const room = await dailycoService.createRoom(roomName);
+          console.log(`✅ Daily.co room created: ${room.url}`);
 
-        await pool.query(
-          `UPDATE video_calls SET jitsi_room_name = $1 WHERE call_id = $2`,
-          [jitsiRoomName, call_id]
-        );
+          // Find admin and applicant clients to create tokens
+          let adminClientId = null;
+          let applicantClientId = null;
+          let adminName = 'Admin';
+          let applicantName = participant_name || 'Applicant';
+          let applicantIp = 'Unknown';
 
-        // Send to initiator (the one who called)
-        if (roomClients) {
-          for (const targetClientId of roomClients) {
-            const targetClient = this.clients.get(targetClientId);
-            if (targetClient) {
-              if (targetClient.userType !== client.userType) {
-                // Send acceptance to caller
-                this.sendToClient(targetClientId, {
-                  type: 'video_call_response',
-                  call_id,
-                  action: 'accept',
-                  participant_name,
-                  preferences, // Forward mic/cam preferences
-                  timestamp: new Date().toISOString()
-                });
+          if (roomClients) {
+            for (const targetClientId of roomClients) {
+              const targetClient = this.clients.get(targetClientId);
+              if (targetClient) {
+                if (targetClient.userType === 'admin') {
+                  adminClientId = targetClientId;
+                } else if (targetClient.userType === 'applicant') {
+                  applicantClientId = targetClientId;
+                  applicantIp = targetClient.ip || 'Unknown';
+                }
               }
-
-              // Send Jitsi URL to BOTH participants
-              this.sendToClient(targetClientId, {
-                type: 'video_call_ready',
-                call_id,
-                jitsi_url: jitsiUrl,
-                room_name: jitsiRoomName,
-                timestamp: new Date().toISOString()
-              });
-              console.log(`✅ Jitsi URL sent to ${targetClient.userType}: ${jitsiUrl}`);
             }
           }
+
+          // Create tokens for both participants
+          const adminToken = await dailycoService.createMeetingToken(roomName, adminName, true);
+          const applicantToken = await dailycoService.createMeetingToken(roomName, applicantName, false);
+
+          // Update video call with Daily.co room info
+          const { Pool } = require('pg');
+          const pool = new Pool({
+            host: process.env.DB_HOST || 'localhost',
+            port: process.env.DB_PORT || 5432,
+            database: process.env.DB_NAME || 'optima_hr',
+            user: process.env.DB_USER || 'postgres',
+            password: process.env.DB_PASSWORD || ''
+          });
+
+          await pool.query(
+            `UPDATE video_calls SET daily_room_name = $1, daily_room_url = $2 WHERE call_id = $3`,
+            [roomName, room.url, call_id]
+          );
+
+          // Send to both participants with their respective tokens
+          if (roomClients) {
+            for (const targetClientId of roomClients) {
+              const targetClient = this.clients.get(targetClientId);
+              if (targetClient) {
+                const isAdmin = targetClient.userType === 'admin';
+                const token = isAdmin ? adminToken : applicantToken;
+                const dailyUrl = `${room.url}?t=${token}`;
+
+                if (targetClient.userType !== client.userType) {
+                  // Send acceptance to caller
+                  this.sendToClient(targetClientId, {
+                    type: 'video_call_response',
+                    call_id,
+                    action: 'accept',
+                    participant_name,
+                    preferences, // Forward mic/cam preferences
+                    timestamp: new Date().toISOString()
+                  });
+                }
+
+                // Send Daily.co URL to participant
+                const readyMessage = {
+                  type: 'video_call_ready',
+                  call_id,
+                  daily_url: dailyUrl,
+                  room_name: roomName,
+                  timestamp: new Date().toISOString()
+                };
+
+                // Include applicant IP for admin
+                if (isAdmin) {
+                  readyMessage.participant_ip = applicantIp;
+                }
+
+                this.sendToClient(targetClientId, readyMessage);
+                console.log(`✅ Daily.co URL sent to ${targetClient.userType}: ${dailyUrl}`);
+              }
+            }
+          }
+
+        } catch (dailyError) {
+          console.error('❌ Daily.co room creation failed:', dailyError);
+          throw dailyError;
         }
 
       } else if (action === 'reject') {

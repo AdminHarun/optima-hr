@@ -263,8 +263,9 @@ CREATE TABLE IF NOT EXISTS video_calls (
     participant_name VARCHAR(255),
     participant_email VARCHAR(255),
 
-    -- Call details
-    jitsi_room_name VARCHAR(255),
+    -- Call details (Daily.co)
+    daily_room_name VARCHAR(255),
+    daily_room_url VARCHAR(500),
     moderator_id VARCHAR(255),
 
     -- Status

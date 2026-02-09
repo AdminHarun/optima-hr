@@ -1,11 +1,11 @@
-// VideoCallContext.js - Rocket.Chat style video call management
+// VideoCallContext.js - Daily.co video call state management
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 const VideoCallContext = createContext(null);
 
 /**
  * VideoCallProvider - Manages video call state across the application
- * Similar to Rocket.Chat's video conference management
+ * Uses Daily.co for video conferencing
  */
 export const VideoCallProvider = ({ children }) => {
   const [activeCall, setActiveCall] = useState(null);
@@ -14,7 +14,7 @@ export const VideoCallProvider = ({ children }) => {
   const callNotificationRef = useRef(null);
 
   /**
-   * Start a video call - Rocket.Chat /jitsi command equivalent
+   * Start a video call with Daily.co
    */
   const startCall = useCallback(({
     roomId,

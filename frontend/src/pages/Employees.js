@@ -70,7 +70,8 @@ import {
   Visibility as ViewIcon,
   PictureAsPdf as PdfIcon,
   Image as ImageIcon,
-  Article as DocIcon
+  Article as DocIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import QRCode from 'qrcode';
 import employeeService from '../services/employeeService';
@@ -1003,7 +1004,7 @@ function Employees() {
               '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' }
             }}
           >
-            <PersonOffIcon />
+            <CloseIcon />
           </IconButton>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

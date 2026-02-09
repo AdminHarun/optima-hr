@@ -279,7 +279,7 @@ function AdminHeader() {
             <SiteSelector />
 
             {/* Sekmeler - Site seçicinin sağında yatay */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1, mt: 0.5 }}>
               <ChromeTab
                 label="Mesajlar"
                 icon={<ChatIcon sx={{ fontSize: 18 }} />}

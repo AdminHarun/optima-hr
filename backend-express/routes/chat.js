@@ -180,7 +180,7 @@ router.post('/rooms/get_or_create_applicant_room/', async (req, res) => {
 // Get online status for all rooms (MUST come before /:roomId route)
 router.get('/rooms/online_status', async (req, res) => {
   try {
-    const chatWebSocketService = require('../services/chatWebSocketService');
+    const chatWebSocketService = require('../services/ChatWebSocketService');
     const onlineStatus = chatWebSocketService.getRoomOnlineStatus();
     res.json(onlineStatus);
   } catch (error) {

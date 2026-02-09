@@ -64,6 +64,7 @@ const VideoCallModal = ({
   const [callDuration, setCallDuration] = useState(0);
   const [hasJoined, setHasJoined] = useState(false);
   const [error, setError] = useState(null);
+  const [containerReady, setContainerReady] = useState(false);
   const durationIntervalRef = useRef(null);
 
   // Cleanup function
@@ -98,17 +99,38 @@ const VideoCallModal = ({
     onClose();
   }, [cleanup, onClose]);
 
+  // Container hazir olunca state'i guncelle
+  useEffect(() => {
+    if (open && containerRef.current) {
+      setContainerReady(true);
+    } else {
+      setContainerReady(false);
+    }
+  }, [open]);
+
+  // Modal acildiginda container'in renderlanmasini bekle
+  useEffect(() => {
+    if (open && !containerReady) {
+      const timer = setTimeout(() => {
+        if (containerRef.current) {
+          setContainerReady(true);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [open, containerReady]);
+
   // Initialize Daily.co
   useEffect(() => {
-    console.log('VideoCallModal useEffect - open:', open, 'dailyUrl:', dailyUrl);
+    console.log('VideoCallModal useEffect - open:', open, 'dailyUrl:', dailyUrl, 'containerReady:', containerReady);
 
-    if (!open || !dailyUrl) {
-      console.log('VideoCallModal: Not open or no Daily URL, skipping init');
+    if (!open || !dailyUrl || !containerReady) {
+      console.log('VideoCallModal: Waiting for all conditions...', { open, hasDailyUrl: !!dailyUrl, containerReady });
       return;
     }
 
     if (!containerRef.current) {
-      console.log('VideoCallModal: Container not ready, waiting...');
+      console.log('VideoCallModal: Container ref still null');
       return;
     }
 
@@ -196,7 +218,7 @@ const VideoCallModal = ({
     return () => {
       cleanup();
     };
-  }, [open, dailyUrl, currentUserName, cleanup, handleClose]);
+  }, [open, dailyUrl, currentUserName, cleanup, handleClose, containerReady]);
 
   // Toggle fullscreen
   const toggleFullscreen = () => {

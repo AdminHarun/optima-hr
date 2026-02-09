@@ -1,6 +1,15 @@
 // Chat Container with WebSocket Integration
 // Connects ChatRoom component with WebSocket service
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Snackbar,
+  Alert,
+  Box,
+  Typography,
+  CircularProgress,
+  IconButton
+} from '@mui/material';
+import { CallEnd as CallEndIcon } from '@mui/icons-material';
 import ChatRoom from './ChatRoom';
 import ForwardMessageModal from './ForwardMessageModal';
 import VideoCallModal from './VideoCallModal';
@@ -58,6 +67,7 @@ const ChatContainer = ({
   // Video Call States
   const [incomingCall, setIncomingCall] = useState(null);
   const [activeCall, setActiveCall] = useState(null);
+  const [outgoingCall, setOutgoingCall] = useState(null); // Admin ariyorken gosterilecek
 
   // Forward Modal State
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
@@ -399,12 +409,14 @@ const ChatContainer = ({
         break;
 
       case 'video_call_response':
-        // Admin: Applicant'ın cevabı
-        console.log('📞 Video call response:', data);
+        // Admin: Applicant'in cevabi
+        console.log('Video call response:', data);
         if (data.action === 'accept') {
-          console.log('✅ Call accepted by applicant');
+          console.log('Call accepted by applicant');
+          setOutgoingCall(null); // Araniyor bildirimini kapat
         } else if (data.action === 'reject') {
-          console.log('❌ Call rejected by applicant');
+          console.log('Call rejected by applicant');
+          setOutgoingCall(null); // Araniyor bildirimini kapat
           setError('Arama reddedildi');
           setTimeout(() => setError(null), 3000);
         }
@@ -413,6 +425,7 @@ const ChatContainer = ({
       case 'video_call_ready':
         // Daily.co room ready
         console.log('Video call ready:', data);
+        setOutgoingCall(null); // Araniyor bildirimini kapat
         setActiveCall({
           call_id: data.call_id,
           daily_url: data.daily_url,
@@ -423,25 +436,28 @@ const ChatContainer = ({
         break;
 
       case 'video_call_ended':
-        // Call sonlandı
-        console.log('📞 Video call ended:', data);
+        // Call sonlandi
+        console.log('Video call ended:', data);
         setActiveCall(null);
         setIncomingCall(null);
+        setOutgoingCall(null);
         break;
 
       case 'video_call_expired':
         // Call timeout (30 seconds passed without answer)
-        console.log('⏰ Video call expired:', data);
+        console.log('Video call expired:', data);
         setIncomingCall(null);
         setActiveCall(null);
-        setError('Arama süresi doldu (30 saniye)');
+        setOutgoingCall(null);
+        setError('Arama suresi doldu (30 saniye)');
         setTimeout(() => setError(null), 3000);
         break;
 
       case 'video_call_error':
-        // Video call hatası
-        console.error('📞 Video call error:', data);
-        setError(data.error || 'Video arama hatası');
+        // Video call hatasi
+        console.error('Video call error:', data);
+        setOutgoingCall(null);
+        setError(data.error || 'Video arama hatasi');
         setTimeout(() => setError(null), 3000);
         break;
 
@@ -666,7 +682,7 @@ const ChatContainer = ({
   // Start video call (Admin initiates)
   const handleVideoCallRequest = useCallback(() => {
     const callId = `call_${Date.now()}`;
-    console.log('📞 Starting video call request:', callId);
+    console.log('Starting video call request:', callId);
 
     const ws = webSocketService.getConnection();
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -676,9 +692,26 @@ const ChatContainer = ({
         room_id: roomId,
         caller_name: currentUserType === 'admin' ? 'Admin' : currentUserName || participantName
       }));
-      console.log('✅ Video call request sent');
+      console.log('Video call request sent');
+
+      // "Araniyor..." bildirimi goster
+      setOutgoingCall({
+        call_id: callId,
+        participant_name: participantName
+      });
+
+      // 30 saniye sonra timeout
+      setTimeout(() => {
+        setOutgoingCall(prev => {
+          if (prev?.call_id === callId) {
+            return null; // Timeout oldu
+          }
+          return prev;
+        });
+      }, 30000);
+
     } else {
-      setError('WebSocket bağlantısı yok');
+      setError('WebSocket baglantisi yok');
     }
 
     // Also call parent callback if exists
@@ -776,6 +809,44 @@ const ChatContainer = ({
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
       />
+
+      {/* Outgoing Call Notification - Admin ariyorken */}
+      <Snackbar
+        open={!!outgoingCall}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="info"
+          sx={{
+            minWidth: 300,
+            bgcolor: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
+            background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
+            color: 'white',
+            '& .MuiAlert-icon': { color: 'white' }
+          }}
+          action={
+            <IconButton
+              size="small"
+              color="inherit"
+              onClick={() => setOutgoingCall(null)}
+            >
+              <CallEndIcon />
+            </IconButton>
+          }
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <CircularProgress size={20} sx={{ color: 'white' }} />
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {outgoingCall?.participant_name || 'Katilimci'} araniyor...
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                Cevap bekleniyor (30 sn)
+              </Typography>
+            </Box>
+          </Box>
+        </Alert>
+      </Snackbar>
 
       {/* Video Call Modal - Daily.co */}
       <VideoCallModal

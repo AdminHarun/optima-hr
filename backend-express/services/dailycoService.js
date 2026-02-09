@@ -13,8 +13,7 @@ class DailycoService {
         name: roomName,
         privacy: 'private',
         properties: {
-          exp: Math.floor(Date.now() / 1000) + 3600, // 1 saat geçerli
-          enable_recording: 'cloud',
+          exp: Math.floor(Date.now() / 1000) + 3600, // 1 saat gecerli
           start_video_off: false,
           start_audio_off: false,
           enable_screenshare: true,
@@ -43,8 +42,7 @@ class DailycoService {
           room_name: roomName,
           user_name: userName,
           is_owner: isOwner,
-          enable_recording: isOwner,
-          exp: Math.floor(Date.now() / 1000) + 3600 // 1 saat geçerli
+          exp: Math.floor(Date.now() / 1000) + 3600 // 1 saat gecerli
         }
       }, {
         headers: {

@@ -36,9 +36,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Info as InfoIcon,
   VideoCall as VideoCallIcon,
-  CalendarToday as CalendarIcon,
-  ArrowBack as ArrowBackIcon,
-  ArrowForward as ArrowForwardIcon
+  CalendarToday as CalendarIcon
 } from '@mui/icons-material';
 
 function AdminHeader() {
@@ -278,38 +276,10 @@ function AdminHeader() {
             height: '100%',
             WebkitAppRegion: 'no-drag'
           }}>
-            {/* Geri / İleri Butonları */}
+            {/* Site Seçici - Sola hizalı */}
             <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-              <IconButton
-                size="small"
-                onClick={() => {
-                  if (window.history.length > 1) {
-                    window.history.back();
-                  } else {
-                    navigate('/admin/dashboard');
-                  }
-                }}
-                sx={{
-                  color: 'rgba(255,255,255,0.7)',
-                  '&:hover': { color: 'white', background: 'rgba(255,255,255,0.1)' },
-                  width: 30, height: 30
-                }}
-              >
-                <ArrowBackIcon sx={{ fontSize: 18 }} />
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={() => window.history.forward()}
-                sx={{
-                  color: 'rgba(255,255,255,0.7)',
-                  '&:hover': { color: 'white', background: 'rgba(255,255,255,0.1)' },
-                  width: 30, height: 30
-                }}
-              >
-                <ArrowForwardIcon sx={{ fontSize: 18 }} />
-              </IconButton>
+              <SiteSelector />
             </Box>
-            <SiteSelector />
             <ChromeTab
               label="Mesajlar"
               icon={<ChatIcon sx={{ fontSize: 18 }} />}

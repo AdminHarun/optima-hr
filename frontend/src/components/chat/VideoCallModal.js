@@ -100,13 +100,15 @@ const VideoCallModal = ({
 
   // Initialize Daily.co
   useEffect(() => {
+    console.log('VideoCallModal useEffect - open:', open, 'dailyUrl:', dailyUrl);
+
     if (!open || !dailyUrl) {
       console.log('VideoCallModal: Not open or no Daily URL, skipping init');
       return;
     }
 
     if (!containerRef.current) {
-      console.log('VideoCallModal: Container not ready');
+      console.log('VideoCallModal: Container not ready, waiting...');
       return;
     }
 

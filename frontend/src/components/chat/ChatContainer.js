@@ -424,14 +424,17 @@ const ChatContainer = ({
 
       case 'video_call_ready':
         // Daily.co room ready
-        console.log('Video call ready:', data);
+        console.log('VIDEO_CALL_READY received:', data);
+        console.log('daily_url:', data.daily_url);
         setOutgoingCall(null); // Araniyor bildirimini kapat
-        setActiveCall({
+        const newActiveCall = {
           call_id: data.call_id,
           daily_url: data.daily_url,
           room_name: data.room_name,
           participant_ip: data.participant_ip // IP address for admin
-        });
+        };
+        console.log('Setting activeCall:', newActiveCall);
+        setActiveCall(newActiveCall);
         setIncomingCall(null);
         break;
 

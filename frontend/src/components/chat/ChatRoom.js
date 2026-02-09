@@ -19,9 +19,7 @@ import {
 } from '@mui/icons-material';
 import MessageList from './MessageList';
 import ChatComposer from './ChatComposer';
-import VideoCallModal from './VideoCallModal';
 import ApplicantProfileModal from './ApplicantProfileModal';
-import { useVideoCall } from '../../contexts/VideoCallContext';
 
 /**
  * Chat Room Component - Main chat interface
@@ -77,10 +75,6 @@ const ChatRoom = ({
   const messageListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Video call integration
-  const { startCall, activeCall, endCall } = useVideoCall();
-  const [showVideoCallModal, setShowVideoCallModal] = useState(false);
-
   // Profile modal
   const [showProfileModal, setShowProfileModal] = useState(false);
 
@@ -114,55 +108,12 @@ const ChatRoom = ({
     // Already handled in MessageToolbar
   }, []);
 
-  // Video call handlers - starts Daily.co call
+  // Video call handler - triggers call request via parent
   const handleVideoCallClick = useCallback(() => {
-    if (!currentUserId || !participantId) {
-      console.error('Missing required user info for video call');
-      return;
-    }
-
-    // Start call using context
-    const call = startCall({
-      roomId,
-      roomName: roomName || `Chat with ${participantName}`,
-      participantId,
-      participantName,
-      participantAvatar,
-      participantEmail: participantEmail || `${participantId}@optima.com`,
-      currentUserId,
-      currentUserName: currentUserName || 'Admin',
-      currentUserAvatar: currentUserAvatar || null,
-      currentUserEmail: currentUserEmail || 'admin@optima.com',
-      isModerator: currentUserType === 'admin'
-    });
-
-    // Show video modal
-    setShowVideoCallModal(true);
-
-    // Call onVideoCall callback if provided
     if (onVideoCall) {
       onVideoCall();
     }
-  }, [
-    roomId,
-    roomName,
-    participantId,
-    participantName,
-    participantAvatar,
-    participantEmail,
-    currentUserId,
-    currentUserName,
-    currentUserAvatar,
-    currentUserEmail,
-    currentUserType,
-    startCall,
-    onVideoCall
-  ]);
-
-  const handleVideoCallClose = useCallback(() => {
-    setShowVideoCallModal(false);
-    endCall();
-  }, [endCall]);
+  }, [onVideoCall]);
 
   // Format typing users display
   const getTypingText = () => {
@@ -531,25 +482,6 @@ const ChatRoom = ({
             onCancelReply={() => setReplyingTo(null)}
           />
         </>
-      )}
-
-      {/* Video Call Modal - Daily.co integration */}
-      {showVideoCallModal && activeCall && (
-        <VideoCallModal
-          open={showVideoCallModal}
-          onClose={handleVideoCallClose}
-          roomId={roomId}
-          roomName={roomName || `Chat with ${participantName}`}
-          currentUserId={currentUserId}
-          currentUserName={currentUserName || 'Admin'}
-          currentUserAvatar={currentUserAvatar}
-          currentUserEmail={currentUserEmail || 'admin@optima.com'}
-          participantId={participantId}
-          participantName={participantName}
-          participantAvatar={participantAvatar}
-          participantEmail={participantEmail || `${participantId}@optima.com`}
-          isModerator={currentUserType === 'admin'}
-        />
       )}
 
       {/* Applicant Profile Modal */}

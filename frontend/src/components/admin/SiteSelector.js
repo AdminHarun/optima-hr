@@ -52,9 +52,6 @@ function SiteSelector() {
     handleClose();
   };
 
-  // Get site color or default
-  const getSiteColor = (site) => site?.color || COLORS.primary;
-
   // Get initials from site name
   const getSiteInitials = (name) => {
     if (!name) return 'S';
@@ -163,43 +160,33 @@ function SiteSelector() {
               minWidth: 280,
               maxWidth: 320,
               borderRadius: 3,
-              background: '#fff',
-              border: '1px solid',
-              borderColor: 'divider',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 25px rgba(28, 97, 171, 0.12)',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 3,
-                background: COLORS.gradient
-              }
+              background: 'rgba(255, 255, 255, 0.15)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.2)',
+              overflow: 'hidden'
             }
           }}
         >
           {/* Header */}
-          <Box sx={{ px: 2.5, py: 2, bgcolor: alpha(COLORS.primary, 0.03) }}>
+          <Box sx={{ px: 2.5, py: 2, bgcolor: 'rgba(255, 255, 255, 0.1)' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SwapIcon sx={{ color: COLORS.primary, fontSize: 20 }} />
-              <Typography variant="subtitle2" fontWeight={600} color="text.primary">
+              <SwapIcon sx={{ color: '#fff', fontSize: 20 }} />
+              <Typography variant="subtitle2" fontWeight={600} sx={{ color: '#fff' }}>
                 Site Değiştir
               </Typography>
             </Box>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               {sites.length} site mevcut
             </Typography>
           </Box>
 
-          <Divider />
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.15)' }} />
 
           {/* Site List */}
           <Box sx={{ py: 1, maxHeight: 320, overflow: 'auto' }}>
             {sites.map((site, index) => {
               const isActive = site.code === currentSite?.code;
-              const siteColor = getSiteColor(site);
 
               return (
                 <MenuItem
@@ -213,15 +200,15 @@ function SiteSelector() {
                     py: 1.5,
                     borderRadius: 2,
                     transition: 'all 0.2s ease',
-                    bgcolor: isActive ? alpha(COLORS.primary, 0.08) : 'transparent',
+                    bgcolor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
                     '&:hover': {
-                      bgcolor: isActive ? alpha(COLORS.primary, 0.12) : alpha(COLORS.primary, 0.05),
+                      bgcolor: 'rgba(255, 255, 255, 0.15)',
                       transform: 'translateX(4px)'
                     },
                     '&.Mui-selected': {
-                      bgcolor: alpha(COLORS.primary, 0.08),
+                      bgcolor: 'rgba(255, 255, 255, 0.2)',
                       '&:hover': {
-                        bgcolor: alpha(COLORS.primary, 0.12)
+                        bgcolor: 'rgba(255, 255, 255, 0.25)'
                       }
                     }
                   }}
@@ -233,9 +220,9 @@ function SiteSelector() {
                         height: 36,
                         fontSize: 13,
                         fontWeight: 700,
-                        background: `linear-gradient(135deg, ${siteColor}, ${alpha(siteColor, 0.7)})`,
+                        background: 'rgba(255, 255, 255, 0.2)',
                         color: '#fff',
-                        boxShadow: `0 2px 8px ${alpha(siteColor, 0.4)}`
+                        border: '2px solid rgba(255, 255, 255, 0.3)'
                       }}
                     >
                       {getSiteInitials(site.name)}
@@ -248,7 +235,7 @@ function SiteSelector() {
                         variant="body2"
                         sx={{
                           fontWeight: isActive ? 600 : 500,
-                          color: isActive ? COLORS.primary : 'text.primary'
+                          color: '#fff'
                         }}
                       >
                         {site.name}
@@ -263,15 +250,15 @@ function SiteSelector() {
                             height: 18,
                             fontSize: '0.65rem',
                             fontWeight: 600,
-                            bgcolor: alpha(siteColor, 0.1),
-                            color: siteColor,
+                            bgcolor: 'rgba(255, 255, 255, 0.15)',
+                            color: '#fff',
                             '& .MuiChip-label': { px: 1 }
                           }}
                         />
                         {site.isActive !== false && (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
-                            <CircleIcon sx={{ fontSize: 6, color: '#4caf50' }} />
-                            <Typography variant="caption" sx={{ color: '#4caf50', fontSize: '0.6rem' }}>
+                            <CircleIcon sx={{ fontSize: 6, color: '#8bb94a' }} />
+                            <Typography variant="caption" sx={{ color: '#8bb94a', fontSize: '0.6rem' }}>
                               Aktif
                             </Typography>
                           </Box>
@@ -283,7 +270,7 @@ function SiteSelector() {
                   {isActive && (
                     <CheckIcon
                       sx={{
-                        color: COLORS.primary,
+                        color: '#fff',
                         fontSize: 20,
                         ml: 1
                       }}
@@ -295,10 +282,10 @@ function SiteSelector() {
           </Box>
 
           {/* Footer */}
-          <Divider />
-          <Box sx={{ px: 2.5, py: 1.5, bgcolor: alpha(COLORS.primary, 0.02) }}>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
-              💡 Site değiştirmek tüm verileri günceller
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.15)' }} />
+          <Box sx={{ px: 2.5, py: 1.5, bgcolor: 'rgba(255, 255, 255, 0.05)' }}>
+            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+              Site değiştirmek tüm verileri günceller
             </Typography>
           </Box>
         </Menu>

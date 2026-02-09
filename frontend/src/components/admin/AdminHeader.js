@@ -267,17 +267,17 @@ function AdminHeader() {
           boxShadow: '0 4px 20px rgba(28, 97, 171, 0.2)'
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: 3, pl: { xs: 3, md: 10 }, minHeight: '56px !important', WebkitAppRegion: 'drag' }}>
+        <Toolbar sx={{ justifyContent: 'space-between', px: 3, pl: { xs: 2, md: 3 }, minHeight: '56px !important', WebkitAppRegion: 'drag' }}>
           {/* Sol Taraf - Site Seçici + Chrome Tarzı Tab'lar */}
           <Box sx={{
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: 'center',
             gap: 2,
             height: '100%',
             WebkitAppRegion: 'no-drag'
           }}>
-            {/* Site Seçici - Sola hizalı */}
-            <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
+            {/* Site Seçici - Sola hizalı ve yukarı kaydırılmış */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 1, mt: -0.5 }}>
               <SiteSelector />
             </Box>
             <ChromeTab

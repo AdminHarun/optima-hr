@@ -617,7 +617,7 @@ class ChatWebSocketService {
         participantName: roomData.applicant_name || `Applicant ${applicantId}`,
         participantEmail: roomData.applicant_email,
         dailyRoomName: null, // Will be set when accepted
-        dailyRoomUrl: null
+        dailyRoomUrl: null,
         moderatorId: client.userType === 'admin' ? 'admin' : null
       });
 

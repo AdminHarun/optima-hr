@@ -110,19 +110,24 @@ function ApplicantChat() {
     const loadGroups = async () => {
       if (!applicantInfo?.id) return;
 
+      console.log('🔍 Loading groups for applicant ID:', applicantInfo.id);
+
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/chat/api/groups/?member_type=applicant&member_id=${applicantInfo.id}`,
-          { credentials: 'include' }
-        );
+        const url = `${API_BASE_URL}/chat/api/groups/?member_type=applicant&member_id=${applicantInfo.id}`;
+        console.log('📡 Fetching groups from:', url);
+
+        const response = await fetch(url, { credentials: 'include' });
 
         if (response.ok) {
           const data = await response.json();
-          console.log('📥 Applicant groups loaded:', data);
+          console.log('📥 Applicant groups loaded:', data.length, 'groups');
+          console.log('📋 Groups data:', data);
           setGroups(data);
+        } else {
+          console.error('❌ Groups API error:', response.status, response.statusText);
         }
       } catch (error) {
-        console.error('Error loading groups:', error);
+        console.error('❌ Error loading groups:', error);
       }
     };
 

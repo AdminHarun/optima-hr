@@ -214,12 +214,22 @@ router.get('/rooms/:roomId/messages/', async (req, res) => {
     const { roomId } = req.params;
     const { page = 1, page_size = 50 } = req.query;
 
-    // Resolve room ID - could be integer PK or string identifier like "applicant_123"
+    // Resolve room ID - could be integer PK or string identifier like "applicant_123" or "group_4"
     let dbRoomId = parseInt(roomId);
     if (isNaN(dbRoomId)) {
       // String identifier - look up the room
       const parts = roomId.split('_');
-      if (parts[0] === 'applicant' && parts[1]) {
+
+      if (parts[0] === 'group' && parts[1]) {
+        // Group room - just use the ID directly
+        dbRoomId = parseInt(parts[1]);
+        const room = await ChatRoom.findOne({
+          where: { id: dbRoomId, room_type: 'group', is_active: true }
+        });
+        if (!room) {
+          return res.status(404).json({ error: 'Group not found' });
+        }
+      } else if (parts[0] === 'applicant' && parts[1]) {
         const applicantId = parseInt(parts[1]);
         let room = await ChatRoom.findOne({ where: { room_type: 'applicant', applicant_id: applicantId } });
 
@@ -700,10 +710,14 @@ router.get('/groups/', async (req, res) => {
     const { member_type, member_id } = req.query;
     const siteCode = getSiteCode(req);
 
+    console.log('📥 GET /groups/ - member_type:', member_type, 'member_id:', member_id);
+
     let groups;
 
     if (member_type && member_id) {
       // Get groups where user is a member
+      console.log('🔍 Searching ChatRoomMember for:', { member_type, member_id: parseInt(member_id) });
+
       const memberships = await ChatRoomMember.findAll({
         where: {
           member_type,
@@ -716,6 +730,8 @@ router.get('/groups/', async (req, res) => {
           where: { room_type: 'group', is_active: true }
         }]
       });
+
+      console.log('📋 Found memberships:', memberships.length);
 
       groups = memberships.map(m => ({
         ...m.room.toJSON(),

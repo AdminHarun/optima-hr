@@ -143,13 +143,18 @@ const startServer = async () => {
       console.log('🔄 Checking chat message columns...');
       await addColumnIfNotExists('chat_messages', 'reply_to_message_id', { type: 'VARCHAR(100)', allowNull: true });
       console.log('✅ Chat message columns checked');
+
+      // Chat room columns for group chat
+      console.log('🔄 Checking chat room columns for group chat...');
+      await addColumnIfNotExists('chat_rooms', 'description', { type: 'TEXT', allowNull: true });
+      console.log('✅ Chat room group columns checked');
     } catch (migrationErr) {
       console.log('⚠️ Site code migration note:', migrationErr.message);
     }
 
     // Initialize core tables (applicant_profiles, job_applications)
     try {
-      const { InvitationLink, ApplicantProfile, JobApplication, ChatRoom, ChatMessage } = require('./models/associations');
+      const { InvitationLink, ApplicantProfile, JobApplication, ChatRoom, ChatMessage, ChatRoomMember } = require('./models/associations');
 
       // Create tables if they don't exist (order matters for foreign keys)
       console.log('🔄 Checking core tables...');
@@ -158,6 +163,7 @@ const startServer = async () => {
       try { await JobApplication.sync({ force: false }); } catch (e) { console.log('⚠️ JobApplication sync:', e.message); }
       try { await ChatRoom.sync({ force: false }); } catch (e) { console.log('⚠️ ChatRoom sync:', e.message); }
       try { await ChatMessage.sync({ force: false }); } catch (e) { console.log('⚠️ ChatMessage sync:', e.message); }
+      try { await ChatRoomMember.sync({ force: false }); } catch (e) { console.log('⚠️ ChatRoomMember sync:', e.message); }
       console.log('✅ Core tables synced');
     } catch (coreErr) {
       console.log('⚠️ Core tables note:', coreErr.message);

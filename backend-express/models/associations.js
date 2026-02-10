@@ -4,6 +4,7 @@ const ApplicantProfile = require('./ApplicantProfile');
 const JobApplication = require('./JobApplication');
 const ChatRoom = require('./ChatRoom');
 const ChatMessage = require('./ChatMessage');
+const ChatRoomMember = require('./ChatRoomMember');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -55,6 +56,16 @@ ChatMessage.belongsTo(ChatMessage, {
   as: 'reply_to'
 });
 
+// ChatRoomMember associations
+ChatRoom.hasMany(ChatRoomMember, {
+  foreignKey: 'room_id',
+  as: 'members'
+});
+ChatRoomMember.belongsTo(ChatRoom, {
+  foreignKey: 'room_id',
+  as: 'room'
+});
+
 // Management Models
 const Site = require('./Site');
 const AdminUser = require('./AdminUser');
@@ -66,6 +77,7 @@ module.exports = {
   JobApplication,
   ChatRoom,
   ChatMessage,
+  ChatRoomMember,
   Site,
   AdminUser,
   AuditLog

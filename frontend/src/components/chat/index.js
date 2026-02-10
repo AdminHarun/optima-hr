@@ -10,3 +10,4 @@ export { default as MessageContent } from './MessageContent';
 export { default as MessageToolbar } from './MessageToolbar';
 export { default as ChatSidebar } from './ChatSidebar';
 export { default as VideoCallModal } from './VideoCallModal';
+export { default as CreateGroupModal } from './CreateGroupModal';

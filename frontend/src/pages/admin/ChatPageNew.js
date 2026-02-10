@@ -1,8 +1,9 @@
 // src/pages/admin/ChatPageNew.js - Professional Chat UI (inspired by reference design)
 import React, { useState, useEffect } from 'react';
-import { Box, Avatar, Badge, Typography, TextField, InputAdornment, Fade, IconButton, Divider } from '@mui/material';
-import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon } from '@mui/icons-material';
+import { Box, Avatar, Badge, Typography, TextField, InputAdornment, Fade, IconButton, Divider, Tabs, Tab, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon, Group as GroupIcon, Person as PersonIcon, GroupAdd as GroupAddIcon } from '@mui/icons-material';
 import { ChatContainer } from '../../components/chat';
+import CreateGroupModal from '../../components/chat/CreateGroupModal';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
 
@@ -18,8 +19,12 @@ const getSiteHeaders = () => {
 function ChatPageNew() {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredRoom, setHoveredRoom] = useState(null);
+  const [activeTab, setActiveTab] = useState(0); // 0: Kişiler, 1: Gruplar
+  const [createGroupOpen, setCreateGroupOpen] = useState(false);
+  const [addMenuAnchor, setAddMenuAnchor] = useState(null);
 
   // Load chat rooms from backend
   useEffect(() => {
@@ -108,6 +113,62 @@ function ChatPageNew() {
     return () => clearInterval(interval);
   }, []);
 
+  // Load group chats
+  useEffect(() => {
+    const loadGroups = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/chat/api/groups/`, {
+          credentials: 'include',
+          headers: getSiteHeaders()
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📥 Groups loaded:', data);
+
+          const transformedGroups = data.map(group => ({
+            id: `group_${group.id}`,
+            roomId: group.room_id || `group_${group.id}`,
+            name: group.room_name,
+            description: group.description,
+            isGroup: true,
+            memberCount: group.member_count || group.members?.length || 0,
+            lastMessage: group.last_message?.content || 'Henüz mesaj yok',
+            lastMessageTime: group.last_message_at ? new Date(group.last_message_at) : new Date(group.created_at),
+            unreadCount: 0
+          }));
+
+          setGroups(transformedGroups);
+        }
+      } catch (error) {
+        console.error('❌ Error loading groups:', error);
+      }
+    };
+
+    loadGroups();
+    const interval = setInterval(loadGroups, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleGroupCreated = (group) => {
+    console.log('✅ New group created:', group);
+    // Add new group to list
+    setGroups(prev => [{
+      id: `group_${group.id}`,
+      roomId: group.room_id || `group_${group.id}`,
+      name: group.room_name,
+      description: group.description,
+      isGroup: true,
+      memberCount: group.members?.length || 1,
+      lastMessage: 'Grup oluşturuldu',
+      lastMessageTime: new Date(),
+      unreadCount: 0
+    }, ...prev]);
+
+    // Switch to groups tab and select the new group
+    setActiveTab(1);
+  };
+
   const handleRoomSelect = (room) => {
     setSelectedRoom(room);
     setRooms(prevRooms =>
@@ -195,6 +256,34 @@ function ChatPageNew() {
     return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   };
 
+  // Format last seen as full date/time (not relative)
+  const formatLastSeen = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const now = new Date();
+
+    // Today - show only time
+    if (d.toDateString() === now.toDateString()) {
+      return `Bugün ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) {
+      return `Dün ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // Full date and time
+    return d.toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'short',
+      year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   // Get avatar initials (first + last name)
   const getInitials = (firstName, lastName) => {
     const first = firstName?.[0] || '';
@@ -257,14 +346,75 @@ function ChatPageNew() {
               Sohbetler
             </Typography>
             <Box>
-              <IconButton size="small" sx={{ color: '#6b7280' }}>
+              <IconButton
+                size="small"
+                sx={{ color: '#6b7280' }}
+                onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+              >
                 <AddIcon fontSize="small" />
               </IconButton>
+              <Menu
+                anchorEl={addMenuAnchor}
+                open={Boolean(addMenuAnchor)}
+                onClose={() => setAddMenuAnchor(null)}
+                PaperProps={{
+                  sx: { minWidth: 180, borderRadius: '8px', mt: 1 }
+                }}
+              >
+                <MenuItem onClick={() => { setAddMenuAnchor(null); setCreateGroupOpen(true); }}>
+                  <ListItemIcon>
+                    <GroupAddIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Yeni Grup Oluştur</ListItemText>
+                </MenuItem>
+              </Menu>
               <IconButton size="small" sx={{ color: '#6b7280', ml: 0.5 }}>
                 <MoreVertIcon fontSize="small" />
               </IconButton>
             </Box>
           </Box>
+
+          {/* Tabs: Kişiler / Gruplar */}
+          <Tabs
+            value={activeTab}
+            onChange={(e, v) => setActiveTab(v)}
+            sx={{
+              minHeight: 36,
+              mb: 2,
+              '& .MuiTabs-indicator': {
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                height: 3,
+                borderRadius: '3px 3px 0 0'
+              }
+            }}
+          >
+            <Tab
+              icon={<PersonIcon sx={{ fontSize: 18 }} />}
+              iconPosition="start"
+              label="Kişiler"
+              sx={{
+                minHeight: 36,
+                fontSize: '13px',
+                fontWeight: 600,
+                textTransform: 'none',
+                flex: 1,
+                '&.Mui-selected': { color: '#6366f1' }
+              }}
+            />
+            <Tab
+              icon={<GroupIcon sx={{ fontSize: 18 }} />}
+              iconPosition="start"
+              label={`Gruplar${groups.length > 0 ? ` (${groups.length})` : ''}`}
+              sx={{
+                minHeight: 36,
+                fontSize: '13px',
+                fontWeight: 600,
+                textTransform: 'none',
+                flex: 1,
+                '&.Mui-selected': { color: '#6366f1' }
+              }}
+            />
+          </Tabs>
 
           {/* Search */}
           <TextField
@@ -312,6 +462,9 @@ function ChatPageNew() {
 
         {/* Scrollable Content */}
         <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          {/* Tab 0: Kişiler (Applicant Chats) */}
+          {activeTab === 0 && (
+            <>
           {/* Recent Chats Section */}
           {!searchTerm && recentChats.length > 0 && (
             <Box sx={{ mb: 2 }}>
@@ -555,7 +708,7 @@ function ChatPageNew() {
                           mt: 0.25
                         }}
                       >
-                        {room.participantOnline ? 'Cevrimici' : (room.lastSeen ? `Son gorunme: ${formatTime(new Date(room.lastSeen))}` : 'Cevrimdisi')}
+                        {room.participantOnline ? 'Çevrimiçi' : (room.lastSeen ? `Son görülme: ${formatLastSeen(room.lastSeen)}` : 'Çevrimdışı')}
                       </Typography>
                     </Box>
                   </Box>
@@ -563,6 +716,141 @@ function ChatPageNew() {
               })
             )}
           </Box>
+            </>
+          )}
+
+          {/* Tab 1: Gruplar (Group Chats) */}
+          {activeTab === 1 && (
+            <Box>
+              {groups.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 6, px: 3 }}>
+                  <Box sx={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    bgcolor: '#f3f4f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 16px'
+                  }}>
+                    <GroupIcon sx={{ fontSize: 32, color: '#9ca3af' }} />
+                  </Box>
+                  <Typography variant="body1" sx={{ color: '#374151', fontWeight: 500, mb: 1 }}>
+                    Henüz grup yok
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#9ca3af', mb: 2 }}>
+                    Yeni bir grup oluşturarak başlayın
+                  </Typography>
+                  <Box
+                    onClick={() => setCreateGroupOpen(true)}
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      px: 3,
+                      py: 1,
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                      fontSize: '14px',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'
+                      }
+                    }}
+                  >
+                    <GroupAddIcon sx={{ fontSize: 18 }} />
+                    Grup Oluştur
+                  </Box>
+                </Box>
+              ) : (
+                groups.filter(g => !searchTerm || g.name?.toLowerCase().includes(searchTerm.toLowerCase())).map((group) => {
+                  const isSelected = selectedRoom?.id === group.id;
+
+                  return (
+                    <Box
+                      key={group.id}
+                      onClick={() => handleRoomSelect({ ...group, participantName: group.name })}
+                      onMouseEnter={() => setHoveredRoom(group.id)}
+                      onMouseLeave={() => setHoveredRoom(null)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        px: 2.5,
+                        py: 1.5,
+                        cursor: 'pointer',
+                        bgcolor: isSelected ? '#f3f4f6' : 'transparent',
+                        borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
+                        '&:hover': { bgcolor: '#f9fafb' },
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <Avatar
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          background: isSelected
+                            ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
+                            : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          fontSize: '16px',
+                          fontWeight: 600
+                        }}
+                      >
+                        <GroupIcon />
+                      </Avatar>
+
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 500,
+                              color: '#111827',
+                              fontSize: '14px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {group.name}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: '#6b7280', fontSize: '11px', ml: 1, flexShrink: 0 }}
+                          >
+                            {formatTime(group.lastMessageTime)}
+                          </Typography>
+                        </Box>
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: '#9ca3af',
+                            fontSize: '13px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {group.lastMessage}
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          sx={{ color: '#6b7280', fontSize: '11px', mt: 0.25 }}
+                        >
+                          {group.memberCount} üye
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })
+              )}
+            </Box>
+          )}
         </Box>
       </Box>
 
@@ -577,7 +865,7 @@ function ChatPageNew() {
             participantFirstName={selectedRoom.firstName}
             participantLastName={selectedRoom.lastName}
             participantAvatar={selectedRoom.participantAvatar}
-            participantEmail={`${selectedRoom.participantId}@optima.com`}
+            participantEmail={selectedRoom.isGroup ? null : `${selectedRoom.participantId}@optima.com`}
             participantOnline={selectedRoom.participantOnline}
             currentUserId="admin_1"
             currentUserName="Admin"
@@ -585,6 +873,9 @@ function ChatPageNew() {
             currentUserEmail="admin@optima.com"
             currentUserType="admin"
             onMessagesRead={handleMessagesRead}
+            isGroup={selectedRoom.isGroup || false}
+            memberCount={selectedRoom.memberCount}
+            groupDescription={selectedRoom.description}
           />
         ) : (
           <Box
@@ -655,6 +946,13 @@ function ChatPageNew() {
           </Box>
         )}
       </Box>
+
+      {/* Create Group Modal */}
+      <CreateGroupModal
+        open={createGroupOpen}
+        onClose={() => setCreateGroupOpen(false)}
+        onGroupCreated={handleGroupCreated}
+      />
     </Box>
   );
 }

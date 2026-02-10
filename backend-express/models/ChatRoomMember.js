@@ -1,0 +1,97 @@
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
+
+/**
+ * ChatRoomMember - Tracks membership for group chat rooms
+ * Links users (admins and applicants) to chat rooms
+ */
+const ChatRoomMember = sequelize.define('ChatRoomMember', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  room_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    comment: 'Reference to chat_rooms table'
+  },
+  member_type: {
+    type: DataTypes.ENUM('admin', 'applicant'),
+    allowNull: false,
+    comment: 'Type of member'
+  },
+  member_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'ID of the member (admin_id or applicant_id)'
+  },
+  member_name: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    comment: 'Display name of the member'
+  },
+  member_email: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'Email of the member'
+  },
+  role: {
+    type: DataTypes.ENUM('owner', 'admin', 'member'),
+    allowNull: false,
+    defaultValue: 'member',
+    comment: 'Role in the group: owner, admin, or member'
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    comment: 'Whether the member is active in the group'
+  },
+  joined_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+    comment: 'When the member joined the group'
+  },
+  left_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When the member left the group (null if still active)'
+  },
+  last_read_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Last time the member read messages in this room'
+  },
+  last_read_message_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'ID of the last message the member has read'
+  },
+  notifications_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    comment: 'Whether notifications are enabled for this member'
+  }
+}, {
+  tableName: 'chat_room_members',
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      fields: ['room_id']
+    },
+    {
+      fields: ['member_type', 'member_id']
+    },
+    {
+      fields: ['room_id', 'member_type', 'member_id'],
+      unique: true
+    },
+    {
+      fields: ['is_active']
+    }
+  ]
+});
+
+module.exports = ChatRoomMember;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const ChatRoom = require('../models/ChatRoom');
 const ChatMessage = require('../models/ChatMessage');
+const ChatRoomMember = require('../models/ChatRoomMember');
 const ApplicantProfile = require('../models/ApplicantProfile');
 const { Op } = require('sequelize');
 const multer = require('multer');
@@ -384,6 +385,101 @@ router.post('/messages/', async (req, res) => {
   }
 });
 
+// Search messages
+router.get('/messages/search/', async (req, res) => {
+  try {
+    const { q, room_id, page = 1, page_size = 20 } = req.query;
+    const siteCode = getSiteCode(req);
+
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ error: 'Search query must be at least 2 characters' });
+    }
+
+    const searchTerm = q.trim().toLowerCase();
+    const offset = (parseInt(page) - 1) * parseInt(page_size);
+
+    // Build where clause
+    const where = {
+      content: {
+        [Op.iLike]: `%${searchTerm}%`
+      }
+    };
+
+    // If room_id provided, resolve it
+    if (room_id) {
+      let resolvedRoomId = parseInt(room_id);
+      if (isNaN(resolvedRoomId)) {
+        const parts = room_id.split('_');
+        if (parts[0] === 'applicant' && parts[1]) {
+          const applicantId = parseInt(parts[1]);
+          const room = await ChatRoom.findOne({
+            where: { room_type: 'applicant', applicant_id: applicantId }
+          });
+          if (room) {
+            resolvedRoomId = room.id;
+          }
+        }
+      }
+      if (!isNaN(resolvedRoomId)) {
+        where.room_id = resolvedRoomId;
+      }
+    }
+
+    // Get messages with room info
+    const { count, rows: messages } = await ChatMessage.findAndCountAll({
+      where,
+      order: [['created_at', 'DESC']],
+      limit: parseInt(page_size),
+      offset: offset,
+      include: [{
+        model: ChatRoom,
+        as: 'room',
+        attributes: ['id', 'room_name', 'applicant_name', 'applicant_id', 'room_type']
+      }]
+    });
+
+    // Format results with highlighted content
+    const results = messages.map(msg => {
+      const plainMsg = msg.toJSON();
+      // Create highlighted snippet
+      const contentLower = plainMsg.content.toLowerCase();
+      const matchIndex = contentLower.indexOf(searchTerm);
+      let snippet = plainMsg.content;
+
+      if (matchIndex !== -1) {
+        const start = Math.max(0, matchIndex - 30);
+        const end = Math.min(plainMsg.content.length, matchIndex + searchTerm.length + 30);
+        snippet = (start > 0 ? '...' : '') +
+                  plainMsg.content.substring(start, end) +
+                  (end < plainMsg.content.length ? '...' : '');
+      }
+
+      return {
+        ...plainMsg,
+        snippet,
+        room_info: plainMsg.room ? {
+          id: plainMsg.room.id,
+          name: plainMsg.room.room_name || plainMsg.room.applicant_name,
+          applicant_id: plainMsg.room.applicant_id,
+          room_type: plainMsg.room.room_type
+        } : null
+      };
+    });
+
+    res.json({
+      count,
+      results,
+      query: q,
+      page: parseInt(page),
+      page_size: parseInt(page_size),
+      total_pages: Math.ceil(count / parseInt(page_size))
+    });
+  } catch (error) {
+    console.error('Error searching messages:', error);
+    res.status(500).json({ error: 'Failed to search messages' });
+  }
+});
+
 // Mark messages as read
 router.post('/messages/mark_read/', async (req, res) => {
   try {
@@ -531,6 +627,440 @@ router.get('/download/:filename', async (req, res) => {
   } catch (error) {
     console.error('Error downloading file:', error);
     res.status(500).json({ error: 'Failed to download file' });
+  }
+});
+
+// ==================== GROUP CHAT ENDPOINTS ====================
+
+// Create a group chat
+router.post('/groups/', async (req, res) => {
+  try {
+    const { group_name, description, creator_id, creator_name, creator_type = 'admin', members = [] } = req.body;
+    const siteCode = getSiteCode(req);
+
+    if (!group_name || !creator_name) {
+      return res.status(400).json({ error: 'group_name and creator_name are required' });
+    }
+
+    // Create the group room
+    const room = await ChatRoom.create({
+      room_type: 'group',
+      room_name: group_name,
+      description: description || null,
+      site_code: siteCode,
+      is_active: true
+    });
+
+    // Add creator as owner
+    await ChatRoomMember.create({
+      room_id: room.id,
+      member_type: creator_type,
+      member_id: creator_id || null,
+      member_name: creator_name,
+      role: 'owner',
+      is_active: true,
+      joined_at: new Date()
+    });
+
+    // Add other members
+    for (const member of members) {
+      await ChatRoomMember.create({
+        room_id: room.id,
+        member_type: member.type || 'admin',
+        member_id: member.id || null,
+        member_name: member.name,
+        member_email: member.email || null,
+        role: member.role || 'member',
+        is_active: true,
+        joined_at: new Date()
+      });
+    }
+
+    // Get all members for response
+    const allMembers = await ChatRoomMember.findAll({
+      where: { room_id: room.id, is_active: true }
+    });
+
+    res.status(201).json({
+      room: {
+        ...room.toJSON(),
+        room_id: `group_${room.id}`,
+        members: allMembers
+      }
+    });
+  } catch (error) {
+    console.error('Error creating group chat:', error);
+    res.status(500).json({ error: 'Failed to create group chat' });
+  }
+});
+
+// Get all group chats (admin can see all, applicant sees only their groups)
+router.get('/groups/', async (req, res) => {
+  try {
+    const { member_type, member_id } = req.query;
+    const siteCode = getSiteCode(req);
+
+    let groups;
+
+    if (member_type && member_id) {
+      // Get groups where user is a member
+      const memberships = await ChatRoomMember.findAll({
+        where: {
+          member_type,
+          member_id: parseInt(member_id),
+          is_active: true
+        },
+        include: [{
+          model: ChatRoom,
+          as: 'room',
+          where: { room_type: 'group', is_active: true }
+        }]
+      });
+
+      groups = memberships.map(m => ({
+        ...m.room.toJSON(),
+        room_id: `group_${m.room.id}`,
+        my_role: m.role
+      }));
+    } else {
+      // Admin: get all groups
+      const where = { room_type: 'group', is_active: true };
+      if (siteCode) where.site_code = siteCode;
+
+      const rooms = await ChatRoom.findAll({
+        where,
+        order: [['last_message_at', 'DESC NULLS LAST'], ['created_at', 'DESC']],
+        include: [{
+          model: ChatRoomMember,
+          as: 'members',
+          where: { is_active: true },
+          required: false
+        }]
+      });
+
+      groups = rooms.map(room => ({
+        ...room.toJSON(),
+        room_id: `group_${room.id}`,
+        member_count: room.members ? room.members.length : 0
+      }));
+    }
+
+    res.json(groups);
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    res.status(500).json({ error: 'Failed to fetch groups' });
+  }
+});
+
+// Get group details with members
+router.get('/groups/:groupId/', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    // Parse group ID
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    const room = await ChatRoom.findOne({
+      where: { id: dbRoomId, room_type: 'group' },
+      include: [{
+        model: ChatRoomMember,
+        as: 'members',
+        where: { is_active: true },
+        required: false
+      }]
+    });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    res.json({
+      ...room.toJSON(),
+      room_id: `group_${room.id}`
+    });
+  } catch (error) {
+    console.error('Error fetching group:', error);
+    res.status(500).json({ error: 'Failed to fetch group' });
+  }
+});
+
+// Update group (name, description)
+router.patch('/groups/:groupId/', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { group_name, description } = req.body;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    const room = await ChatRoom.findOne({
+      where: { id: dbRoomId, room_type: 'group' }
+    });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    if (group_name) room.room_name = group_name;
+    if (description !== undefined) room.description = description;
+    await room.save();
+
+    res.json({
+      ...room.toJSON(),
+      room_id: `group_${room.id}`
+    });
+  } catch (error) {
+    console.error('Error updating group:', error);
+    res.status(500).json({ error: 'Failed to update group' });
+  }
+});
+
+// Get group members
+router.get('/groups/:groupId/members/', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    const members = await ChatRoomMember.findAll({
+      where: { room_id: dbRoomId, is_active: true },
+      order: [
+        ['role', 'ASC'], // owner first, then admin, then member
+        ['joined_at', 'ASC']
+      ]
+    });
+
+    res.json(members);
+  } catch (error) {
+    console.error('Error fetching group members:', error);
+    res.status(500).json({ error: 'Failed to fetch group members' });
+  }
+});
+
+// Add member to group
+router.post('/groups/:groupId/members/', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { member_type, member_id, member_name, member_email, role = 'member' } = req.body;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    // Check if room exists
+    const room = await ChatRoom.findOne({
+      where: { id: dbRoomId, room_type: 'group' }
+    });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    // Check if already a member
+    const existingMember = await ChatRoomMember.findOne({
+      where: {
+        room_id: dbRoomId,
+        member_type,
+        member_id: member_id || null
+      }
+    });
+
+    if (existingMember) {
+      if (existingMember.is_active) {
+        return res.status(400).json({ error: 'Member already exists in this group' });
+      }
+      // Re-activate member
+      existingMember.is_active = true;
+      existingMember.left_at = null;
+      existingMember.joined_at = new Date();
+      existingMember.role = role;
+      await existingMember.save();
+      return res.json(existingMember);
+    }
+
+    // Add new member
+    const newMember = await ChatRoomMember.create({
+      room_id: dbRoomId,
+      member_type,
+      member_id: member_id || null,
+      member_name,
+      member_email: member_email || null,
+      role,
+      is_active: true,
+      joined_at: new Date()
+    });
+
+    res.status(201).json(newMember);
+  } catch (error) {
+    console.error('Error adding group member:', error);
+    res.status(500).json({ error: 'Failed to add group member' });
+  }
+});
+
+// Remove member from group
+router.delete('/groups/:groupId/members/:memberId/', async (req, res) => {
+  try {
+    const { groupId, memberId } = req.params;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    const member = await ChatRoomMember.findOne({
+      where: {
+        id: parseInt(memberId),
+        room_id: dbRoomId
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    // Soft delete - mark as inactive
+    member.is_active = false;
+    member.left_at = new Date();
+    await member.save();
+
+    res.json({ success: true, message: 'Member removed from group' });
+  } catch (error) {
+    console.error('Error removing group member:', error);
+    res.status(500).json({ error: 'Failed to remove group member' });
+  }
+});
+
+// Update member role
+router.patch('/groups/:groupId/members/:memberId/', async (req, res) => {
+  try {
+    const { groupId, memberId } = req.params;
+    const { role } = req.body;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    if (!['owner', 'admin', 'member'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be owner, admin, or member' });
+    }
+
+    const member = await ChatRoomMember.findOne({
+      where: {
+        id: parseInt(memberId),
+        room_id: dbRoomId,
+        is_active: true
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+
+    member.role = role;
+    await member.save();
+
+    res.json(member);
+  } catch (error) {
+    console.error('Error updating member role:', error);
+    res.status(500).json({ error: 'Failed to update member role' });
+  }
+});
+
+// Leave group (self-remove)
+router.post('/groups/:groupId/leave/', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    const { member_type, member_id } = req.body;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    const member = await ChatRoomMember.findOne({
+      where: {
+        room_id: dbRoomId,
+        member_type,
+        member_id: member_id || null,
+        is_active: true
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: 'You are not a member of this group' });
+    }
+
+    // Check if owner is trying to leave
+    if (member.role === 'owner') {
+      // Check if there are other members
+      const otherMembers = await ChatRoomMember.count({
+        where: {
+          room_id: dbRoomId,
+          is_active: true,
+          id: { [Op.ne]: member.id }
+        }
+      });
+
+      if (otherMembers > 0) {
+        return res.status(400).json({
+          error: 'Owner cannot leave the group. Transfer ownership first or delete the group.'
+        });
+      }
+    }
+
+    member.is_active = false;
+    member.left_at = new Date();
+    await member.save();
+
+    res.json({ success: true, message: 'You have left the group' });
+  } catch (error) {
+    console.error('Error leaving group:', error);
+    res.status(500).json({ error: 'Failed to leave group' });
+  }
+});
+
+// Delete group (owner only)
+router.delete('/groups/:groupId/', async (req, res) => {
+  try {
+    const { groupId } = req.params;
+
+    let dbRoomId = parseInt(groupId);
+    if (isNaN(dbRoomId) && groupId.startsWith('group_')) {
+      dbRoomId = parseInt(groupId.replace('group_', ''));
+    }
+
+    const room = await ChatRoom.findOne({
+      where: { id: dbRoomId, room_type: 'group' }
+    });
+
+    if (!room) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    // Soft delete the room
+    room.is_active = false;
+    await room.save();
+
+    // Deactivate all members
+    await ChatRoomMember.update(
+      { is_active: false, left_at: new Date() },
+      { where: { room_id: dbRoomId } }
+    );
+
+    res.json({ success: true, message: 'Group deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    res.status(500).json({ error: 'Failed to delete group' });
   }
 });
 

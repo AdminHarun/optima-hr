@@ -139,17 +139,17 @@ class ChatApiService {
     try {
       // Extract numeric ID
       const cleanId = applicantId.replace('applicant_', '');
-      
+
       // Get or create room for applicant
       const { room } = await this.getOrCreateApplicantRoom({
         applicant_id: cleanId,
         applicant_email: `applicant_${cleanId}@temp.com`,
         applicant_name: `Applicant ${cleanId}`
       });
-      
+
       // Get messages for room
       const messagesData = await this.getRoomMessages(room.id);
-      
+
       // Transform to frontend format
       return messagesData.messages.map(msg => ({
         id: msg.id,
@@ -170,6 +170,61 @@ class ChatApiService {
     } catch (error) {
       console.error('Failed to load messages for frontend:', error);
       return [];
+    }
+  }
+
+  // Search messages across all rooms
+  async searchMessages(query, roomId = null, page = 1, pageSize = 20) {
+    try {
+      const params = { q: query, page, page_size: pageSize };
+      if (roomId) {
+        params.room_id = roomId;
+      }
+      const response = await this.api.get('/messages/search/', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to search messages:', error);
+      throw error;
+    }
+  }
+
+  // Mark messages as read
+  async markMessagesRead(messageIds = [], roomId = null) {
+    try {
+      const response = await this.api.post('/messages/mark_read/', {
+        message_ids: messageIds,
+        room_id: roomId
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to mark messages as read:', error);
+      throw error;
+    }
+  }
+
+  // Get online status for all rooms
+  async getOnlineStatus() {
+    try {
+      const response = await this.api.get('/rooms/online_status');
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get online status:', error);
+      throw error;
+    }
+  }
+
+  // Upload file
+  async uploadFile(file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await this.api.post('/upload/file/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to upload file:', error);
+      throw error;
     }
   }
 }

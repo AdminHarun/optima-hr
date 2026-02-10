@@ -52,7 +52,10 @@ const ChatContainer = ({
   currentUserType = 'admin',
   onBack,
   onVideoCall,
-  onMessagesRead // Callback to notify parent when messages are marked as read
+  onMessagesRead, // Callback to notify parent when messages are marked as read
+  isGroup = false,
+  memberCount = 0,
+  groupDescription = null
 }) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -784,6 +787,7 @@ const ChatContainer = ({
         participantAvatar={participantAvatar}
         participantEmail={participantEmail}
         participantOnline={participantOnline}
+        isConnected={isConnected}
         messages={messages}
         currentUserId={currentUserId}
         currentUserName={currentUserName}
@@ -803,7 +807,10 @@ const ChatContainer = ({
         onForwardMessage={handleForwardMessage}
         onPinMessage={handlePinMessage}
         onBack={onBack}
-        onVideoCall={handleVideoCallRequest}
+        onVideoCall={isGroup ? null : handleVideoCallRequest}
+        isGroup={isGroup}
+        memberCount={memberCount}
+        groupDescription={groupDescription}
       />
 
       {/* Incoming Call Notification */}

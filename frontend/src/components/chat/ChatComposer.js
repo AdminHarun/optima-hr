@@ -21,7 +21,8 @@ import {
   Delete as DeleteIcon,
   PlayArrow,
   Pause,
-  Reply as ReplyIcon
+  Reply as ReplyIcon,
+  FlashOn as QuickReplyIcon
 } from '@mui/icons-material';
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
@@ -39,11 +40,26 @@ const ChatComposer = ({
   disabled = false,
   maxLength = 5000,
   replyingTo = null,
-  onCancelReply = null
+  onCancelReply = null,
+  droppedFile = null,
+  onDroppedFileHandled = null
 }) => {
   const [message, setMessage] = useState('');
   const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
+  const [cannedResponsesAnchorEl, setCannedResponsesAnchorEl] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
+
+  // Canned responses list - can be moved to config/API later
+  const cannedResponses = [
+    { id: 1, title: 'Selamlama', text: 'Merhaba! Optima HR platformuna hoş geldiniz. Size nasıl yardımcı olabilirim?' },
+    { id: 2, title: 'Teşekkür', text: 'İlginiz için teşekkür ederiz. Başvurunuz değerlendirilmektedir.' },
+    { id: 3, title: 'Belge İsteme', text: 'Lütfen CV\'nizi ve kimlik fotokopinizi yükleyebilir misiniz?' },
+    { id: 4, title: 'Mülakat Daveti', text: 'Başvurunuz olumlu değerlendirilmiştir. Görüntülü görüşme için uygun olduğunuz zamanı bildirir misiniz?' },
+    { id: 5, title: 'Bekleme', text: 'Değerlendirme sürecimiz devam etmektedir. En kısa sürede size dönüş yapacağız.' },
+    { id: 6, title: 'Ek Bilgi', text: 'Başvurunuzla ilgili birkaç ek bilgiye ihtiyacımız var. Lütfen aşağıdaki soruları yanıtlayın:' },
+    { id: 7, title: 'Video Görüşme', text: 'Video görüşme başlatmak için yukarıdaki kamera ikonuna tıklayabilirsiniz. Hazır olduğunuzda bana bildirin.' },
+    { id: 8, title: 'Kapanış', text: 'Görüşmemiz için teşekkür ederiz. İyi günler dileriz!' }
+  ];
   const [isSending, setIsSending] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -61,6 +77,48 @@ const ChatComposer = ({
   // Auto-focus on mount
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Handle dropped file from parent (drag-drop)
+  useEffect(() => {
+    if (droppedFile) {
+      setSelectedFile(droppedFile);
+      if (onDroppedFileHandled) {
+        onDroppedFileHandled();
+      }
+      inputRef.current?.focus();
+    }
+  }, [droppedFile, onDroppedFileHandled]);
+
+  // Handle paste events for images
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            // Create a named file from the clipboard
+            const extension = file.type.split('/')[1] || 'png';
+            const fileName = `clipboard-${Date.now()}.${extension}`;
+            const namedFile = new File([file], fileName, { type: file.type });
+            setSelectedFile(namedFile);
+            console.log('📋 Image pasted from clipboard:', fileName);
+          }
+          break;
+        }
+      }
+    };
+
+    const inputElement = inputRef.current;
+    if (inputElement) {
+      inputElement.addEventListener('paste', handlePaste);
+      return () => inputElement.removeEventListener('paste', handlePaste);
+    }
   }, []);
 
   // Typing indicator
@@ -139,6 +197,25 @@ const ChatComposer = ({
     setTimeout(() => {
       input.focus();
       input.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
+    }, 0);
+  };
+
+  // Handle canned response selection
+  const handleCannedResponseSelect = (response) => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    // Insert at cursor or append to existing message
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const newMessage = message.substring(0, start) + response.text + message.substring(end);
+    setMessage(newMessage);
+    setCannedResponsesAnchorEl(null);
+
+    setTimeout(() => {
+      input.focus();
+      const newCursorPos = start + response.text.length;
+      input.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
   };
 
@@ -328,29 +405,92 @@ const ChatComposer = ({
         </Box>
       )}
 
-      {/* File Preview */}
+      {/* File Preview - with image thumbnail for images */}
       {selectedFile && !audioBlob && (
         <Box
           sx={{
             mb: 1,
-            p: 1,
-            backgroundColor: '#f5f6f7',
-            borderRadius: 1,
+            p: 1.25,
+            backgroundColor: 'rgba(99, 102, 241, 0.05)',
+            borderRadius: '12px',
+            border: '1px solid rgba(99, 102, 241, 0.15)',
             display: 'flex',
             alignItems: 'center',
-            gap: 1
+            gap: 1.5
           }}
         >
-          <AttachFile fontSize="small" />
+          {/* Show image thumbnail if it's an image */}
+          {selectedFile.type?.startsWith('image/') ? (
+            <Box
+              sx={{
+                width: 60,
+                height: 60,
+                borderRadius: '8px',
+                overflow: 'hidden',
+                flexShrink: 0,
+                border: '1px solid rgba(99, 102, 241, 0.2)'
+              }}
+            >
+              <img
+                src={URL.createObjectURL(selectedFile)}
+                alt="Preview"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }}
+              />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}
+            >
+              <AttachFile sx={{ color: '#6366f1' }} />
+            </Box>
+          )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="body2" sx={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 600,
+                color: '#1e293b',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                mb: 0.25
+              }}
+            >
               {selectedFile.name}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {(selectedFile.size / 1024).toFixed(2)} KB
+            <Typography variant="caption" sx={{ color: '#64748b' }}>
+              {(selectedFile.size / 1024).toFixed(1)} KB
+              {selectedFile.name?.startsWith('clipboard-') && (
+                <Box component="span" sx={{ ml: 1, color: '#6366f1' }}>
+                  📋 Panodan yapıştırıldı
+                </Box>
+              )}
             </Typography>
           </Box>
-          <IconButton size="small" onClick={handleRemoveFile}>
+          <IconButton
+            size="small"
+            onClick={handleRemoveFile}
+            sx={{
+              color: '#94a3b8',
+              '&:hover': {
+                color: '#ef4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)'
+              }
+            }}
+          >
             <Close fontSize="small" />
           </IconButton>
         </Box>
@@ -528,6 +668,28 @@ const ChatComposer = ({
               </IconButton>
             </Tooltip>
 
+            {/* Canned Responses Button */}
+            <Tooltip title="Hazır Yanıtlar">
+              <IconButton
+                size="small"
+                onClick={(e) => setCannedResponsesAnchorEl(e.currentTarget)}
+                disabled={disabled}
+                sx={{
+                  color: '#a0aec0',
+                  backgroundColor: 'rgba(100, 150, 200, 0.08)',
+                  borderRadius: '10px',
+                  '&:hover': {
+                    color: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    transform: 'scale(1.03)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <QuickReplyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+
             {/* Hidden File Input */}
             <input
               ref={fileInputRef}
@@ -688,6 +850,84 @@ const ChatComposer = ({
           previewPosition="none"
           skinTonePosition="search"
         />
+      </Popover>
+
+      {/* Canned Responses Popover */}
+      <Popover
+        open={Boolean(cannedResponsesAnchorEl)}
+        anchorEl={cannedResponsesAnchorEl}
+        onClose={() => setCannedResponsesAnchorEl(null)}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            maxHeight: 400,
+            width: 320
+          }
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <QuickReplyIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1e293b' }}>
+              Hazır Yanıtlar
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {cannedResponses.map((response) => (
+              <Box
+                key={response.id}
+                onClick={() => handleCannedResponseSelect(response)}
+                sx={{
+                  p: 1.5,
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  border: '1px solid #e2e8f0',
+                  backgroundColor: '#fff',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    borderColor: '#f59e0b',
+                    transform: 'translateX(4px)'
+                  }
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                    color: '#f59e0b',
+                    fontSize: '13px',
+                    mb: 0.5
+                  }}
+                >
+                  {response.title}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#64748b',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    lineHeight: 1.4
+                  }}
+                >
+                  {response.text}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
       </Popover>
     </Paper>
   );

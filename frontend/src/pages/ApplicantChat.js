@@ -13,9 +13,12 @@ import {
   Container,
   Alert,
   Divider,
-  Button
+  Button,
+  Tabs,
+  Tab,
+  Badge
 } from '@mui/material';
-import { Send, ArrowBack } from '@mui/icons-material';
+import { Send, ArrowBack, Group as GroupIcon, Person as PersonIcon } from '@mui/icons-material';
 import VideoCallModal from '../components/chat/VideoCallModal';
 import MessageContent from '../components/chat/MessageContent';
 import webSocketService from '../services/webSocketService';
@@ -41,6 +44,12 @@ function ApplicantChat() {
   // Video Call States
   const [incomingCall, setIncomingCall] = useState(null);
   const [activeCall, setActiveCall] = useState(null);
+
+  // Group Chat States
+  const [groups, setGroups] = useState([]);
+  const [activeTab, setActiveTab] = useState(0); // 0: HR Chat, 1: Groups
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupMessages, setGroupMessages] = useState([]);
 
   // Otomatik scroll fonksiyonu
   const scrollToBottom = useCallback((instant = false) => {
@@ -95,6 +104,30 @@ function ApplicantChat() {
 
     loadProfile();
   }, [chatToken]);
+
+  // Load groups for applicant
+  useEffect(() => {
+    const loadGroups = async () => {
+      if (!applicantInfo?.id) return;
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/chat/api/groups/?member_type=applicant&member_id=${applicantInfo.id}`,
+          { credentials: 'include' }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📥 Applicant groups loaded:', data);
+          setGroups(data);
+        }
+      } catch (error) {
+        console.error('Error loading groups:', error);
+      }
+    };
+
+    loadGroups();
+  }, [applicantInfo?.id]);
 
   // WebSocket bağlantısını kur
   useEffect(() => {
@@ -521,6 +554,52 @@ function ApplicantChat() {
           </Button>
         </Box>
 
+        {/* Tabs - Only show if there are groups */}
+        {groups.length > 0 && (
+          <Box sx={{ px: 2, borderBottom: '1px solid rgba(28, 97, 171, 0.1)' }}>
+            <Tabs
+              value={activeTab}
+              onChange={(e, v) => { setActiveTab(v); setSelectedGroup(null); }}
+              sx={{
+                minHeight: 40,
+                '& .MuiTabs-indicator': {
+                  background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
+                  height: 3
+                }
+              }}
+            >
+              <Tab
+                icon={<PersonIcon sx={{ fontSize: 18 }} />}
+                iconPosition="start"
+                label="İK ile Sohbet"
+                sx={{
+                  minHeight: 40,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&.Mui-selected': { color: '#1c61ab' }
+                }}
+              />
+              <Tab
+                icon={
+                  <Badge badgeContent={groups.length} color="primary" sx={{ '& .MuiBadge-badge': { fontSize: 10 } }}>
+                    <GroupIcon sx={{ fontSize: 18 }} />
+                  </Badge>
+                }
+                iconPosition="start"
+                label="Gruplar"
+                sx={{
+                  minHeight: 40,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&.Mui-selected': { color: '#1c61ab' }
+                }}
+              />
+            </Tabs>
+          </Box>
+        )}
+
         {/* Connection Error */}
         {error && applicantInfo && (
           <Alert severity="warning" sx={{ m: 1 }}>
@@ -528,6 +607,10 @@ function ApplicantChat() {
           </Alert>
         )}
 
+        {/* Tab Content */}
+        {activeTab === 0 ? (
+          /* Tab 0: HR Chat */
+          <>
         {/* Mesaj Listesi */}
         <Box sx={{
           flex: 1,
@@ -707,6 +790,75 @@ function ApplicantChat() {
             </IconButton>
           </Box>
         </Box>
+          </>
+        ) : (
+          /* Tab 1: Groups */
+          <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
+            {groups.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <GroupIcon sx={{ fontSize: 48, color: '#9ca3af', mb: 2 }} />
+                <Typography variant="body1" color="text.secondary">
+                  Henüz bir gruba dahil değilsiniz
+                </Typography>
+              </Box>
+            ) : (
+              <List>
+                {groups.map((group) => (
+                  <ListItem
+                    key={group.id || group.room_id}
+                    onClick={() => setSelectedGroup(group)}
+                    sx={{
+                      mb: 1,
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      background: selectedGroup?.id === group.id
+                        ? 'linear-gradient(135deg, rgba(28, 97, 171, 0.1), rgba(139, 185, 74, 0.1))'
+                        : 'rgba(255, 255, 255, 0.9)',
+                      border: '1px solid rgba(28, 97, 171, 0.1)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.05), rgba(139, 185, 74, 0.05))'
+                      }
+                    }}
+                  >
+                    <Avatar sx={{
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      mr: 2
+                    }}>
+                      <GroupIcon />
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        {group.room_name || group.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {group.member_count || group.memberCount || 0} üye
+                      </Typography>
+                    </Box>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+
+            {/* Group Chat View - Coming Soon */}
+            {selectedGroup && (
+              <Box sx={{
+                mt: 2,
+                p: 3,
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.05), rgba(139, 185, 74, 0.05))',
+                border: '1px solid rgba(28, 97, 171, 0.1)',
+                textAlign: 'center'
+              }}>
+                <Typography variant="h6" sx={{ mb: 1 }}>
+                  {selectedGroup.room_name || selectedGroup.name}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Grup sohbeti özelliği yakında aktif olacaktır.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
       </Paper>
 
       {/* Incoming Call Notification */}

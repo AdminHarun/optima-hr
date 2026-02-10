@@ -37,6 +37,11 @@ const ChatRoom = sequelize.define('ChatRoom', {
     allowNull: true,
     comment: 'Custom room name for group chats'
   },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Description for group chats'
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,

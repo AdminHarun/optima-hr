@@ -15,7 +15,10 @@ import {
 import {
   ArrowBack,
   MoreVert,
-  VideoCall as VideoCallIcon
+  VideoCall as VideoCallIcon,
+  SignalWifiOff as DisconnectedIcon,
+  SignalWifi4Bar as ConnectedIcon,
+  CloudUpload as DropIcon
 } from '@mui/icons-material';
 import MessageList from './MessageList';
 import ChatComposer from './ChatComposer';
@@ -43,6 +46,7 @@ const ChatRoom = ({
   participantEmail,
   participantId,
   participantOnline = false,
+  isConnected = true,
   messages = [],
   currentUserId,
   currentUserName,
@@ -63,8 +67,15 @@ const ChatRoom = ({
   onPinMessage,
   onBack,
   onVideoCall,
-  onLoadMore
+  onLoadMore,
+  isGroup = false,
+  memberCount = 0,
+  groupDescription = null
 }) => {
+  // Drag and drop state
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragFile, setDragFile] = useState(null);
+  const dragCounterRef = useRef(0);
   // Get avatar initials
   const getInitials = (firstName, lastName) => {
     const first = firstName?.[0] || '';
@@ -84,6 +95,44 @@ const ChatRoom = ({
   // Handle typing indicator from current user
   const handleTyping = useCallback((typing) => {
     setIsTyping(typing);
+  }, []);
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    dragCounterRef.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0]; // Take first file
+      setDragFile(file);
+      console.log('📁 File dropped:', file.name, file.type);
+    }
   }, []);
 
   // Send message handler
@@ -133,7 +182,69 @@ const ChatRoom = ({
         overflow: 'hidden',
         position: 'relative'
       }}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
+      {/* Drag & Drop Overlay */}
+      {isDragOver && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 100,
+            backgroundColor: 'rgba(99, 102, 241, 0.95)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+            pointerEvents: 'none'
+          }}
+        >
+          <Box
+            sx={{
+              width: 100,
+              height: 100,
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'pulse 1.5s ease-in-out infinite',
+              '@keyframes pulse': {
+                '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+                '50%': { transform: 'scale(1.1)', opacity: 0.8 }
+              }
+            }}
+          >
+            <DropIcon sx={{ fontSize: 48, color: '#fff' }} />
+          </Box>
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#fff',
+              fontWeight: 600,
+              textAlign: 'center'
+            }}
+          >
+            Dosyayı buraya bırakın
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.8)',
+              textAlign: 'center'
+            }}
+          >
+            Resim, video veya belge yükleyebilirsiniz
+          </Typography>
+        </Box>
+      )}
       {/* Chat Header - Modern & Soft */}
       <Paper
         elevation={0}
@@ -171,49 +282,66 @@ const ChatRoom = ({
             </IconButton>
           )}
 
-          {/* Participant Avatar with Online Status */}
-          <Badge
-            overlap="circular"
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            variant="dot"
-            sx={{
-              '& .MuiBadge-badge': {
-                backgroundColor: participantOnline ? '#48bb78' : '#cbd5e0',
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                border: '1.5px solid white',
-                boxShadow: participantOnline ? '0 0 0 2px rgba(72, 187, 120, 0.2)' : 'none'
-              }
-            }}
-          >
+          {/* Avatar - Different for group vs individual */}
+          {isGroup ? (
             <Avatar
-              src={participantAvatar}
-              alt={participantName}
               sx={{
                 width: 32,
                 height: 32,
-                background: 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                 fontSize: '14px',
                 fontWeight: 600,
-                boxShadow: '0 1px 4px rgba(100, 150, 200, 0.12)',
-                cursor: 'pointer',
-                '&:hover': {
-                  transform: 'scale(1.03)',
-                  boxShadow: '0 2px 8px rgba(100, 150, 200, 0.18)'
-                },
-                transition: 'all 0.2s ease'
+                boxShadow: '0 1px 4px rgba(99, 102, 241, 0.2)'
               }}
             >
-              {getInitials(participantFirstName, participantLastName)}
+              <Box component="span" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                👥
+              </Box>
             </Avatar>
-          </Badge>
+          ) : (
+            <Badge
+              overlap="circular"
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              variant="dot"
+              sx={{
+                '& .MuiBadge-badge': {
+                  backgroundColor: participantOnline ? '#48bb78' : '#cbd5e0',
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  border: '1.5px solid white',
+                  boxShadow: participantOnline ? '0 0 0 2px rgba(72, 187, 120, 0.2)' : 'none'
+                }
+              }}
+            >
+              <Avatar
+                src={participantAvatar}
+                alt={participantName}
+                sx={{
+                  width: 32,
+                  height: 32,
+                  background: 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  boxShadow: '0 1px 4px rgba(100, 150, 200, 0.12)',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'scale(1.03)',
+                    boxShadow: '0 2px 8px rgba(100, 150, 200, 0.18)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {getInitials(participantFirstName, participantLastName)}
+              </Avatar>
+            </Badge>
+          )}
 
           {/* Room Info */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               variant="subtitle1"
-              onClick={() => participantId && setShowProfileModal(true)}
+              onClick={() => !isGroup && participantId && setShowProfileModal(true)}
               sx={{
                 fontWeight: 600,
                 fontSize: '15px',
@@ -222,9 +350,9 @@ const ChatRoom = ({
                 whiteSpace: 'nowrap',
                 color: '#2d3748',
                 letterSpacing: '-0.2px',
-                cursor: participantId ? 'pointer' : 'default',
+                cursor: !isGroup && participantId ? 'pointer' : 'default',
                 transition: 'color 0.2s ease',
-                '&:hover': participantId ? {
+                '&:hover': !isGroup && participantId ? {
                   color: '#5a9fd4',
                   textDecoration: 'underline',
                   textUnderlineOffset: '3px'
@@ -236,7 +364,7 @@ const ChatRoom = ({
             <Typography
               variant="caption"
               sx={{
-                color: participantOnline ? '#48bb78' : '#a0aec0',
+                color: isGroup ? '#6b7280' : (participantOnline ? '#48bb78' : '#a0aec0'),
                 fontSize: '12px',
                 fontWeight: 500,
                 display: 'flex',
@@ -244,40 +372,97 @@ const ChatRoom = ({
                 gap: 0.5
               }}
             >
-              <Box
-                component="span"
-                sx={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: '50%',
-                  bgcolor: participantOnline ? '#48bb78' : '#cbd5e0',
-                  display: 'inline-block'
-                }}
-              />
-              {participantOnline ? 'Çevrimiçi' : 'Çevrimdışı'}
+              {isGroup ? (
+                <>
+                  {memberCount} üye
+                  {groupDescription && (
+                    <Box component="span" sx={{ mx: 0.5 }}>•</Box>
+                  )}
+                  {groupDescription && (
+                    <Box
+                      component="span"
+                      sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        maxWidth: 200
+                      }}
+                    >
+                      {groupDescription}
+                    </Box>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      bgcolor: participantOnline ? '#48bb78' : '#cbd5e0',
+                      display: 'inline-block'
+                    }}
+                  />
+                  {participantOnline ? 'Çevrimiçi' : 'Çevrimdışı'}
+                </>
+              )}
             </Typography>
           </Box>
 
-          {/* Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            {/* Video Call Button */}
-            <IconButton
-              onClick={handleVideoCallClick}
+          {/* Connection Status & Action Buttons */}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {/* Connection Status Indicator */}
+            <Box
               sx={{
-                color: '#5a9fd4',
-                backgroundColor: 'rgba(90, 159, 212, 0.1)',
-                borderRadius: '12px',
-                width: 40,
-                height: 40,
-                '&:hover': {
-                  backgroundColor: 'rgba(90, 159, 212, 0.15)',
-                  transform: 'scale(1.05)'
-                },
-                transition: 'all 0.2s ease'
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: '8px',
+                backgroundColor: isConnected ? 'rgba(72, 187, 120, 0.1)' : 'rgba(245, 101, 101, 0.1)',
+                transition: 'all 0.3s ease'
               }}
             >
-              <VideoCallIcon sx={{ fontSize: 22 }} />
-            </IconButton>
+              {isConnected ? (
+                <ConnectedIcon sx={{ fontSize: 14, color: '#48bb78' }} />
+              ) : (
+                <DisconnectedIcon sx={{ fontSize: 14, color: '#f56565' }} />
+              )}
+              <Typography
+                variant="caption"
+                sx={{
+                  color: isConnected ? '#48bb78' : '#f56565',
+                  fontWeight: 500,
+                  fontSize: '11px'
+                }}
+              >
+                {isConnected ? 'Bağlı' : 'Bağlantı Yok'}
+              </Typography>
+            </Box>
+
+            {/* Video Call Button - Hidden for groups */}
+            {!isGroup && onVideoCall && (
+              <IconButton
+                onClick={handleVideoCallClick}
+                disabled={!isConnected}
+                sx={{
+                  color: isConnected ? '#5a9fd4' : '#a0aec0',
+                  backgroundColor: isConnected ? 'rgba(90, 159, 212, 0.1)' : 'rgba(160, 174, 192, 0.1)',
+                  borderRadius: '12px',
+                  width: 40,
+                  height: 40,
+                  '&:hover': {
+                    backgroundColor: isConnected ? 'rgba(90, 159, 212, 0.15)' : 'rgba(160, 174, 192, 0.1)',
+                    transform: isConnected ? 'scale(1.05)' : 'none'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <VideoCallIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            )}
 
             {/* More Options */}
             <IconButton
@@ -480,6 +665,8 @@ const ChatRoom = ({
             placeholder={`Message ${participantName || 'recipient'}...`}
             replyingTo={replyingTo}
             onCancelReply={() => setReplyingTo(null)}
+            droppedFile={dragFile}
+            onDroppedFileHandled={() => setDragFile(null)}
           />
         </>
       )}

@@ -1,17 +1,14 @@
-// IncomingCallNotification.js - Rocket.Chat inspired with Optima branding
+// IncomingCallNotification.js - Modern slide-in call notification
 import React, { useEffect, useState } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  IconButton,
+  Slide,
+  Paper,
   Box,
   Avatar,
   Typography,
-  LinearProgress,
-  Tooltip
+  IconButton,
+  Tooltip,
+  LinearProgress
 } from '@mui/material';
 import {
   VideoCall,
@@ -20,13 +17,12 @@ import {
   MicOff,
   Videocam,
   VideocamOff,
-  VolumeOff
+  PhoneInTalk
 } from '@mui/icons-material';
-import optimaColors from '../../theme/colors';
 
 const CALL_TIMEOUT_SECONDS = 30;
 
-const IncomingCallNotification = ({ callData, onAccept, onReject, position = 0 }) => {
+const IncomingCallNotification = ({ callData, onAccept, onReject }) => {
   const [open, setOpen] = useState(!!callData);
   const [micEnabled, setMicEnabled] = useState(true);
   const [camEnabled, setCamEnabled] = useState(true);
@@ -36,32 +32,46 @@ const IncomingCallNotification = ({ callData, onAccept, onReject, position = 0 }
     setOpen(!!callData);
 
     if (callData) {
-      // Reset preferences
       setMicEnabled(true);
       setCamEnabled(true);
       setTimeRemaining(CALL_TIMEOUT_SECONDS);
 
-      // Optional: Add ring tone
-      // const audio = new Audio('/sounds/ring.mp3');
-      // audio.loop = true;
-      // audio.play();
+      // Play ringtone
+      try {
+        const audio = new Audio('/sounds/ringtone.mp3');
+        audio.loop = true;
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
 
-      // Countdown timer
-      const interval = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            handleReject(); // Auto-reject on timeout
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+        const interval = setInterval(() => {
+          setTimeRemaining(prev => {
+            if (prev <= 1) {
+              handleReject();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
 
-      return () => {
-        clearInterval(interval);
-        // audio.pause();
-        // audio.currentTime = 0;
-      };
+        return () => {
+          clearInterval(interval);
+          audio.pause();
+          audio.currentTime = 0;
+        };
+      } catch (e) {
+        // Audio not available
+        const interval = setInterval(() => {
+          setTimeRemaining(prev => {
+            if (prev <= 1) {
+              handleReject();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(interval);
+      }
     }
   }, [callData]);
 
@@ -82,332 +92,302 @@ const IncomingCallNotification = ({ callData, onAccept, onReject, position = 0 }
     }
   };
 
-  const handleMuteAndDismiss = () => {
-    // Sessize al ve kapat
-    setOpen(false);
-    if (onReject && callData) {
-      onReject(callData.call_id, { muted: true });
-    }
-  };
-
-  const toggleMic = () => setMicEnabled(!micEnabled);
-  const toggleCam = () => setCamEnabled(!camEnabled);
-
   if (!callData) return null;
 
   const progress = (timeRemaining / CALL_TIMEOUT_SECONDS) * 100;
+  const isUrgent = timeRemaining <= 10;
 
   return (
-    <Dialog
-      open={open}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: '24px',
-          background: optimaColors.white,
-          boxShadow: '0 12px 40px rgba(79, 209, 197, 0.15)',
-          border: `2px solid ${optimaColors.turquoise100}`,
-          overflow: 'hidden',
-          position: 'relative',
-          top: `${position * 10}px`,
-          left: `${position * 10}px`,
-        }
-      }}
-    >
-      {/* Header */}
-      <DialogTitle
+    <Slide direction="down" in={open} mountOnEnter unmountOnExit>
+      <Paper
+        elevation={8}
         sx={{
-          textAlign: 'center',
-          pt: 3,
-          pb: 2,
-          position: 'relative',
-          background: `linear-gradient(180deg, ${optimaColors.turquoise50} 0%, ${optimaColors.lightBlue50} 100%)`,
-          borderBottom: `1px solid ${optimaColors.border}`
+          position: 'fixed',
+          top: 20,
+          right: 20,
+          zIndex: 9999,
+          width: 380,
+          borderRadius: '20px',
+          overflow: 'hidden',
+          background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+          border: '1px solid rgba(99, 102, 241, 0.1)',
+          boxShadow: '0 20px 60px rgba(99, 102, 241, 0.25), 0 0 0 1px rgba(99, 102, 241, 0.1)'
         }}
       >
+        {/* Animated gradient border */}
         <Box
           sx={{
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: optimaColors.turquoiseGradient,
+            height: 4,
+            background: isUrgent
+              ? 'linear-gradient(90deg, #ef4444 0%, #f97316 50%, #ef4444 100%)'
+              : 'linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #6366f1 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'gradientMove 2s linear infinite'
+          }}
+        />
+
+        {/* Header with caller info */}
+        <Box sx={{ p: 2.5, pb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Animated avatar */}
+            <Box sx={{ position: 'relative' }}>
+              <Avatar
+                sx={{
+                  width: 60,
+                  height: 60,
+                  background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                  fontSize: 24,
+                  fontWeight: 700,
+                  boxShadow: '0 4px 20px rgba(99, 102, 241, 0.3)'
+                }}
+              >
+                {callData.caller_name?.[0]?.toUpperCase() || 'A'}
+              </Avatar>
+              {/* Pulsing ring */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -4,
+                  left: -4,
+                  right: -4,
+                  bottom: -4,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(99, 102, 241, 0.4)',
+                  animation: 'pulseRing 1.5s ease-out infinite'
+                }}
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -8,
+                  left: -8,
+                  right: -8,
+                  bottom: -8,
+                  borderRadius: '50%',
+                  border: '2px solid rgba(99, 102, 241, 0.2)',
+                  animation: 'pulseRing 1.5s ease-out infinite 0.3s'
+                }}
+              />
+            </Box>
+
+            {/* Caller info */}
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <PhoneInTalk
+                  sx={{
+                    fontSize: 16,
+                    color: '#6366f1',
+                    animation: 'shake 0.5s ease-in-out infinite'
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#6366f1',
+                    fontWeight: 600,
+                    fontSize: '12px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  Gelen Arama
+                </Typography>
+              </Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: '#1e293b',
+                  fontSize: '18px',
+                  lineHeight: 1.2
+                }}
+              >
+                {callData.caller_name || 'Admin'}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: '#64748b',
+                  fontSize: '13px'
+                }}
+              >
+                {callData.caller_type === 'admin' ? 'Yönetici' : 'Başvuru Sahibi'} • Görüntülü Görüşme
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Media preferences */}
+        <Box
+          sx={{
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 16px',
-            animation: 'pulse 2s ease-in-out infinite',
-            boxShadow: `0 4px 20px ${optimaColors.turquoise200}`
+            gap: 1.5,
+            py: 1.5,
+            px: 2.5,
+            bgcolor: 'rgba(99, 102, 241, 0.04)',
+            borderTop: '1px solid rgba(99, 102, 241, 0.08)',
+            borderBottom: '1px solid rgba(99, 102, 241, 0.08)'
           }}
         >
-          <VideoCall
+          <Tooltip title={micEnabled ? 'Mikrofonu Kapat' : 'Mikrofonu Aç'} arrow>
+            <IconButton
+              onClick={() => setMicEnabled(!micEnabled)}
+              size="small"
+              sx={{
+                width: 44,
+                height: 44,
+                bgcolor: micEnabled ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                color: micEnabled ? '#10b981' : '#ef4444',
+                border: `1.5px solid ${micEnabled ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                '&:hover': {
+                  bgcolor: micEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {micEnabled ? <Mic sx={{ fontSize: 22 }} /> : <MicOff sx={{ fontSize: 22 }} />}
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={camEnabled ? 'Kamerayı Kapat' : 'Kamerayı Aç'} arrow>
+            <IconButton
+              onClick={() => setCamEnabled(!camEnabled)}
+              size="small"
+              sx={{
+                width: 44,
+                height: 44,
+                bgcolor: camEnabled ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                color: camEnabled ? '#3b82f6' : '#ef4444',
+                border: `1.5px solid ${camEnabled ? 'rgba(59, 130, 246, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                '&:hover': {
+                  bgcolor: camEnabled ? 'rgba(59, 130, 246, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  transform: 'scale(1.05)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {camEnabled ? <Videocam sx={{ fontSize: 22 }} /> : <VideocamOff sx={{ fontSize: 22 }} />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Timeout progress */}
+        <Box sx={{ px: 2.5, py: 1.5 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
+            <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '11px' }}>
+              Otomatik reddetme
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: isUrgent ? '#ef4444' : '#6366f1',
+                fontWeight: 700,
+                fontSize: '12px'
+              }}
+            >
+              {timeRemaining} saniye
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={progress}
             sx={{
-              fontSize: 48,
-              color: optimaColors.white
+              height: 4,
+              borderRadius: 2,
+              bgcolor: 'rgba(99, 102, 241, 0.1)',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 2,
+                background: isUrgent
+                  ? 'linear-gradient(90deg, #ef4444 0%, #f97316 100%)'
+                  : 'linear-gradient(90deg, #6366f1 0%, #a855f7 100%)',
+                transition: 'transform 1s linear'
+              }
             }}
           />
         </Box>
-        <Typography
-          variant="h6"
-          fontWeight="600"
-          sx={{
-            color: optimaColors.textPrimary,
-            mb: 0.5
-          }}
-        >
-          📞 Gelen Arama
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: optimaColors.textSecondary,
-            fontSize: '14px'
-          }}
-        >
-          Görüntülü görüşme talebi
-        </Typography>
-      </DialogTitle>
 
-      {/* Mic/Cam Controllers - Rocket.Chat Style */}
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 1.5,
-          py: 2,
-          px: 3,
-          borderBottom: `1px solid ${optimaColors.borderLight}`
-        }}
-      >
-        <Tooltip title={micEnabled ? 'Mikrofonu Kapat' : 'Mikrofonu Aç'}>
+        {/* Action buttons */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1.5,
+            p: 2.5,
+            pt: 1.5
+          }}
+        >
           <IconButton
-            onClick={toggleMic}
+            onClick={handleReject}
             sx={{
-              width: 56,
-              height: 56,
-              background: micEnabled
-                ? optimaColors.turquoise100
-                : optimaColors.red100,
-              color: micEnabled ? optimaColors.turquoise : optimaColors.red,
-              border: `2px solid ${micEnabled ? optimaColors.turquoise200 : optimaColors.red200}`,
+              flex: 1,
+              height: 52,
+              borderRadius: '14px',
+              bgcolor: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              border: '1.5px solid rgba(239, 68, 68, 0.2)',
+              gap: 1,
               '&:hover': {
-                background: micEnabled
-                  ? optimaColors.turquoise200
-                  : optimaColors.red200,
-                transform: 'scale(1.05)'
+                bgcolor: '#ef4444',
+                color: '#fff',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 20px rgba(239, 68, 68, 0.3)'
               },
               transition: 'all 0.2s ease'
             }}
           >
-            {micEnabled ? <Mic sx={{ fontSize: 28 }} /> : <MicOff sx={{ fontSize: 28 }} />}
+            <CallEnd sx={{ fontSize: 24 }} />
+            <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>Reddet</Typography>
           </IconButton>
-        </Tooltip>
 
-        <Tooltip title={camEnabled ? 'Kamerayı Kapat' : 'Kamerayı Aç'}>
           <IconButton
-            onClick={toggleCam}
+            onClick={handleAccept}
             sx={{
-              width: 56,
-              height: 56,
-              background: camEnabled
-                ? optimaColors.lightBlue100
-                : optimaColors.red100,
-              color: camEnabled ? optimaColors.lightBlue : optimaColors.red,
-              border: `2px solid ${camEnabled ? optimaColors.lightBlue200 : optimaColors.red200}`,
+              flex: 1,
+              height: 52,
+              borderRadius: '14px',
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: '#fff',
+              gap: 1,
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
               '&:hover': {
-                background: camEnabled
-                  ? optimaColors.lightBlue200
-                  : optimaColors.red200,
-                transform: 'scale(1.05)'
+                background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 25px rgba(16, 185, 129, 0.5)'
               },
               transition: 'all 0.2s ease'
             }}
           >
-            {camEnabled ? <Videocam sx={{ fontSize: 28 }} /> : <VideocamOff sx={{ fontSize: 28 }} />}
+            <VideoCall sx={{ fontSize: 24 }} />
+            <Typography sx={{ fontWeight: 600, fontSize: '14px' }}>Kabul Et</Typography>
           </IconButton>
-        </Tooltip>
-      </Box>
-
-      {/* Caller Info */}
-      <DialogContent sx={{ textAlign: 'center', pb: 2, pt: 3 }}>
-        <Avatar
-          sx={{
-            width: 100,
-            height: 100,
-            margin: '0 auto 16px',
-            background: optimaColors.primaryGradient,
-            color: optimaColors.white,
-            fontSize: 40,
-            fontWeight: '600',
-            boxShadow: `0 6px 20px ${optimaColors.lightBlue200}`,
-            border: `3px solid ${optimaColors.white}`
-          }}
-        >
-          {callData.caller_name?.[0]?.toUpperCase() || 'A'}
-        </Avatar>
-        <Typography
-          variant="h5"
-          fontWeight="600"
-          sx={{
-            color: optimaColors.textPrimary,
-            mb: 0.5
-          }}
-        >
-          {callData.caller_name || 'Admin'}
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: optimaColors.textSecondary,
-            fontSize: '15px',
-            mb: 1
-          }}
-        >
-          {callData.caller_type === 'admin' ? 'Yönetici' : 'Başvuru Sahibi'}
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: optimaColors.turquoise,
-            fontSize: '16px',
-            fontWeight: 500
-          }}
-        >
-          sizi arıyor...
-        </Typography>
-      </DialogContent>
-
-      {/* Timeout Progress Bar - Rocket.Chat Inspired */}
-      <Box sx={{ px: 3, pb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-          <Typography variant="caption" sx={{ color: optimaColors.textMuted, fontSize: '12px' }}>
-            Otomatik red
-          </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: timeRemaining <= 10 ? optimaColors.red : optimaColors.turquoise,
-              fontSize: '13px',
-              fontWeight: 600
-            }}
-          >
-            {timeRemaining}s
-          </Typography>
         </Box>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          sx={{
-            height: 6,
-            borderRadius: 3,
-            backgroundColor: optimaColors.lightBlue50,
-            '& .MuiLinearProgress-bar': {
-              borderRadius: 3,
-              background: timeRemaining <= 10
-                ? optimaColors.red
-                : optimaColors.turquoiseGradient
+
+        {/* Animations */}
+        <style>{`
+          @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes pulseRing {
+            0% {
+              transform: scale(1);
+              opacity: 1;
             }
-          }}
-        />
-      </Box>
-
-      {/* Action Buttons */}
-      <DialogActions
-        sx={{
-          justifyContent: 'center',
-          pb: 3,
-          pt: 1,
-          gap: 1.5,
-          px: 3
-        }}
-      >
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleReject}
-          startIcon={<CallEnd />}
-          sx={{
-            bgcolor: optimaColors.white,
-            color: optimaColors.red,
-            px: 3,
-            py: 1.5,
-            fontSize: '15px',
-            fontWeight: 600,
-            borderRadius: '16px',
-            textTransform: 'none',
-            boxShadow: `0 4px 12px ${optimaColors.red100}`,
-            border: `2px solid ${optimaColors.red200}`,
-            '&:hover': {
-              bgcolor: optimaColors.red50,
-              transform: 'translateY(-2px)',
-              boxShadow: `0 6px 16px ${optimaColors.red200}`,
-              border: `2px solid ${optimaColors.red300}`
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          Reddet
-        </Button>
-
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleAccept}
-          startIcon={<VideoCall />}
-          sx={{
-            background: optimaColors.callAccentGradient,
-            color: optimaColors.white,
-            px: 3,
-            py: 1.5,
-            fontSize: '15px',
-            fontWeight: 600,
-            borderRadius: '16px',
-            textTransform: 'none',
-            boxShadow: `0 4px 16px ${optimaColors.turquoise200}`,
-            border: 'none',
-            '&:hover': {
-              background: optimaColors.turquoiseGradient,
-              transform: 'translateY(-2px)',
-              boxShadow: `0 6px 20px ${optimaColors.turquoise300}`
-            },
-            transition: 'all 0.2s ease'
-          }}
-        >
-          Kabul Et
-        </Button>
-
-        <Tooltip title="Sessize al ve kapat">
-          <IconButton
-            onClick={handleMuteAndDismiss}
-            sx={{
-              color: optimaColors.textMuted,
-              bgcolor: optimaColors.lightBlue50,
-              border: `1px solid ${optimaColors.borderLight}`,
-              '&:hover': {
-                bgcolor: optimaColors.lightBlue100,
-                color: optimaColors.textSecondary
-              }
-            }}
-          >
-            <VolumeOff />
-          </IconButton>
-        </Tooltip>
-      </DialogActions>
-
-      {/* Pulse Animation */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 4px 20px ${optimaColors.turquoise200};
+            100% {
+              transform: scale(1.4);
+              opacity: 0;
+            }
           }
-          50% {
-            transform: scale(1.05);
-            box-shadow: 0 6px 30px ${optimaColors.turquoise300};
+          @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
           }
-        }
-      `}</style>
-    </Dialog>
+        `}</style>
+      </Paper>
+    </Slide>
   );
 };
 

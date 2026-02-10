@@ -488,37 +488,55 @@ class ChatWebSocketService {
   }
 
   async getOrCreateRoom(roomIdentifier) {
-    // Parse room identifier (e.g., "applicant_123")
-    const [roomType, applicantId] = roomIdentifier.split('_');
+    // Parse room identifier (e.g., "applicant_123" or "group_4")
+    const [roomType, id] = roomIdentifier.split('_');
 
-    if (roomType !== 'applicant') {
+    if (roomType === 'group') {
+      // Group chat room - just find it, don't create
+      const roomId = parseInt(id);
+      let room = await ChatRoom.findOne({
+        where: {
+          id: roomId,
+          room_type: 'group',
+          is_active: true
+        }
+      });
+
+      if (!room) {
+        throw new Error(`Group room not found: ${roomId}`);
+      }
+
+      return room;
+    } else if (roomType === 'applicant') {
+      const applicantId = parseInt(id);
+
+      // Find or create room
+      let room = await ChatRoom.findOne({
+        where: {
+          room_type: 'applicant',
+          applicant_id: applicantId
+        }
+      });
+
+      if (!room) {
+        // Get applicant profile information
+        const ApplicantProfile = require('../models/ApplicantProfile');
+        const profile = await ApplicantProfile.findByPk(applicantId);
+
+        room = await ChatRoom.create({
+          room_type: 'applicant',
+          applicant_id: applicantId,
+          applicant_email: profile?.email || `applicant_${applicantId}@temp.com`,
+          applicant_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+          is_active: true
+        });
+        console.log(`✅ Created new chat room for applicant ${applicantId} (${room.applicant_name})`);
+      }
+
+      return room;
+    } else {
       throw new Error(`Unsupported room type: ${roomType}`);
     }
-
-    // Find or create room
-    let room = await ChatRoom.findOne({
-      where: {
-        room_type: 'applicant',
-        applicant_id: parseInt(applicantId)
-      }
-    });
-
-    if (!room) {
-      // Get applicant profile information
-      const ApplicantProfile = require('../models/ApplicantProfile');
-      const profile = await ApplicantProfile.findByPk(parseInt(applicantId));
-
-      room = await ChatRoom.create({
-        room_type: 'applicant',
-        applicant_id: parseInt(applicantId),
-        applicant_email: profile?.email || `applicant_${applicantId}@temp.com`,
-        applicant_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
-        is_active: true
-      });
-      console.log(`✅ Created new chat room for applicant ${applicantId} (${room.applicant_name})`);
-    }
-
-    return room;
   }
 
   handleDisconnection(clientId, code, reason) {

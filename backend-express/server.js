@@ -138,6 +138,11 @@ const startServer = async () => {
       await addColumnIfNotExists('applicant_profiles', 'vpn_score', { type: 'INTEGER', allowNull: true, defaultValue: 0 });
       await addColumnIfNotExists('applicant_profiles', 'is_vpn', { type: 'BOOLEAN', allowNull: true, defaultValue: false });
       console.log('✅ Applicant device tracking columns checked');
+
+      // Chat message columns
+      console.log('🔄 Checking chat message columns...');
+      await addColumnIfNotExists('chat_messages', 'reply_to_message_id', { type: 'VARCHAR(100)', allowNull: true });
+      console.log('✅ Chat message columns checked');
     } catch (migrationErr) {
       console.log('⚠️ Site code migration note:', migrationErr.message);
     }

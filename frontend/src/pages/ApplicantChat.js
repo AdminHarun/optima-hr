@@ -15,8 +15,7 @@ import {
   Divider,
   Button
 } from '@mui/material';
-import { Send, EmojiEmotions, ArrowBack } from '@mui/icons-material';
-import Picker from '@emoji-mart/data';
+import { Send, ArrowBack } from '@mui/icons-material';
 import VideoCallModal from '../components/chat/VideoCallModal';
 import MessageContent from '../components/chat/MessageContent';
 import webSocketService from '../services/webSocketService';

@@ -8,7 +8,6 @@ class ChatWebSocketService {
     this.wss = null;
     this.clients = new Map(); // Map<clientId, {ws, roomId, userType, userId}>
     this.rooms = new Map(); // Map<roomId, Set<clientId>>
-    this.callTimeouts = new Map(); // Map<call_id, timeout> for 30-second expiry
     console.log('🔧 ChatWebSocketService initialized');
   }
 
@@ -641,32 +640,8 @@ class ChatWebSocketService {
         }
       }
 
-      // Set 30-second timeout for call expiry (Rocket.Chat style)
-      const timeout = setTimeout(async () => {
-        try {
-          console.log(`⏰ Call ${call_id} expired after 30 seconds`);
-          await videoCallService.expireCall(call_id);
-
-          // Notify all participants that call expired
-          const roomClients = this.rooms.get(room_id);
-          if (roomClients) {
-            for (const targetClientId of roomClients) {
-              this.sendToClient(targetClientId, {
-                type: 'video_call_expired',
-                call_id,
-                timestamp: new Date().toISOString()
-              });
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error expiring call:', error);
-        } finally {
-          this.callTimeouts.delete(call_id);
-        }
-      }, 30000); // 30 seconds
-
-      this.callTimeouts.set(call_id, timeout);
-      console.log(`⏰ Call ${call_id} will expire in 30 seconds`);
+      // Note: 30-second timeout removed - was causing issues with call cancellation/restart
+      console.log(`📞 Call ${call_id} initiated, waiting for response...`);
 
     } catch (error) {
       console.error('❌ Error handling video call request:', error);
@@ -689,13 +664,6 @@ class ChatWebSocketService {
     try {
       const roomClients = this.rooms.get(client.roomId);
       const videoCallService = require('./videoCallService');
-
-      // Cancel timeout if exists (call was answered before expiry)
-      if (this.callTimeouts.has(call_id)) {
-        clearTimeout(this.callTimeouts.get(call_id));
-        this.callTimeouts.delete(call_id);
-        console.log(`✅ Cancelled timeout for call ${call_id}`);
-      }
 
       if (action === 'accept') {
         // Mark call as accepted (calling -> active)
@@ -735,20 +703,8 @@ class ChatWebSocketService {
           const adminToken = await dailycoService.createMeetingToken(roomName, adminName, true);
           const applicantToken = await dailycoService.createMeetingToken(roomName, applicantName, false);
 
-          // Update video call with Daily.co room info
-          const { Pool } = require('pg');
-          const pool = new Pool({
-            host: process.env.DB_HOST || 'localhost',
-            port: process.env.DB_PORT || 5432,
-            database: process.env.DB_NAME || 'optima_hr',
-            user: process.env.DB_USER || 'postgres',
-            password: process.env.DB_PASSWORD || ''
-          });
-
-          await pool.query(
-            `UPDATE video_calls SET daily_room_name = $1, daily_room_url = $2 WHERE call_id = $3`,
-            [roomName, room.url, call_id]
-          );
+          // Update video call with Daily.co room info using videoCallService
+          await videoCallService.updateDailyRoomInfo(call_id, roomName, room.url);
 
           // Send to both participants with their respective tokens
           if (roomClients) {

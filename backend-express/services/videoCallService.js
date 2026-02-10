@@ -312,6 +312,30 @@ class VideoCallService {
   }
 
   /**
+   * Update Daily.co room info for a call
+   */
+  async updateDailyRoomInfo(callId, roomName, roomUrl) {
+    const query = `
+      UPDATE video_calls
+      SET daily_room_name = $1, daily_room_url = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE call_id = $3
+      RETURNING *
+    `;
+
+    try {
+      const result = await pool.query(query, [roomName, roomUrl, callId]);
+      if (result.rows.length > 0) {
+        console.log('📞 Daily room info updated for call:', callId);
+        return result.rows[0];
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Error updating daily room info:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Mark call as accepted and change status to active
    */
   async acceptCall(callId) {

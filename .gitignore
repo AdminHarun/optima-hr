@@ -9,11 +9,17 @@ dist/
 # Environment files (sensitive)
 .env
 .env.local
+.env.production
+.env.*.local
 backend-express/.env
+backend-express/.env.production
+frontend/.env
+frontend/.env.production
 
-# Keep production env template
+# Keep example templates
 !.env.example
-!.env.production
+!backend-express/.env.example
+!frontend/.env.example
 
 # OS files
 .DS_Store

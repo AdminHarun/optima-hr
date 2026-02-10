@@ -69,6 +69,11 @@ const ChatMessage = sequelize.define('ChatMessage', {
     allowNull: true,
     comment: 'ID of message this is replying to'
   },
+  reply_to_message_id: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Message ID of the replied message (for WebSocket compatibility)'
+  },
   status: {
     type: DataTypes.ENUM('sent', 'delivered', 'read', 'failed'),
     allowNull: false,
@@ -135,6 +140,9 @@ const ChatMessage = sequelize.define('ChatMessage', {
     },
     {
       fields: ['reply_to_id']
+    },
+    {
+      fields: ['reply_to_message_id']
     }
   ]
 });

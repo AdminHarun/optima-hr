@@ -213,45 +213,41 @@ function ApplicantCabinet() {
     prevMessageCountRef.current = messages.length;
   }, [messages.length, scrollToBottom]);
 
-  // Chat sekmesine gecildiginde baglanti kur
+  // Application yuklendikten sonra applicantInfo'yu ve WebSocket baglantisinı baslat
+  // Video call bildirimleri tum sayfalarda calisacak
   useEffect(() => {
-    if (activeTab !== 1 || !application?.chatToken) return;
+    if (!application?.chatToken) return;
 
-    const initChat = async () => {
-      setChatLoading(true);
-      setChatError(null);
-
+    const initApplicantInfo = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/applications/chat/${application.chatToken}`, {
           credentials: 'include'
         });
 
-        if (!response.ok) throw new Error('Chat yuklenemedi');
+        if (!response.ok) throw new Error('Applicant info yuklenemedi');
 
         const profileData = await response.json();
         setApplicantInfo(profileData);
       } catch (err) {
-        setChatError('Chat baglantisi kurulamadi');
-        setChatLoading(false);
+        console.error('Applicant info yuklenemedi:', err);
       }
     };
 
-    initChat();
+    initApplicantInfo();
+  }, [application?.chatToken]);
 
-    return () => {
-      // Tab'dan cikinca WebSocket'i temizle
-      if (wsCleanupRef.current) {
-        wsCleanupRef.current();
-        wsCleanupRef.current = null;
-      }
-      webSocketService.disconnect();
-      setIsConnected(false);
-    };
-  }, [activeTab, application?.chatToken]);
-
-  // applicantInfo geldiginde WebSocket baglan
+  // Chat sekmesine gecildiginde mesajlari yukle
   useEffect(() => {
-    if (!applicantInfo?.id || activeTab !== 1) return;
+    if (activeTab !== 1 || !applicantInfo?.id) return;
+
+    setChatLoading(true);
+    setChatError(null);
+    loadMessages();
+  }, [activeTab, applicantInfo?.id]);
+
+  // applicantInfo geldiginde WebSocket baglan (tum sekmeler icin - video call bildirimleri)
+  useEffect(() => {
+    if (!applicantInfo?.id) return;
 
     const roomId = `applicant_${applicantInfo.id}`;
     const wsUrl = `${WS_BASE_URL}/ws/applicant-chat/${roomId}`;
@@ -261,9 +257,14 @@ function ApplicantCabinet() {
       if (event.type === 'connected') {
         setIsConnected(true);
         setChatError(null);
-        loadMessages();
+        // Sadece chat sekmesindeyse mesajlari yukle
+        if (activeTab === 1) {
+          loadMessages();
+        }
       } else if (event.type === 'disconnected') {
         setIsConnected(false);
+      } else if (event.type === 'reconnecting') {
+        console.log(`🔄 Yeniden baglaniliyor... (${event.attempt}/${event.maxAttempts})`);
       }
     });
 
@@ -276,13 +277,14 @@ function ApplicantCabinet() {
       unsubMessage();
     };
 
+    // Component unmount oldugunda baglantıyı kes
     return () => {
       unsubConnection();
       unsubMessage();
       webSocketService.disconnect();
       setMessages([]);
     };
-  }, [applicantInfo?.id, activeTab]);
+  }, [applicantInfo?.id]);
 
   const loadMessages = async () => {
     if (!applicantInfo?.id) return;

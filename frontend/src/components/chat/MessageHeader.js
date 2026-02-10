@@ -2,20 +2,12 @@
 // Converted to Material-UI for Optima
 import React, { memo } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
-import { Check, DoneAll, Schedule, Error } from '@mui/icons-material';
 
 /**
- * Message Header Component - Shows sender name, timestamp, and status
- * Rocket.Chat pattern adapted for Optima
+ * Message Header Component - Shows sender name and timestamp
+ * Status indicators are shown at bottom of message (RoomMessage.js)
  */
 const MessageHeader = ({ message, isOwnMessage, onNameClick }) => {
-  const formatTime = (timestamp) => {
-    return new Date(timestamp).toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const formatDateAndTime = (timestamp) => {
     return new Date(timestamp).toLocaleString('tr-TR', {
       year: 'numeric',
@@ -24,33 +16,6 @@ const MessageHeader = ({ message, isOwnMessage, onNameClick }) => {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
-
-  // Status icon for own messages (WhatsApp style)
-  const StatusIcon = () => {
-    const { status } = message;
-
-    const iconProps = {
-      sx: {
-        fontSize: 14,
-        ml: 0.5
-      }
-    };
-
-    switch (status) {
-      case 'sending':
-        return <Schedule {...iconProps} sx={{ ...iconProps.sx, color: 'text.disabled' }} />;
-      case 'sent':
-        return <Check {...iconProps} sx={{ ...iconProps.sx, color: 'text.secondary' }} />;
-      case 'delivered':
-        return <DoneAll {...iconProps} sx={{ ...iconProps.sx, color: 'text.secondary' }} />;
-      case 'read':
-        return <DoneAll {...iconProps} sx={{ ...iconProps.sx, color: '#1c61ab' }} />;
-      case 'failed':
-        return <Error {...iconProps} sx={{ ...iconProps.sx, color: 'error.main' }} />;
-      default:
-        return null;
-    }
   };
 
   return (
@@ -98,19 +63,6 @@ const MessageHeader = ({ message, isOwnMessage, onNameClick }) => {
         />
       )}
 
-      {/* Timestamp */}
-      <Typography
-        id={`${message.id}-time`}
-        variant="caption"
-        sx={{
-          color: 'text.secondary',
-          fontSize: '0.75rem'
-        }}
-        title={formatDateAndTime(message.created_at)}
-      >
-        {formatTime(message.created_at)}
-      </Typography>
-
       {/* Edited indicator */}
       {message.edited && (
         <Typography
@@ -120,13 +72,11 @@ const MessageHeader = ({ message, isOwnMessage, onNameClick }) => {
             fontSize: '0.7rem',
             fontStyle: 'italic'
           }}
+          title={formatDateAndTime(message.edited_at || message.created_at)}
         >
-          (edited)
+          (düzenlendi)
         </Typography>
       )}
-
-      {/* Status indicator (for own messages) */}
-      {isOwnMessage && <StatusIcon />}
     </Box>
   );
 };

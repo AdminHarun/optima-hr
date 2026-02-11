@@ -237,17 +237,25 @@ function AdminHeader() {
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
         }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between', px: 3, pl: { xs: 2, md: 3 }, minHeight: '64px !important', WebkitAppRegion: 'drag' }}>
-          {/* Sol Taraf - Site Seçici + Sekmeler */}
+        <Toolbar sx={{ px: 3, minHeight: '64px !important', WebkitAppRegion: 'drag' }}>
+          {/* Sol Taraf - Site Seçici (Sabit) */}
           <Box sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: 3,
-            WebkitAppRegion: 'no-drag'
+            WebkitAppRegion: 'no-drag',
+            minWidth: 180
           }}>
             <SiteSelector />
+          </Box>
 
-            {/* Elegant Navigation Buttons */}
+          {/* Orta - Sekmeler (Ortalanmış) */}
+          <Box sx={{
+            flex: 1,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            WebkitAppRegion: 'no-drag'
+          }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <NavButton
                 label="Mesajlar"
@@ -280,8 +288,8 @@ function AdminHeader() {
             </Box>
           </Box>
 
-          {/* Sağ Taraf - Bildirimler ve Profil */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, WebkitAppRegion: 'no-drag' }}>
+          {/* Sağ Taraf - Bildirimler ve Profil (Sabit) */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, WebkitAppRegion: 'no-drag', minWidth: 180, justifyContent: 'flex-end' }}>
             <IconButton
               color="inherit"
               onClick={handleNotificationOpen}

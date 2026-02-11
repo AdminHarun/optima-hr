@@ -14,18 +14,18 @@ export const THEMES = [
       secondary: '#8bb94a',
       accent: '#6366f1',
       sidebar: {
-        bg: 'linear-gradient(180deg, rgba(28, 97, 171, 0.95) 0%, rgba(139, 185, 74, 0.95) 100%)',
+        bg: 'rgba(28, 97, 171, 0.15)',
         text: '#FFFFFF',
-        active: 'rgba(255, 255, 255, 0.2)',
-        hover: 'rgba(255, 255, 255, 0.1)',
+        active: 'rgba(139, 185, 74, 0.35)',
+        hover: 'rgba(28, 97, 171, 0.25)',
       },
       card: {
-        bg: 'rgba(255, 255, 255, 0.95)',
-        border: 'rgba(28, 97, 171, 0.1)',
-        shadow: '0 8px 32px rgba(28, 97, 171, 0.15)',
+        bg: 'rgba(255, 255, 255, 0.12)',
+        border: 'rgba(255, 255, 255, 0.25)',
+        shadow: '0 8px 32px rgba(28, 97, 171, 0.2)',
       },
       header: {
-        bg: 'linear-gradient(135deg, rgba(28, 97, 171, 0.95), rgba(139, 185, 74, 0.95))',
+        bg: 'rgba(28, 97, 171, 0.2)',
         text: '#FFFFFF',
       },
       button: {
@@ -43,8 +43,8 @@ export const THEMES = [
     glass: {
       blur: '20px',
       saturation: '180%',
-      opacity: '0.95',
-      borderOpacity: '0.1',
+      opacity: '0.15',
+      borderOpacity: '0.3',
     },
   },
   {
@@ -58,18 +58,18 @@ export const THEMES = [
       secondary: '#a4d65e',
       accent: '#818cf8',
       sidebar: {
-        bg: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)',
+        bg: 'rgba(15, 23, 42, 0.2)',
         text: '#FFFFFF',
-        active: 'rgba(74, 158, 255, 0.3)',
-        hover: 'rgba(255, 255, 255, 0.08)',
+        active: 'rgba(74, 158, 255, 0.35)',
+        hover: 'rgba(255, 255, 255, 0.15)',
       },
       card: {
-        bg: 'rgba(30, 41, 59, 0.95)',
-        border: 'rgba(255, 255, 255, 0.1)',
+        bg: 'rgba(30, 41, 59, 0.12)',
+        border: 'rgba(255, 255, 255, 0.2)',
         shadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
       },
       header: {
-        bg: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))',
+        bg: 'rgba(15, 23, 42, 0.25)',
         text: '#FFFFFF',
       },
       button: {
@@ -87,8 +87,8 @@ export const THEMES = [
     glass: {
       blur: '20px',
       saturation: '150%',
-      opacity: '0.95',
-      borderOpacity: '0.15',
+      opacity: '0.2',
+      borderOpacity: '0.25',
     },
   },
   {

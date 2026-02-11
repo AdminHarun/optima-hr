@@ -2,24 +2,24 @@
 
 /* CSS Variables - Theme Colors */
 :root {
-  /* Default Theme Colors (Standard) */
+  /* Default Theme Colors - Transparent Glass Effect */
   --theme-primary: #1c61ab;
   --theme-secondary: #8bb94a;
   --theme-accent: #6366f1;
 
-  /* Sidebar */
-  --theme-sidebar-bg: linear-gradient(180deg, rgba(28, 97, 171, 0.95) 0%, rgba(139, 185, 74, 0.95) 100%);
+  /* Sidebar - Transparent Glass */
+  --theme-sidebar-bg: rgba(28, 97, 171, 0.15);
   --theme-sidebar-text: #FFFFFF;
-  --theme-sidebar-active: rgba(255, 255, 255, 0.2);
-  --theme-sidebar-hover: rgba(255, 255, 255, 0.1);
+  --theme-sidebar-active: rgba(139, 185, 74, 0.35);
+  --theme-sidebar-hover: rgba(28, 97, 171, 0.25);
 
-  /* Card */
-  --theme-card-bg: rgba(255, 255, 255, 0.95);
-  --theme-card-border: rgba(28, 97, 171, 0.1);
-  --theme-card-shadow: 0 8px 32px rgba(28, 97, 171, 0.15);
+  /* Card - Transparent Glass */
+  --theme-card-bg: rgba(255, 255, 255, 0.12);
+  --theme-card-border: rgba(255, 255, 255, 0.25);
+  --theme-card-shadow: 0 8px 32px rgba(28, 97, 171, 0.2);
 
-  /* Header */
-  --theme-header-bg: linear-gradient(135deg, rgba(28, 97, 171, 0.95), rgba(139, 185, 74, 0.95));
+  /* Header - Transparent Glass */
+  --theme-header-bg: rgba(28, 97, 171, 0.2);
   --theme-header-text: #FFFFFF;
 
   /* Button */

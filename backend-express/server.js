@@ -84,24 +84,34 @@ app.use((error, req, res, next) => {
 // Start server
 const startServer = async () => {
   try {
-    console.log('🚀 Server v1.0.1 starting - chat_rooms migration included');
+    console.log('🚀 Server v1.0.2 starting - quick boot for Railway');
 
-    // Test database connection
+    // Test database connection first
     await testConnection();
 
-    // Run database migrations and create missing tables
-    // console.log('🔄 Running database migrations...');
-    // await databaseMigrationService.runMigrations();
-    // await databaseMigrationService.getTableCounts();
-    console.log('✅ Skipping database migration service (manuel migration yapıldı)');
+    // Initialize WebSocket service early
+    chatWebSocketService.initialize(server);
 
-    // Sync models (disabled - using SQL migrations instead)
-    // if (process.env.NODE_ENV === 'development') {
-    //   console.log('🔄 Syncing database models...');
-    //   await sequelize.sync({ force: false, alter: false });
-    //   console.log('✅ Database models synced');
-    // }
-    console.log('✅ Skipping Sequelize sync - using SQL migrations instead');
+    // Start HTTP server IMMEDIATELY to pass Railway health check
+    server.listen(PORT, () => {
+      console.log(`🚀 Optima HR API server running on port ${PORT}`);
+      console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+      console.log('✅ Server ready - running migrations in background...');
+
+      // Run migrations in background after server starts
+      runMigrations().catch(err => console.error('Migration error:', err));
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Background migrations
+const runMigrations = async () => {
+  try {
+    console.log('🔄 Running background migrations...');
 
     // Add site_code columns for multi-tenant isolation (idempotent)
     try {
@@ -278,21 +288,9 @@ const startServer = async () => {
     // Initialize recording service
     await recordingService.initialize();
 
-    // Initialize WebSocket service
-    chatWebSocketService.initialize(server);
-
-    // Start HTTP server
-    server.listen(PORT, () => {
-      console.log(`🚀 Optima HR API server running on port ${PORT}`);
-      console.log(`🌐 Health check: http://localhost:${PORT}/health`);
-      console.log(`📊 API Base URL: http://localhost:${PORT}/api`);
-      console.log(`💬 WebSocket URL: ws://localhost:${PORT}/ws`);
-      console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-
+    console.log('✅ All background migrations completed');
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
+    console.error('⚠️ Background migration error:', error.message);
   }
 };
 

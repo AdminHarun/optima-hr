@@ -39,8 +39,8 @@
   --theme-glass-opacity: 0.95;
   --theme-glass-border-opacity: 0.1;
 
-  /* Wallpaper */
-  --theme-wallpaper: url('/site_background.jpg');
+  /* Wallpaper - Set dynamically by ThemeContext.js */
+  --theme-wallpaper: none;
 }
 
 /* Base Styles */

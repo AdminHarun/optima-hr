@@ -244,8 +244,8 @@ const startServer = async () => {
         }
       }
 
-      // Remove NOT NULL constraints from optional columns
-      const optionalColumns = ['job_title', 'first_name', 'last_name', 'email', 'phone'];
+      // Remove NOT NULL constraints from optional columns (only columns that exist in job_applications)
+      const optionalColumns = ['tc_number', 'birth_date', 'address', 'city', 'district'];
       for (const col of optionalColumns) {
         try {
           await sequelize.query(`ALTER TABLE job_applications ALTER COLUMN ${col} DROP NOT NULL`);

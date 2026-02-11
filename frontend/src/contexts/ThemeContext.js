@@ -1,31 +1,56 @@
 // ThemeContext.js - Liquid Glass Theme System for Optima HR
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
+// WCAG Luminance Contrast Algorithm
+// Calculates relative luminance of a color
+const getLuminance = (hexColor) => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+
+  const toLinear = (c) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+};
+
+// Returns appropriate text color based on background luminance (WCAG AA)
+export const getContrastText = (bgColor) => {
+  if (!bgColor || bgColor.includes('gradient') || bgColor.includes('rgba')) {
+    return '#FFFFFF'; // Default to white for gradients/transparent
+  }
+  const luminance = getLuminance(bgColor);
+  return luminance > 0.179 ? '#1a1a1a' : '#FFFFFF'; // Dark text on light bg, white on dark
+};
+
 // Liquid Glass Theme definitions
 export const THEMES = [
+  // ==================== BASIC THEMES (Original Solid Design) ====================
   {
     id: 'basic-light',
     name: 'Basic Light',
     description: 'Klasik açık tema',
     wallpaper: '/site_background.jpg',
     preview: null,
+    isBasic: true,
     colors: {
       primary: '#1c61ab',
       secondary: '#8bb94a',
       accent: '#6366f1',
       sidebar: {
-        bg: 'rgba(28, 97, 171, 0.15)',
+        bg: 'linear-gradient(180deg, rgba(28, 97, 171, 0.95) 0%, rgba(139, 185, 74, 0.95) 100%)',
         text: '#FFFFFF',
-        active: 'rgba(139, 185, 74, 0.35)',
-        hover: 'rgba(28, 97, 171, 0.25)',
+        active: 'rgba(255, 255, 255, 0.2)',
+        hover: 'rgba(255, 255, 255, 0.1)',
       },
       card: {
-        bg: 'rgba(255, 255, 255, 0.12)',
-        border: 'rgba(255, 255, 255, 0.25)',
-        shadow: '0 8px 32px rgba(28, 97, 171, 0.2)',
+        bg: 'rgba(255, 255, 255, 0.95)',
+        border: 'rgba(28, 97, 171, 0.1)',
+        shadow: '0 8px 32px rgba(28, 97, 171, 0.15)',
+        text: '#1a1a1a',
       },
       header: {
-        bg: 'rgba(28, 97, 171, 0.2)',
+        bg: 'linear-gradient(135deg, rgba(28, 97, 171, 0.95), rgba(139, 185, 74, 0.95))',
         text: '#FFFFFF',
       },
       button: {
@@ -43,8 +68,8 @@ export const THEMES = [
     glass: {
       blur: '20px',
       saturation: '180%',
-      opacity: '0.15',
-      borderOpacity: '0.3',
+      opacity: '0.95',
+      borderOpacity: '0.1',
     },
   },
   {
@@ -53,23 +78,25 @@ export const THEMES = [
     description: 'Klasik koyu tema',
     wallpaper: '/site_background.jpg',
     preview: null,
+    isBasic: true,
     colors: {
       primary: '#4a9eff',
       secondary: '#a4d65e',
       accent: '#818cf8',
       sidebar: {
-        bg: 'rgba(15, 23, 42, 0.2)',
+        bg: 'linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%)',
         text: '#FFFFFF',
-        active: 'rgba(74, 158, 255, 0.35)',
-        hover: 'rgba(255, 255, 255, 0.15)',
+        active: 'rgba(74, 158, 255, 0.3)',
+        hover: 'rgba(255, 255, 255, 0.08)',
       },
       card: {
-        bg: 'rgba(30, 41, 59, 0.12)',
-        border: 'rgba(255, 255, 255, 0.2)',
+        bg: 'rgba(30, 41, 59, 0.95)',
+        border: 'rgba(255, 255, 255, 0.1)',
         shadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+        text: '#FFFFFF',
       },
       header: {
-        bg: 'rgba(15, 23, 42, 0.25)',
+        bg: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98))',
         text: '#FFFFFF',
       },
       button: {
@@ -87,10 +114,11 @@ export const THEMES = [
     glass: {
       blur: '20px',
       saturation: '150%',
-      opacity: '0.2',
-      borderOpacity: '0.25',
+      opacity: '0.98',
+      borderOpacity: '0.15',
     },
   },
+  // ==================== WALLPAPER THEMES (Transparent Glass) ====================
   {
     id: 'sakura-sunset',
     name: 'Sakura Sunset',
@@ -648,6 +676,7 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--theme-card-bg', colors.card.bg);
     root.style.setProperty('--theme-card-border', colors.card.border);
     root.style.setProperty('--theme-card-shadow', colors.card.shadow);
+    root.style.setProperty('--theme-card-text', colors.card.text || (theme.isBasic ? '#1a1a1a' : '#FFFFFF'));
 
     // Header colors
     root.style.setProperty('--theme-header-bg', colors.header.bg);

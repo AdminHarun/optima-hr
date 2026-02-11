@@ -1,7 +1,8 @@
-// Admin Sidebar - Yetkiye göre menü gösterimi
+// Admin Sidebar - Liquid Glass Theme Support
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
   Drawer,
   List,
@@ -48,6 +49,7 @@ function AdminSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, hasPermission, PERMISSIONS, EMPLOYEE_ROLES } = useEmployeeAuth();
+  const { themeConfig } = useTheme();
   const [openEmployeeMenu, setOpenEmployeeMenu] = useState(false);
 
   // Ana menü öğeleri
@@ -141,12 +143,10 @@ function AdminSidebar() {
     setOpenEmployeeMenu(!openEmployeeMenu);
   };
 
-  // Check if any submenu item is active
   const isSubMenuActive = (subItems) => {
     return subItems?.some(item => isCurrentPath(item.path)) || false;
   };
 
-  // Yetki kontrolü olan menüleri filtrele
   const visibleMenuItems = menuItems.filter(item => {
     if (!item.permission) return true;
     return hasPermission(item.permission);
@@ -161,15 +161,16 @@ function AdminSidebar() {
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
-          background: 'linear-gradient(180deg, rgba(28, 97, 171, 0.95) 0%, rgba(139, 185, 74, 0.95) 100%)',
-          backdropFilter: 'blur(20px)',
+          background: 'var(--theme-sidebar-bg)',
+          backdropFilter: `blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%))`,
+          WebkitBackdropFilter: `blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%))`,
           border: 'none',
           borderRight: '1px solid rgba(255, 255, 255, 0.1)'
         },
       }}
     >
       {/* Sidebar Header */}
-      <Box sx={{ p: 3, textAlign: 'center', color: 'white' }}>
+      <Box sx={{ p: 3, textAlign: 'center', color: 'var(--theme-sidebar-text, white)' }}>
         <img
           src={optimaLogo}
           alt="Optima Logo"
@@ -188,7 +189,7 @@ function AdminSidebar() {
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
       {/* Kullanıcı Bilgisi */}
-      <Box sx={{ p: 2, color: 'white' }}>
+      <Box sx={{ p: 2, color: 'var(--theme-sidebar-text, white)' }}>
         <Typography variant="body2" sx={{ opacity: 0.8 }}>
           Hoş geldiniz,
         </Typography>
@@ -196,7 +197,6 @@ function AdminSidebar() {
           {currentUser?.firstName} {currentUser?.lastName}
         </Typography>
 
-        {/* Site Bilgisi */}
         {currentUser?.role !== EMPLOYEE_ROLES.SUPER_ADMIN && (
           <Chip
             size="small"
@@ -226,16 +226,16 @@ function AdminSidebar() {
                     mb: 0.5,
                     borderRadius: '12px',
                     mx: 1,
-                    color: 'white',
+                    color: 'var(--theme-sidebar-text, white)',
                     '&:hover': {
-                      background: 'rgba(255, 255, 255, 0.1)',
+                      background: 'var(--theme-sidebar-hover)',
                       transform: 'translateX(4px)',
                     },
                     '&.Mui-selected': {
-                      background: 'rgba(255, 255, 255, 0.2)',
+                      background: 'var(--theme-sidebar-active)',
                       borderLeft: '4px solid white',
                       '&:hover': {
-                        background: 'rgba(255, 255, 255, 0.25)',
+                        background: 'var(--theme-sidebar-active)',
                       }
                     },
                     transition: 'all 0.3s ease'
@@ -255,7 +255,7 @@ function AdminSidebar() {
                 </ListItemButton>
                 <Collapse in={openEmployeeMenu} timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
-                    {item.subItems?.filter(subItem => 
+                    {item.subItems?.filter(subItem =>
                       !subItem.permission || hasPermission(subItem.permission)
                     ).map((subItem) => (
                       <ListItemButton
@@ -267,16 +267,16 @@ function AdminSidebar() {
                           mb: 0.5,
                           borderRadius: '12px',
                           mx: 1,
-                          color: 'white',
+                          color: 'var(--theme-sidebar-text, white)',
                           '&:hover': {
-                            background: 'rgba(255, 255, 255, 0.1)',
+                            background: 'var(--theme-sidebar-hover)',
                             transform: 'translateX(4px)',
                           },
                           '&.Mui-selected': {
-                            background: 'rgba(255, 255, 255, 0.15)',
+                            background: 'var(--theme-sidebar-active)',
                             borderLeft: '3px solid white',
                             '&:hover': {
-                              background: 'rgba(255, 255, 255, 0.2)',
+                              background: 'var(--theme-sidebar-active)',
                             }
                           },
                           transition: 'all 0.3s ease'
@@ -305,16 +305,16 @@ function AdminSidebar() {
                   mb: 0.5,
                   borderRadius: '12px',
                   mx: 1,
-                  color: 'white',
+                  color: 'var(--theme-sidebar-text, white)',
                   '&:hover': {
-                    background: 'rgba(255, 255, 255, 0.1)',
+                    background: 'var(--theme-sidebar-hover)',
                     transform: 'translateX(4px)',
                   },
                   '&.Mui-selected': {
-                    background: 'rgba(255, 255, 255, 0.2)',
+                    background: 'var(--theme-sidebar-active)',
                     borderLeft: '4px solid white',
                     '&:hover': {
-                      background: 'rgba(255, 255, 255, 0.25)',
+                      background: 'var(--theme-sidebar-active)',
                     }
                   },
                   transition: 'all 0.3s ease'
@@ -337,7 +337,7 @@ function AdminSidebar() {
       </List>
 
       {/* Sidebar Footer */}
-      <Box sx={{ mt: 'auto', p: 2, color: 'white', textAlign: 'center' }}>
+      <Box sx={{ mt: 'auto', p: 2, color: 'var(--theme-sidebar-text, white)', textAlign: 'center' }}>
         <Typography variant="caption" sx={{ opacity: 0.6 }}>
           v1.0.0 - OPTIMA HR Management System
         </Typography>

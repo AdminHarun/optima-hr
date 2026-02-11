@@ -1,14 +1,395 @@
+/* Optima HR - Liquid Glass Theme System */
+
+/* CSS Variables - Theme Colors */
+:root {
+  /* Default Theme Colors (Standard) */
+  --theme-primary: #1c61ab;
+  --theme-secondary: #8bb94a;
+  --theme-accent: #6366f1;
+
+  /* Sidebar */
+  --theme-sidebar-bg: linear-gradient(180deg, rgba(28, 97, 171, 0.95) 0%, rgba(139, 185, 74, 0.95) 100%);
+  --theme-sidebar-text: #FFFFFF;
+  --theme-sidebar-active: rgba(255, 255, 255, 0.2);
+  --theme-sidebar-hover: rgba(255, 255, 255, 0.1);
+
+  /* Card */
+  --theme-card-bg: rgba(255, 255, 255, 0.95);
+  --theme-card-border: rgba(28, 97, 171, 0.1);
+  --theme-card-shadow: 0 8px 32px rgba(28, 97, 171, 0.15);
+
+  /* Header */
+  --theme-header-bg: linear-gradient(135deg, rgba(28, 97, 171, 0.95), rgba(139, 185, 74, 0.95));
+  --theme-header-text: #FFFFFF;
+
+  /* Button */
+  --theme-button-primary: linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%);
+  --theme-button-secondary: rgba(255, 255, 255, 0.15);
+  --theme-button-text: #FFFFFF;
+
+  /* Status */
+  --theme-status-success: #10B981;
+  --theme-status-warning: #F59E0B;
+  --theme-status-error: #EF4444;
+  --theme-status-info: #3B82F6;
+
+  /* Glass Effect */
+  --theme-glass-blur: 20px;
+  --theme-glass-saturation: 180%;
+  --theme-glass-opacity: 0.95;
+  --theme-glass-border-opacity: 0.1;
+
+  /* Wallpaper */
+  --theme-wallpaper: url('/site_background.jpg');
+}
+
+/* Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  background-color: #0a0a0a;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Liquid Glass Panel */
+.glass-panel {
+  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 16px;
+  box-shadow: var(--theme-card-shadow);
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Liquid Glass Card */
+.glass-card {
+  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  background: var(--theme-card-bg);
+  border: 1px solid var(--theme-card-border);
+  border-radius: 12px;
+  box-shadow: var(--theme-card-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+}
+
+/* Liquid Glass Sidebar */
+.glass-sidebar {
+  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  background: var(--theme-sidebar-bg);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Liquid Glass Header */
+.glass-header {
+  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation));
+  background: var(--theme-header-bg);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Liquid Glass Button */
+.glass-button {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: var(--theme-button-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--theme-button-text);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.glass-button:hover {
+  backdrop-filter: blur(15px);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.glass-button-secondary {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: var(--theme-button-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--theme-button-text);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.glass-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Liquid Glass Menu */
+.glass-menu {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Liquid Glass Dropdown */
+.glass-dropdown {
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+}
+
+/* Liquid Glass Modal */
+.glass-modal {
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+
+/* Liquid Glass Input */
+.glass-input {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Liquid Glass Table */
+.glass-table {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+}
+
+.glass-table th {
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-table tr:hover td {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Status Badge Glass */
+.glass-badge {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.75rem;
+  padding: 4px 12px;
+}
+
+.glass-badge-success {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6EE7B7;
+}
+
+.glass-badge-warning {
+  background: rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #FCD34D;
+}
+
+.glass-badge-error {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
+}
+
+.glass-badge-info {
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93C5FD;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Glass Scroll */
+.glass-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.glass-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.glass-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Selection Color */
+::selection {
+  background: var(--theme-primary);
+  color: white;
+}
+
+/* Focus Styles */
+:focus-visible {
+  outline: 2px solid var(--theme-primary);
+  outline-offset: 2px;
+}
+
+/* Theme Transition */
+.theme-transition {
+  transition:
+    background-color 0.5s ease,
+    background-image 0.5s ease,
+    border-color 0.5s ease,
+    box-shadow 0.5s ease,
+    backdrop-filter 0.5s ease;
+}
+
+/* Glass Animation */
+@keyframes glassFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(var(--theme-glass-blur));
+  }
+}
+
+.glass-animate-in {
+  animation: glassFadeIn 0.4s ease-out forwards;
+}
+
+/* Shimmer Effect */
+@keyframes glassShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.glass-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: glassShimmer 2s infinite;
+}
+
+/* MUI Component Overrides for Theme */
+.MuiPaper-root {
+  background: var(--theme-card-bg) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.MuiDrawer-paper {
+  background: var(--theme-sidebar-bg) !important;
+  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
+}
+
+.MuiAppBar-root {
+  background: var(--theme-header-bg) !important;
+  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
+}
+
+/* Dialog Glass */
+.MuiDialog-paper {
+  background: var(--theme-card-bg) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1px solid var(--theme-card-border) !important;
+  border-radius: 16px !important;
+}
+
+/* Menu Glass */
+.MuiMenu-paper {
+  background: var(--theme-card-bg) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--theme-card-border) !important;
+  border-radius: 12px !important;
 }

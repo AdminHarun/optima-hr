@@ -155,18 +155,21 @@ function AdminSidebar() {
   return (
     <Drawer
       variant="permanent"
-      sx={{
-        width: DRAWER_WIDTH,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
+      PaperProps={{
+        sx: {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
           background: 'var(--theme-sidebar-bg)',
+          backgroundColor: 'transparent',
           backdropFilter: `blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%))`,
           WebkitBackdropFilter: `blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%))`,
           border: 'none',
           borderRight: '1px solid rgba(255, 255, 255, 0.1)'
-        },
+        }
+      }}
+      sx={{
+        width: DRAWER_WIDTH,
+        flexShrink: 0,
       }}
     >
       {/* Sidebar Header */}

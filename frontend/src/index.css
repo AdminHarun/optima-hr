@@ -364,6 +364,7 @@ code {
 /* Sidebar - Must override MuiPaper-root */
 .MuiDrawer-paper.MuiDrawer-paper {
   background: var(--theme-sidebar-bg) !important;
+  background-color: transparent !important;
   backdrop-filter: blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%)) !important;
   -webkit-backdrop-filter: blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%)) !important;
 }

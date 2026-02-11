@@ -21,7 +21,6 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.12.2",
-    "colorthief": "^2.6.0",
     "date-fns": "^4.1.0",
     "emoji-mart": "^5.6.0",
     "qrcode": "^1.5.4",

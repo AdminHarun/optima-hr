@@ -37,6 +37,23 @@ function AdminLayout() {
 
   return (
     <NotificationProvider>
+      {/* Full-page wallpaper background - behind everything including sidebar */}
+      <Box
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: `url(${themeConfig?.wallpaper || '/site_background.jpg'})`,
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+          backgroundPosition: 'center center',
+          zIndex: -1
+        }}
+      />
+
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Sidebar */}
         <AdminSidebar />
@@ -47,11 +64,6 @@ function AdminLayout() {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            backgroundImage: `url(${themeConfig?.wallpaper || '/site_background.jpg'})`,
-            backgroundSize: 'cover',
-            backgroundRepeat: 'no-repeat',
-            backgroundAttachment: 'fixed',
-            backgroundPosition: 'center center',
             minHeight: '100vh',
             position: 'relative'
           }}

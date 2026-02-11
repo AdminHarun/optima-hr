@@ -56,6 +56,22 @@ function AdminLayout() {
             position: 'relative'
           }}
         >
+          {/* Dark overlay for better readability on wallpaper themes */}
+          {!themeConfig?.isBasic && (
+            <Box
+              sx={{
+                position: 'fixed',
+                top: 0,
+                left: 280, // Sidebar width
+                right: 0,
+                bottom: 0,
+                background: 'rgba(0, 0, 0, 0.3)',
+                pointerEvents: 'none',
+                zIndex: 0
+              }}
+            />
+          )}
+
           {/* Header */}
           <AdminHeader />
 

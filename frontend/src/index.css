@@ -359,22 +359,28 @@ code {
 }
 
 /* MUI Component Overrides for Theme */
-.MuiPaper-root {
+/* Note: Order matters! More specific overrides come after general ones */
+
+/* Sidebar - Must override MuiPaper-root */
+.MuiDrawer-paper.MuiDrawer-paper {
+  background: var(--theme-sidebar-bg) !important;
+  backdrop-filter: blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%)) !important;
+}
+
+/* Header - Must override MuiPaper-root */
+.MuiAppBar-root.MuiAppBar-root {
+  background: var(--theme-header-bg) !important;
+  backdrop-filter: blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%)) !important;
+  -webkit-backdrop-filter: blur(var(--theme-glass-blur, 20px)) saturate(var(--theme-glass-saturation, 180%)) !important;
+}
+
+/* Cards and other Paper components */
+.MuiPaper-root:not(.MuiDrawer-paper):not(.MuiAppBar-root) {
   background: var(--theme-card-bg) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-}
-
-.MuiDrawer-paper {
-  background: var(--theme-sidebar-bg) !important;
-  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
-  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
-}
-
-.MuiAppBar-root {
-  background: var(--theme-header-bg) !important;
-  backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
-  -webkit-backdrop-filter: blur(var(--theme-glass-blur)) saturate(var(--theme-glass-saturation)) !important;
+  color: var(--theme-card-text, inherit);
 }
 
 /* Dialog Glass */

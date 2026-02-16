@@ -1,10 +1,11 @@
 {
   "name": "optima-hr",
   "version": "1.0.0",
-  "description": "Optima HR - İnsan Kaynakları Yönetim Sistemi",
+  "description": "Optima HR - Human Resources Management System",
   "author": "Optima HR",
   "private": true,
-  "main": "public/electron.js",
+  "type": "module",
+  "main": "electron/main.js",
   "homepage": "/",
   "dependencies": {
     "@daily-co/daily-js": "^0.87.0",
@@ -16,11 +17,8 @@
     "@mui/lab": "^7.0.0-beta.17",
     "@mui/material": "^7.3.2",
     "@mui/x-date-pickers": "^8.12.0",
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^13.5.0",
     "axios": "^1.12.2",
+    "colorthief": "^2.4.0",
     "date-fns": "^4.1.0",
     "emoji-mart": "^5.6.0",
     "qrcode": "^1.5.4",
@@ -28,24 +26,26 @@
     "react-dom": "^19.1.1",
     "react-player": "^3.3.3",
     "react-resizable-panels": "^3.0.6",
-    "react-router-dom": "^7.9.1",
-    "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "react-router-dom": "^7.9.1"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^8.2.2",
     "cross-env": "^10.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-is-dev": "^3.0.1",
+    "vite": "^6.0.7",
     "wait-on": "^8.0.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite",
+    "start:legacy": "react-scripts start",
+    "build:legacy": "react-scripts build",
+    "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && cross-env VITE_DEV_SERVER_URL=http://localhost:3000 electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build-mac": "npm run build && electron-builder --mac",
     "electron:build-win": "npm run build && electron-builder --win",
@@ -57,11 +57,13 @@
     "files": [
       "build/**/*",
       "node_modules/**/*",
-      "public/electron.js",
-      "public/preload.js"
+      "electron/**/*",
+      "public/logo3.png",
+      "public/logo3.ico"
     ],
     "directories": {
-      "buildResources": "public"
+      "buildResources": "public",
+      "output": "release"
     },
     "mac": {
       "category": "public.app-category.business",
@@ -105,24 +107,16 @@
         "nsis"
       ],
       "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
     }
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
   }
 }

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/logo3.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Optima HR - Human Resources Management System" />
+    <link rel="apple-touch-icon" href="/logo3.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Optima HR</title>
+  </head>
+  <body style="background-image: url('/site_background.jpg'); background-size: cover; background-repeat: no-repeat; background-attachment: fixed; background-position: center center;">
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+
+    <!-- Liquid Glass SVG Filters -->
+    <svg width="0" height="0" style="position: absolute;">
+      <defs>
+        <filter id="liquid-prism-intense" x="-50%" y="-50%" width="200%" height="200%">
+          <feTurbulence baseFrequency="0.012 0.018" numOctaves="3" result="turbulence" seed="1" type="fractalNoise" />
+          <feColorMatrix in="turbulence" type="saturate" values="0" result="grayscale" />
+          <feDisplacementMap in="SourceGraphic" in2="grayscale" scale="30" result="displaced1" />
+          <feTurbulence baseFrequency="0.025 0.035" numOctaves="2" result="turbulence2" seed="2" type="fractalNoise" />
+          <feColorMatrix in="turbulence2" type="saturate" values="0" result="grayscale2" />
+          <feDisplacementMap in="displaced1" in2="grayscale2" scale="20" result="displaced2" />
+          <feOffset in="displaced2" dx="-1" dy="0" result="offsetR" />
+          <feOffset in="displaced2" dx="1" dy="0" result="offsetB" />
+          <feColorMatrix in="offsetR" type="matrix" result="redChannel"
+            values="1 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" />
+          <feColorMatrix in="displaced2" type="matrix" result="greenChannel"
+            values="0 0 0 0 0
+                    0 1 0 0 0
+                    0 0 0 0 0
+                    0 0 0 1 0" />
+          <feColorMatrix in="offsetB" type="matrix" result="blueChannel"
+            values="0 0 0 0 0
+                    0 0 0 0 0
+                    0 0 1 0 0
+                    0 0 0 1 0" />
+          <feComposite in="redChannel" in2="greenChannel" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rg" />
+          <feComposite in="rg" in2="blueChannel" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="rgb" />
+          <feGaussianBlur in="rgb" stdDeviation="0.8" />
+        </filter>
+      </defs>
+    </svg>
+
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

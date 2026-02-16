@@ -1,6 +1,6 @@
 // Chat Container with WebSocket Integration
 // Connects ChatRoom component with WebSocket service
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import {
   Snackbar,
   Alert,
@@ -15,7 +15,9 @@ import ForwardMessageModal from './ForwardMessageModal';
 import VideoCallModal from './VideoCallModal';
 import webSocketService from '../../services/webSocketService';
 import notificationService from '../../services/notificationService';
+import electronNotificationService from '../../services/electronNotificationService';
 import { IncomingCallNotification } from '../videoCall';
+import { ChatContext } from '../../contexts/ChatContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
 const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
@@ -211,6 +213,17 @@ const ChatContainer = ({
               messageData.sender_name || participantName || 'Kullanıcı',
               messagePreview,
               roomId
+            );
+
+            // Electron native notification (if in Electron environment)
+            electronNotificationService.showMessageNotification(
+              {
+                content: messageData.content,
+                message_type: messageData.file_url ? 'file' : 'text',
+                file_name: messageData.file_name
+              },
+              { id: roomId },
+              { name: messageData.sender_name || participantName }
             );
           }
 

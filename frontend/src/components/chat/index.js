@@ -1,6 +1,7 @@
 // Chat Components - Adapted from Rocket.Chat
 // Export all chat components for easy importing
 export { default as ChatContainer } from './ChatContainer';
+export { default as ChatLayout } from './ChatLayout';
 export { default as ChatRoom } from './ChatRoom';
 export { default as ChatComposer } from './ChatComposer';
 export { default as MessageList } from './MessageList';
@@ -11,3 +12,12 @@ export { default as MessageToolbar } from './MessageToolbar';
 export { default as ChatSidebar } from './ChatSidebar';
 export { default as VideoCallModal } from './VideoCallModal';
 export { default as CreateGroupModal } from './CreateGroupModal';
+
+// Modern Glassmorphism Components
+export * from './modern';
+
+// Employee Directory Components
+export * from './EmployeeDirectory';
+
+// Media Components
+export * from './media';

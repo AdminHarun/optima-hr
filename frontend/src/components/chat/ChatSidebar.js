@@ -37,14 +37,20 @@ import { chatApi } from '../../services';
 const ChatSidebar = ({
   rooms = [],
   selectedRoomId,
+  activeRoomId, // New: from ChatLayout
   onRoomSelect,
   onCreateRoom,
   open = true,
   onClose,
   drawerWidth = 280,
   variant = 'permanent',
-  onMessageSelect // New: callback when a message search result is selected
+  onMessageSelect, // New: callback when a message search result is selected
+  currentUserType = 'admin', // New: current user type
+  channelType = 'EXTERNAL', // New: EXTERNAL or INTERNAL channel
+  unreadCounts = {} // New: object with room IDs as keys
 }) => {
+  // Use activeRoomId if provided, otherwise fall back to selectedRoomId
+  const currentRoomId = activeRoomId ?? selectedRoomId;
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchMode, setSearchMode] = useState(0); // 0 = rooms, 1 = messages
@@ -127,7 +133,10 @@ const ChatSidebar = ({
     }
 
     if (filterStatus === 'unread') {
-      filtered = filtered.filter(room => room.unreadCount > 0);
+      filtered = filtered.filter(room => {
+        const count = unreadCounts[room.id] ?? room.unreadCount ?? 0;
+        return count > 0;
+      });
     } else if (filterStatus === 'online') {
       filtered = filtered.filter(room => room.participantOnline);
     }
@@ -137,7 +146,7 @@ const ChatSidebar = ({
       const timeB = new Date(b.lastMessageTime || 0);
       return timeB - timeA;
     });
-  }, [rooms, searchTerm, filterStatus, searchMode]);
+  }, [rooms, searchTerm, filterStatus, searchMode, unreadCounts]);
 
   // Handle message result click
   const handleMessageResultClick = useCallback((result) => {
@@ -166,8 +175,10 @@ const ChatSidebar = ({
 
   // Room item component
   const RoomItem = ({ room }) => {
-    const isSelected = room.id === selectedRoomId;
-    const hasUnread = room.unreadCount > 0;
+    const isSelected = room.id === currentRoomId;
+    // Use unreadCounts from prop if available, otherwise use room's unreadCount
+    const unreadCount = unreadCounts[room.id] ?? room.unreadCount ?? 0;
+    const hasUnread = unreadCount > 0;
 
     return (
       <ListItem
@@ -274,7 +285,7 @@ const ChatSidebar = ({
               </Typography>
               {hasUnread && (
                 <Chip
-                  label={room.unreadCount}
+                  label={unreadCount}
                   size="small"
                   sx={{
                     height: 20,
@@ -388,7 +399,9 @@ const ChatSidebar = ({
       {/* Sidebar Header */}
       <Toolbar
         sx={{
-          background: 'linear-gradient(90deg, #1c61ab 0%, #4a8bd4 100%)',
+          background: channelType === 'INTERNAL'
+            ? 'linear-gradient(90deg, #1c61ab 0%, #3d8fd4 100%)'
+            : 'linear-gradient(90deg, #8bb94a 0%, #a8ca6f 100%)',
           color: '#ffffff',
           minHeight: 64,
           px: 2
@@ -396,7 +409,7 @@ const ChatSidebar = ({
       >
         <VideoCallIcon sx={{ mr: 1.5, fontSize: 28 }} />
         <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
-          Görüşmeler
+          {channelType === 'INTERNAL' ? 'Dahili Mesajlar' : 'Aday Görüşmeleri'}
         </Typography>
         {variant === 'temporary' && (
           <IconButton

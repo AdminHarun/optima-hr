@@ -19,7 +19,7 @@ const ChatMessage = sequelize.define('ChatMessage', {
     comment: 'Reference to chat_rooms table'
   },
   sender_type: {
-    type: DataTypes.ENUM('admin', 'applicant', 'system'),
+    type: DataTypes.ENUM('admin', 'applicant', 'system', 'employee'),
     allowNull: false,
     comment: 'Type of message sender'
   },
@@ -110,6 +110,22 @@ const ChatMessage = sequelize.define('ChatMessage', {
     type: DataTypes.DATE,
     allowNull: true,
     comment: 'Timestamp of deletion'
+  },
+  delivery_status: {
+    type: DataTypes.ENUM('pending', 'sent', 'delivered', 'read', 'failed'),
+    allowNull: false,
+    defaultValue: 'sent',
+    comment: 'Mesaj iletim durumu: beklemede, gonderildi, iletildi, okundu, basarisiz'
+  },
+  delivered_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Mesajin aliciya ulastigi zaman'
+  },
+  read_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Mesajin okundugu zaman'
   }
 }, {
   tableName: 'chat_messages',
@@ -143,8 +159,87 @@ const ChatMessage = sequelize.define('ChatMessage', {
     },
     {
       fields: ['reply_to_message_id']
+    },
+    {
+      fields: ['delivery_status']
     }
   ]
 });
+
+/**
+ * Statik Metodlar
+ */
+
+// Mesaji iletildi olarak isaretle
+ChatMessage.markAsDelivered = async function(messageId) {
+  return this.update(
+    {
+      delivery_status: 'delivered',
+      delivered_at: new Date()
+    },
+    {
+      where: {
+        id: messageId,
+        delivery_status: 'sent'
+      }
+    }
+  );
+};
+
+// Mesaji okundu olarak isaretle
+ChatMessage.markAsRead = async function(messageId) {
+  return this.update(
+    {
+      delivery_status: 'read',
+      read_at: new Date()
+    },
+    {
+      where: {
+        id: messageId,
+        delivery_status: { [require('sequelize').Op.in]: ['sent', 'delivered'] }
+      }
+    }
+  );
+};
+
+// Odadaki tum mesajlari okundu olarak isaretle
+ChatMessage.markRoomMessagesAsRead = async function(roomId, readerType, readerId) {
+  const { Op } = require('sequelize');
+
+  return this.update(
+    {
+      delivery_status: 'read',
+      read_at: new Date()
+    },
+    {
+      where: {
+        room_id: roomId,
+        delivery_status: { [Op.in]: ['sent', 'delivered'] },
+        // Kendi mesajlarini guncelleme
+        [Op.not]: {
+          sender_type: readerType,
+          sender_id: readerId
+        }
+      }
+    }
+  );
+};
+
+// Sistemsel mesaj olustur
+ChatMessage.createSystemMessage = async function(roomId, content, metadata = null) {
+  const messageId = `sys_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  return this.create({
+    message_id: messageId,
+    room_id: roomId,
+    sender_type: 'system',
+    sender_name: 'Sistem',
+    sender_id: null,
+    message_type: 'system',
+    content,
+    delivery_status: 'sent',
+    metadata
+  });
+};
 
 module.exports = ChatMessage;

@@ -5,6 +5,9 @@ const JobApplication = require('./JobApplication');
 const ChatRoom = require('./ChatRoom');
 const ChatMessage = require('./ChatMessage');
 const ChatRoomMember = require('./ChatRoomMember');
+const EmployeePresence = require('./EmployeePresence');
+const MessageReadReceipt = require('./MessageReadReceipt');
+const Employee = require('./Employee');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -71,6 +74,42 @@ const Site = require('./Site');
 const AdminUser = require('./AdminUser');
 const AuditLog = require('./AuditLog');
 
+// EmployeePresence - Employee iliskisi
+Employee.hasOne(EmployeePresence, {
+  foreignKey: 'employee_id',
+  as: 'presence'
+});
+EmployeePresence.belongsTo(Employee, {
+  foreignKey: 'employee_id',
+  as: 'employee'
+});
+
+// MessageReadReceipt - ChatMessage iliskisi
+ChatMessage.hasMany(MessageReadReceipt, {
+  foreignKey: 'message_id',
+  as: 'read_receipts'
+});
+MessageReadReceipt.belongsTo(ChatMessage, {
+  foreignKey: 'message_id',
+  as: 'message'
+});
+
+// AdminUser - Employee iliskisi (onboarding icin)
+AdminUser.belongsTo(Employee, {
+  foreignKey: 'employee_id',
+  as: 'employee'
+});
+Employee.hasOne(AdminUser, {
+  foreignKey: 'employee_id',
+  as: 'admin_user'
+});
+
+// ChatRoom - Pinned Message iliskisi
+ChatRoom.belongsTo(ChatMessage, {
+  foreignKey: 'pinned_message_id',
+  as: 'pinned_message'
+});
+
 module.exports = {
   InvitationLink,
   ApplicantProfile,
@@ -78,6 +117,9 @@ module.exports = {
   ChatRoom,
   ChatMessage,
   ChatRoomMember,
+  EmployeePresence,
+  MessageReadReceipt,
+  Employee,
   Site,
   AdminUser,
   AuditLog

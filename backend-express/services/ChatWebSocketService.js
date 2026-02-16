@@ -1,17 +1,32 @@
 const WebSocket = require('ws');
 const ChatRoom = require('../models/ChatRoom');
 const ChatMessage = require('../models/ChatMessage');
+const ChatRoomMember = require('../models/ChatRoomMember');
+const EmployeePresence = require('../models/EmployeePresence');
+const MessageReadReceipt = require('../models/MessageReadReceipt');
 const url = require('url');
+const redisService = require('./RedisService');
+const { authenticateWebSocket } = require('../middleware/chatAuth');
 
 class ChatWebSocketService {
   constructor() {
     this.wss = null;
-    this.clients = new Map(); // Map<clientId, {ws, roomId, userType, userId}>
+    this.clients = new Map(); // Map<clientId, {ws, roomId, userType, userId, employeeId}>
     this.rooms = new Map(); // Map<roomId, Set<clientId>>
+    this.userSockets = new Map(); // Map<"userType:userId", Set<clientId>> - Kullanici bazli socket takibi
+    this.presenceSubscriptions = new Map(); // Map<clientId, Set<employeeId>> - Presence abonelikleri
     console.log('🔧 ChatWebSocketService initialized');
   }
 
-  initialize(server) {
+  async initialize(server) {
+    // Redis baglantisini kur
+    try {
+      await redisService.connect();
+      this._setupRedisSubscriptions();
+    } catch (error) {
+      console.warn('[WebSocket] Redis baglantisi kurulamadi, yerel mod aktif:', error.message);
+    }
+
     this.wss = new WebSocket.Server({
       server,
       verifyClient: (info) => {
@@ -30,6 +45,39 @@ class ChatWebSocketService {
     });
 
     console.log('✅ WebSocket server initialized on /ws');
+  }
+
+  /**
+   * Redis pub/sub aboneliklerini ayarla
+   */
+  _setupRedisSubscriptions() {
+    // Presence degisiklikleri
+    redisService.subscribe('presence:changes', (data) => {
+      this._handlePresenceChange(data);
+    });
+
+    // Multi-instance mesaj dagitimi
+    // Her instance kendi room'larina gelen mesajlari dinler
+  }
+
+  /**
+   * Redis'ten gelen presence degisikligini isle
+   */
+  _handlePresenceChange(data) {
+    const { userType, userId, status } = data;
+
+    // Bu kullanicinin presence'ini takip eden tum client'lara bildir
+    for (const [clientId, subscriptions] of this.presenceSubscriptions.entries()) {
+      if (subscriptions.has(userId)) {
+        this.sendToClient(clientId, {
+          type: 'presence_update',
+          userType,
+          userId,
+          status,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
   }
 
   handleConnection(ws, req) {
@@ -160,6 +208,38 @@ class ChatWebSocketService {
           break;
         case 'ping':
           this.sendToClient(clientId, { type: 'pong', timestamp: new Date().toISOString() });
+          break;
+        // Presence Events
+        case 'presence_subscribe':
+          await this.handlePresenceSubscribe(clientId, message);
+          break;
+        case 'presence_bulk_query':
+          await this.handlePresenceBulkQuery(clientId, message);
+          break;
+        case 'set_status':
+          await this.handleSetStatus(clientId, message);
+          break;
+        // Message Status Events
+        case 'message_delivered':
+          await this.handleMessageDelivered(clientId, message);
+          break;
+        case 'mark_room_read':
+          await this.handleMarkRoomRead(clientId, message);
+          break;
+        // Room Events
+        case 'join_room':
+          await this.handleJoinRoom(clientId, message);
+          break;
+        case 'leave_room':
+          await this.handleLeaveRoom(clientId, message);
+          break;
+        // Desktop Notification
+        case 'request_desktop_notification':
+          this.handleDesktopNotificationRequest(clientId, message);
+          break;
+        // Authentication
+        case 'authenticate':
+          await this.handleAuthenticate(clientId, message);
           break;
         // Video Call Events
         case 'video_call_request':
@@ -539,11 +619,14 @@ class ChatWebSocketService {
     }
   }
 
-  handleDisconnection(clientId, code, reason) {
+  async handleDisconnection(clientId, code, reason) {
     const client = this.clients.get(clientId);
     if (!client) return;
 
     console.log(`🔌 Client ${clientId} disconnected:`, code, reason);
+
+    // Cleanup (Redis, presence, etc.)
+    await this.cleanupClient(clientId);
 
     // Remove from room
     if (this.rooms.has(client.roomId)) {
@@ -563,7 +646,8 @@ class ChatWebSocketService {
       type: 'presence_update',
       clientId,
       userType: client.userType,
-      roomId: client.roomId, // Add room ID so clients know which room this update is for
+      userId: client.userId,
+      roomId: client.roomId,
       action: 'left',
       timestamp: new Date().toISOString()
     });
@@ -882,6 +966,382 @@ class ChatWebSocketService {
     return stats;
   }
 }
+
+// ==================== YENİ PRESENCE & STATUS HANDLERS ====================
+
+  /**
+   * Kullanici kimlik dogrulama
+   */
+  async handleAuthenticate(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const { token } = message;
+      const result = await authenticateWebSocket(token);
+
+      if (!result.success) {
+        this.sendToClient(clientId, {
+          type: 'auth_error',
+          error: result.error,
+          timestamp: new Date().toISOString()
+        });
+        return;
+      }
+
+      const user = result.user;
+
+      // Client bilgilerini guncelle
+      client.userId = user.id;
+      client.userType = user.type;
+      client.employeeId = user.employeeId;
+      client.userName = user.name;
+      client.siteCode = user.siteCode;
+
+      // Kullanici bazli socket takibine ekle
+      const userKey = `${user.type}:${user.id}`;
+      if (!this.userSockets.has(userKey)) {
+        this.userSockets.set(userKey, new Set());
+      }
+      this.userSockets.get(userKey).add(clientId);
+
+      // Redis'te online olarak isaretle
+      if (user.employeeId) {
+        await redisService.setUserOnline('employee', user.employeeId, 'web');
+        await EmployeePresence.updateStatus(user.employeeId, 'online', 'web');
+      }
+
+      this.sendToClient(clientId, {
+        type: 'auth_success',
+        user: {
+          id: user.id,
+          type: user.type,
+          name: user.name,
+          employeeId: user.employeeId
+        },
+        timestamp: new Date().toISOString()
+      });
+
+      console.log(`✅ Client ${clientId} authenticated as ${user.name} (${user.type})`);
+    } catch (error) {
+      console.error('❌ Authentication error:', error);
+      this.sendToClient(clientId, {
+        type: 'auth_error',
+        error: 'Kimlik dogrulama hatasi',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Presence aboneligi
+   */
+  async handlePresenceSubscribe(clientId, message) {
+    const { employeeIds } = message;
+    if (!Array.isArray(employeeIds)) return;
+
+    // Abone listesini guncelle
+    if (!this.presenceSubscriptions.has(clientId)) {
+      this.presenceSubscriptions.set(clientId, new Set());
+    }
+    const subscriptions = this.presenceSubscriptions.get(clientId);
+    employeeIds.forEach(id => subscriptions.add(id));
+
+    // Mevcut durumlari gonder
+    const presenceMap = await redisService.bulkGetPresence('employee', employeeIds);
+
+    this.sendToClient(clientId, {
+      type: 'presence_bulk',
+      presence: presenceMap,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Toplu presence sorgulama
+   */
+  async handlePresenceBulkQuery(clientId, message) {
+    const { employeeIds } = message;
+    if (!Array.isArray(employeeIds)) return;
+
+    const presenceMap = await redisService.bulkGetPresence('employee', employeeIds);
+
+    this.sendToClient(clientId, {
+      type: 'presence_bulk',
+      presence: presenceMap,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Durum guncelleme
+   */
+  async handleSetStatus(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client || !client.employeeId) return;
+
+    const { status, customStatus, statusEmoji } = message;
+
+    // Redis'i guncelle
+    await redisService.setUserOnline('employee', client.employeeId);
+
+    // DB'yi guncelle
+    await EmployeePresence.upsert({
+      employee_id: client.employeeId,
+      status: status || 'online',
+      custom_status: customStatus,
+      status_emoji: statusEmoji,
+      last_seen_at: new Date()
+    });
+
+    // Presence degisikligini yayinla
+    await redisService.publishPresenceChange('employee', client.employeeId, status);
+
+    this.sendToClient(clientId, {
+      type: 'status_updated',
+      status,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Mesaj iletildi bildirimi
+   */
+  async handleMessageDelivered(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { messageIds, roomId } = message;
+    if (!Array.isArray(messageIds)) return;
+
+    // Mesajlari delivered olarak isaretle
+    await ChatMessage.update(
+      { delivery_status: 'delivered', delivered_at: new Date() },
+      { where: { message_id: messageIds, delivery_status: 'sent' } }
+    );
+
+    // Odadaki diger kullanicilara bildir
+    this.broadcastToRoom(roomId, {
+      type: 'messages_delivered',
+      messageIds,
+      deliveredTo: {
+        type: client.userType,
+        id: client.userId,
+        name: client.userName
+      },
+      timestamp: new Date().toISOString()
+    }, clientId);
+  }
+
+  /**
+   * Odayi okundu olarak isaretle
+   */
+  async handleMarkRoomRead(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { roomId } = message;
+
+    // Tum mesajlari okundu olarak isaretle
+    const updated = await ChatMessage.markRoomMessagesAsRead(
+      roomId,
+      client.userType,
+      client.userId
+    );
+
+    // Read receipts olustur
+    if (client.employeeId) {
+      await MessageReadReceipt.markRoomAsRead(roomId, 'employee', client.employeeId);
+    } else {
+      await MessageReadReceipt.markRoomAsRead(roomId, client.userType, client.userId);
+    }
+
+    // Odadaki diger kullanicilara bildir
+    this.broadcastToRoom(roomId, {
+      type: 'room_read',
+      roomId,
+      readBy: {
+        type: client.userType,
+        id: client.userId,
+        name: client.userName
+      },
+      timestamp: new Date().toISOString()
+    }, clientId);
+
+    // Redis uzerinden yayin
+    await redisService.publishMessageStatus(roomId, null, 'room_read', {
+      type: client.userType,
+      id: client.userId
+    });
+  }
+
+  /**
+   * Odaya katilma (multi-room support)
+   */
+  async handleJoinRoom(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { roomId } = message;
+
+    // Erisim kontrolu
+    const accessResult = await ChatRoom.validateAccess(client.userId, client.userType, roomId);
+    if (!accessResult.allowed) {
+      this.sendToClient(clientId, {
+        type: 'join_error',
+        roomId,
+        error: accessResult.reason,
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+
+    // Odaya ekle
+    if (!this.rooms.has(roomId)) {
+      this.rooms.set(roomId, new Set());
+    }
+    this.rooms.get(roomId).add(clientId);
+
+    // Odadaki digerlerne bildir
+    this.broadcastToRoom(roomId, {
+      type: 'room_member_joined',
+      roomId,
+      member: {
+        type: client.userType,
+        id: client.userId,
+        name: client.userName
+      },
+      timestamp: new Date().toISOString()
+    }, clientId);
+
+    this.sendToClient(clientId, {
+      type: 'room_joined',
+      roomId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Odadan ayrilma
+   */
+  async handleLeaveRoom(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { roomId } = message;
+
+    // Odadan cikar
+    if (this.rooms.has(roomId)) {
+      this.rooms.get(roomId).delete(clientId);
+
+      // Bos odalari temizle
+      if (this.rooms.get(roomId).size === 0) {
+        this.rooms.delete(roomId);
+      }
+    }
+
+    // Odadaki digerlerne bildir
+    this.broadcastToRoom(roomId, {
+      type: 'room_member_left',
+      roomId,
+      member: {
+        type: client.userType,
+        id: client.userId,
+        name: client.userName
+      },
+      timestamp: new Date().toISOString()
+    });
+
+    this.sendToClient(clientId, {
+      type: 'room_left',
+      roomId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Desktop notification istegi
+   */
+  handleDesktopNotificationRequest(clientId, message) {
+    // Client'a desktop notification gonder
+    this.sendToClient(clientId, {
+      type: 'desktop_notification',
+      title: message.title,
+      body: message.body,
+      data: message.data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Kullaniciya mesaj gonder (userType:userId ile)
+   */
+  sendToUser(userType, userId, message) {
+    const userKey = `${userType}:${userId}`;
+    const sockets = this.userSockets.get(userKey);
+
+    if (!sockets || sockets.size === 0) {
+      return false;
+    }
+
+    for (const clientId of sockets) {
+      this.sendToClient(clientId, message);
+    }
+
+    return true;
+  }
+
+  /**
+   * Presence degisikligini yayinla
+   */
+  broadcastPresenceChange(userType, userId, status, userName = null) {
+    // Bu kullanicinin presence'ini takip eden tum client'lara bildir
+    for (const [clientId, subscriptions] of this.presenceSubscriptions.entries()) {
+      if (subscriptions.has(userId)) {
+        this.sendToClient(clientId, {
+          type: 'presence_change',
+          userType,
+          userId,
+          status,
+          userName,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  }
+
+  /**
+   * Baglanti kapatildiginda temizlik
+   */
+  async cleanupClient(clientId) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    // Kullanici bazli socket takibinden cikar
+    const userKey = `${client.userType}:${client.userId}`;
+    if (this.userSockets.has(userKey)) {
+      this.userSockets.get(userKey).delete(clientId);
+
+      // Son socket ise offline yap
+      if (this.userSockets.get(userKey).size === 0) {
+        this.userSockets.delete(userKey);
+
+        // Redis'te offline yap
+        if (client.employeeId) {
+          await redisService.setUserOffline('employee', client.employeeId);
+          await EmployeePresence.decrementSocket(client.employeeId);
+        }
+      }
+    }
+
+    // Presence aboneliklerini temizle
+    this.presenceSubscriptions.delete(clientId);
+
+    // Typing indicator'i temizle
+    if (client.roomId) {
+      await redisService.clearTyping(client.roomId, client.userType, client.userId);
+    }
+  }
 
 // Create singleton instance
 const chatWebSocketService = new ChatWebSocketService();

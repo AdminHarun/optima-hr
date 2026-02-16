@@ -1,5 +1,9 @@
 const express = require('express');
+const { Op } = require('sequelize');
 const { Employee, EmployeeDocument } = require('../models');
+const ChatRoom = require('../models/ChatRoom');
+const ChatRoomMember = require('../models/ChatRoomMember');
+const presenceService = require('../services/PresenceService');
 const router = express.Router();
 
 // Site code helper
@@ -440,6 +444,332 @@ router.patch('/:id/update_crypto/', async (req, res) => {
   } catch (error) {
     console.error('Employee update crypto error:', error);
     res.status(500).json({ error: 'Kripto adresleri güncellenirken hata oluştu' });
+  }
+});
+
+// ==================== INTERNAL CHAT ENDPOINTS (FAZ 3) ====================
+
+// GET /api/employees/directory - Employee directory for internal chat
+router.get('/directory', async (req, res) => {
+  try {
+    const { department, search } = req.query;
+    const siteCode = getSiteCode(req);
+
+    const where = { is_active: true };
+    addSiteFilter(where, siteCode);
+
+    if (department && department !== 'all') {
+      where.department = department;
+    }
+
+    if (search) {
+      where[Op.or] = [
+        { first_name: { [Op.iLike]: `%${search}%` } },
+        { last_name: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+        { position: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const employees = await Employee.findAll({
+      where,
+      attributes: ['id', 'first_name', 'last_name', 'email', 'department',
+                   'position', 'avatar_url', 'phone'],
+      order: [['department', 'ASC'], ['first_name', 'ASC']]
+    });
+
+    // Add presence information
+    const withPresence = employees.map(emp => {
+      const empJson = emp.toJSON();
+      return {
+        ...empJson,
+        isOnline: presenceService.isOnline(`employee_${emp.id}`)
+      };
+    });
+
+    res.json({ employees: withPresence });
+  } catch (error) {
+    console.error('Employee directory error:', error);
+    res.status(500).json({ error: 'Calisan rehberi yuklenirken hata olustu' });
+  }
+});
+
+// POST /api/employees/dm - Start direct message with another employee
+router.post('/dm', async (req, res) => {
+  try {
+    const { targetEmployeeId } = req.body;
+    const currentUserId = req.auth?.userId || req.user?.id;
+    const siteCode = getSiteCode(req);
+
+    if (!targetEmployeeId) {
+      return res.status(400).json({ error: 'Target employee ID required' });
+    }
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verify target employee exists
+    const targetEmployee = await Employee.findByPk(targetEmployeeId);
+    if (!targetEmployee) {
+      return res.status(404).json({ error: 'Target employee not found' });
+    }
+
+    // Get current employee info
+    const currentEmployee = await Employee.findByPk(currentUserId);
+    if (!currentEmployee) {
+      return res.status(404).json({ error: 'Current employee not found' });
+    }
+
+    // Check if DM room already exists between these two users
+    const existingMembers = await ChatRoomMember.findAll({
+      where: {
+        member_type: 'employee',
+        member_id: [currentUserId, targetEmployeeId],
+        is_active: true
+      },
+      attributes: ['room_id'],
+      raw: true
+    });
+
+    // Group by room_id and find rooms that have both users
+    const roomCounts = {};
+    existingMembers.forEach(m => {
+      roomCounts[m.room_id] = (roomCounts[m.room_id] || 0) + 1;
+    });
+
+    let room = null;
+    for (const [roomId, count] of Object.entries(roomCounts)) {
+      if (count === 2) {
+        // Found a room with both users, verify it's a DM (2 members only)
+        const memberCount = await ChatRoomMember.count({
+          where: { room_id: roomId, is_active: true }
+        });
+
+        if (memberCount === 2) {
+          room = await ChatRoom.findOne({
+            where: {
+              id: roomId,
+              room_type: 'internal',
+              channel_type: 'INTERNAL',
+              is_active: true
+            }
+          });
+          if (room) break;
+        }
+      }
+    }
+
+    if (!room) {
+      // Create new DM room
+      room = await ChatRoom.create({
+        site_code: siteCode,
+        room_type: 'internal',
+        channel_type: 'INTERNAL',
+        room_name: null, // DMs don't have names, use participant names
+        created_by: currentUserId,
+        is_active: true
+      });
+
+      // Add both users as members
+      await ChatRoomMember.bulkCreate([
+        {
+          room_id: room.id,
+          member_type: 'employee',
+          member_id: currentUserId,
+          member_name: `${currentEmployee.first_name} ${currentEmployee.last_name}`,
+          member_email: currentEmployee.email,
+          role: 'member'
+        },
+        {
+          room_id: room.id,
+          member_type: 'employee',
+          member_id: targetEmployeeId,
+          member_name: `${targetEmployee.first_name} ${targetEmployee.last_name}`,
+          member_email: targetEmployee.email,
+          role: 'member'
+        }
+      ]);
+
+      console.log(`Created new DM room ${room.id} between employees ${currentUserId} and ${targetEmployeeId}`);
+    }
+
+    // Get room with members
+    const members = await ChatRoomMember.findAll({
+      where: { room_id: room.id, is_active: true }
+    });
+
+    res.json({
+      room: {
+        ...room.toJSON(),
+        members: members.map(m => m.toJSON())
+      }
+    });
+  } catch (error) {
+    console.error('Start DM error:', error);
+    res.status(500).json({ error: 'DM olusturulurken hata olustu' });
+  }
+});
+
+// GET /api/employees/internal-rooms - Get internal chat rooms for current user
+router.get('/internal-rooms', async (req, res) => {
+  try {
+    const currentUserId = req.auth?.userId || req.user?.id;
+    const siteCode = getSiteCode(req);
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Get all rooms where user is a member
+    const memberships = await ChatRoomMember.findAll({
+      where: {
+        member_type: 'employee',
+        member_id: currentUserId,
+        is_active: true
+      }
+    });
+
+    const roomIds = memberships.map(m => m.room_id);
+
+    if (roomIds.length === 0) {
+      return res.json({ rooms: [] });
+    }
+
+    // Get rooms with their members
+    const rooms = await ChatRoom.findAll({
+      where: {
+        id: roomIds,
+        channel_type: 'INTERNAL',
+        is_active: true
+      },
+      order: [['last_message_at', 'DESC']]
+    });
+
+    // Get all members for these rooms
+    const allMembers = await ChatRoomMember.findAll({
+      where: {
+        room_id: roomIds,
+        is_active: true
+      }
+    });
+
+    // Group members by room
+    const membersByRoom = {};
+    allMembers.forEach(m => {
+      if (!membersByRoom[m.room_id]) {
+        membersByRoom[m.room_id] = [];
+      }
+      membersByRoom[m.room_id].push(m.toJSON());
+    });
+
+    // Combine rooms with members and add online status
+    const roomsWithMembers = rooms.map(room => {
+      const roomJson = room.toJSON();
+      const members = membersByRoom[room.id] || [];
+
+      // For DM rooms, get the other person's info
+      if (room.room_type === 'internal' && members.length === 2) {
+        const otherMember = members.find(m => m.member_id !== currentUserId);
+        if (otherMember) {
+          roomJson.dm_partner = {
+            id: otherMember.member_id,
+            name: otherMember.member_name,
+            email: otherMember.member_email,
+            isOnline: presenceService.isOnline(`employee_${otherMember.member_id}`)
+          };
+        }
+      }
+
+      return {
+        ...roomJson,
+        members,
+        is_dm: room.room_type === 'internal' && members.length === 2
+      };
+    });
+
+    res.json({ rooms: roomsWithMembers });
+  } catch (error) {
+    console.error('Get internal rooms error:', error);
+    res.status(500).json({ error: 'Ic iletisim odalari yuklenirken hata olustu' });
+  }
+});
+
+// POST /api/employees/group - Create internal group chat
+router.post('/group', async (req, res) => {
+  try {
+    const { name, description, memberIds, avatar_url } = req.body;
+    const currentUserId = req.auth?.userId || req.user?.id;
+    const siteCode = getSiteCode(req);
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!name) {
+      return res.status(400).json({ error: 'Group name required' });
+    }
+
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length < 1) {
+      return res.status(400).json({ error: 'At least one member required' });
+    }
+
+    // Get current employee info
+    const currentEmployee = await Employee.findByPk(currentUserId);
+    if (!currentEmployee) {
+      return res.status(404).json({ error: 'Current employee not found' });
+    }
+
+    // Verify all members exist
+    const allMemberIds = [...new Set([currentUserId, ...memberIds])];
+    const employees = await Employee.findAll({
+      where: { id: allMemberIds, is_active: true }
+    });
+
+    if (employees.length !== allMemberIds.length) {
+      return res.status(400).json({ error: 'Some members not found or inactive' });
+    }
+
+    // Create group room
+    const room = await ChatRoom.create({
+      site_code: siteCode,
+      room_type: 'group',
+      channel_type: 'INTERNAL',
+      room_name: name,
+      description: description || null,
+      avatar_url: avatar_url || null,
+      created_by: currentUserId,
+      is_active: true
+    });
+
+    // Add all members
+    const memberRecords = employees.map(emp => ({
+      room_id: room.id,
+      member_type: 'employee',
+      member_id: emp.id,
+      member_name: `${emp.first_name} ${emp.last_name}`,
+      member_email: emp.email,
+      role: emp.id === currentUserId ? 'owner' : 'member'
+    }));
+
+    await ChatRoomMember.bulkCreate(memberRecords);
+
+    console.log(`Created group chat ${room.id} with ${memberRecords.length} members`);
+
+    // Get room with members
+    const members = await ChatRoomMember.findAll({
+      where: { room_id: room.id }
+    });
+
+    res.status(201).json({
+      room: {
+        ...room.toJSON(),
+        members: members.map(m => m.toJSON())
+      }
+    });
+  } catch (error) {
+    console.error('Create group error:', error);
+    res.status(500).json({ error: 'Grup olusturulurken hata olustu' });
   }
 });
 

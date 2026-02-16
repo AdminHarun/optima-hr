@@ -5,12 +5,28 @@
  * Environment variable'lar .env dosyalarından okunur:
  * - .env (development)
  * - .env.production (production build)
+ *
+ * Vite kullanır: import.meta.env.VITE_*
+ * CRA fallback: process.env.REACT_APP_*
  */
 
+// Helper to get env variable (Vite + CRA compatible)
+const getEnv = (viteKey, craKey, defaultValue) => {
+  // Vite environment
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[viteKey] || defaultValue;
+  }
+  // CRA fallback
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[craKey] || defaultValue;
+  }
+  return defaultValue;
+};
+
 // Base URLs
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
-export const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
-export const PUBLIC_URL = process.env.REACT_APP_PUBLIC_URL || 'http://localhost:3000';
+export const API_BASE_URL = getEnv('VITE_API_URL', 'REACT_APP_API_URL', 'http://localhost:9000');
+export const WS_BASE_URL = getEnv('VITE_WS_URL', 'REACT_APP_WS_URL', 'ws://localhost:9000');
+export const PUBLIC_URL = getEnv('VITE_PUBLIC_URL', 'REACT_APP_PUBLIC_URL', 'http://localhost:3000');
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -45,6 +61,11 @@ export const API_ENDPOINTS = {
   login: `${API_BASE_URL}/api/auth/login`,
   register: `${API_BASE_URL}/api/auth/register`,
 
+  // Employees
+  employees: `${API_BASE_URL}/api/employees`,
+  employeeDirectory: `${API_BASE_URL}/api/employees/directory`,
+  employeeDM: `${API_BASE_URL}/api/employees/dm`,
+
   // Management
   managementUsers: `${API_BASE_URL}/api/management/users`,
   managementRoles: `${API_BASE_URL}/api/management/roles`,
@@ -55,6 +76,8 @@ export const API_ENDPOINTS = {
 export const WS_ENDPOINTS = {
   adminChat: (roomId) => `${WS_BASE_URL}/ws/admin-chat/${roomId}`,
   applicantChat: (roomId) => `${WS_BASE_URL}/ws/applicant-chat/${roomId}`,
+  // New user-specific endpoint for FAZ 2
+  userChat: (userId) => `${WS_BASE_URL}/ws/chat/${userId}`,
 };
 
 // Helper function to get file URL

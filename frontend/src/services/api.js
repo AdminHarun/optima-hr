@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// API Base URL
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+// API Base URL - Vite compatible with CRA fallback
+const API_URL = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:9000';
 
 // Create axios instance
 const api = axios.create({

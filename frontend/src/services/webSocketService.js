@@ -6,8 +6,10 @@ class WebSocketService {
     this.socket = null;
     this.isConnected = false;
     this.isConnecting = false;
+    this.isAuthenticated = false;
     this.messageHandlers = [];
     this.connectionHandlers = [];
+    this.presenceHandlers = [];
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 10;
     this.reconnectDelay = 1000; // Start with 1 second
@@ -16,6 +18,11 @@ class WebSocketService {
     this.heartbeatTimeout = null;
     this.currentUrl = null;
     this.userType = null;
+    this.userId = null;
+    this.employeeId = null;
+    this.authToken = null;
+    this.currentRoomId = null;
+    this.subscribedRooms = new Set();
     this.intentionalDisconnect = false;
     console.log('🔧 WebSocketService initialized with auto-reconnect');
   }
@@ -81,6 +88,31 @@ class WebSocketService {
           if (data.type === 'pong') {
             this.handlePong();
             return;
+          }
+
+          // Handle authentication response
+          if (data.type === 'authenticated') {
+            this.isAuthenticated = true;
+            console.log('✅ WebSocket authenticated');
+          }
+
+          // Handle authentication error
+          if (data.type === 'auth_error') {
+            this.isAuthenticated = false;
+            console.error('❌ WebSocket authentication failed:', data.message);
+          }
+
+          // Handle presence updates
+          if (data.type === 'presence_update' || data.type === 'presence_bulk') {
+            this.presenceHandlers.forEach(handler => {
+              handler(data);
+            });
+            return;
+          }
+
+          // Handle message delivered confirmation
+          if (data.type === 'message_delivered_ack') {
+            console.log('✓ Message delivered:', data.message_id);
           }
 
           // Handle other messages
@@ -377,6 +409,7 @@ class WebSocketService {
     this.isConnecting = false;
     this.currentUrl = null;
     this.reconnectAttempts = 0;
+    this.clearSubscriptions();
   }
 
   // Force reconnect (manual trigger)
@@ -400,15 +433,206 @@ class WebSocketService {
     return {
       isConnected: this.isConnected,
       isConnecting: this.isConnecting,
+      isAuthenticated: this.isAuthenticated,
       userType: this.userType,
       reconnectAttempts: this.reconnectAttempts,
-      currentUrl: this.currentUrl
+      currentUrl: this.currentUrl,
+      currentRoomId: this.currentRoomId
     };
   }
 
   // Get WebSocket connection (for video calls)
   getConnection() {
     return this.socket;
+  }
+
+  // ==================== YENİ METODLAR ====================
+
+  // Generic send method
+  send(data) {
+    if (!this.isConnected || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot send data: WebSocket not connected');
+      return false;
+    }
+
+    try {
+      this.socket.send(JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.error('Failed to send data:', error);
+      return false;
+    }
+  }
+
+  // Authenticate with token
+  authenticate(token, userId, employeeId = null) {
+    this.authToken = token;
+    this.userId = userId;
+    this.employeeId = employeeId;
+
+    if (!this.isConnected) {
+      console.warn('Cannot authenticate: WebSocket not connected');
+      return false;
+    }
+
+    const success = this.send({
+      type: 'authenticate',
+      token: token,
+      user_id: userId,
+      employee_id: employeeId,
+      timestamp: new Date().toISOString()
+    });
+
+    if (success) {
+      this.isAuthenticated = true;
+      console.log('🔐 Authentication sent');
+    }
+
+    return success;
+  }
+
+  // Subscribe to presence updates
+  subscribePresence(employeeIds) {
+    if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+      return false;
+    }
+
+    return this.send({
+      type: 'presence_subscribe',
+      employee_ids: employeeIds,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Bulk query presence
+  queryPresenceBulk(employeeIds) {
+    if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+      return false;
+    }
+
+    return this.send({
+      type: 'presence_bulk_query',
+      employee_ids: employeeIds,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Set user status
+  setStatus(status, customMessage = null) {
+    return this.send({
+      type: 'set_status',
+      status: status,
+      custom_message: customMessage,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Join a chat room
+  joinRoom(roomId) {
+    if (this.subscribedRooms.has(roomId)) {
+      console.log(`Already subscribed to room ${roomId}`);
+      return true;
+    }
+
+    const success = this.send({
+      type: 'join_room',
+      room_id: roomId,
+      timestamp: new Date().toISOString()
+    });
+
+    if (success) {
+      this.subscribedRooms.add(roomId);
+      this.currentRoomId = roomId;
+      console.log(`📥 Joined room: ${roomId}`);
+    }
+
+    return success;
+  }
+
+  // Leave a chat room
+  leaveRoom(roomId) {
+    if (!this.subscribedRooms.has(roomId)) {
+      return true;
+    }
+
+    const success = this.send({
+      type: 'leave_room',
+      room_id: roomId,
+      timestamp: new Date().toISOString()
+    });
+
+    if (success) {
+      this.subscribedRooms.delete(roomId);
+      if (this.currentRoomId === roomId) {
+        this.currentRoomId = null;
+      }
+      console.log(`📤 Left room: ${roomId}`);
+    }
+
+    return success;
+  }
+
+  // Mark room as read
+  markRoomAsRead(roomId) {
+    return this.send({
+      type: 'mark_room_read',
+      room_id: roomId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Send message delivered confirmation
+  sendDeliveredConfirmation(messageId) {
+    return this.send({
+      type: 'message_delivered',
+      message_id: messageId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Request desktop notification
+  requestDesktopNotification(data) {
+    return this.send({
+      type: 'desktop_notification',
+      ...data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Presence event listener
+  onPresence(handler) {
+    this.presenceHandlers.push(handler);
+    return () => {
+      const index = this.presenceHandlers.indexOf(handler);
+      if (index > -1) {
+        this.presenceHandlers.splice(index, 1);
+      }
+    };
+  }
+
+  // Alias methods for compatibility
+  addMessageListener(handler) {
+    return this.onMessage(handler);
+  }
+
+  addConnectionListener(handler) {
+    return this.onConnection(handler);
+  }
+
+  addPresenceListener(handler) {
+    return this.onPresence(handler);
+  }
+
+  // Get subscribed rooms
+  getSubscribedRooms() {
+    return Array.from(this.subscribedRooms);
+  }
+
+  // Clear all subscriptions on disconnect
+  clearSubscriptions() {
+    this.subscribedRooms.clear();
+    this.currentRoomId = null;
+    this.isAuthenticated = false;
   }
 }
 

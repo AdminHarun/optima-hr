@@ -1,10 +1,14 @@
-const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, Notification } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const isDev = require('electron-is-dev');
 
 let mainWindow;
 let tray;
+let trayFlashInterval = null;
+let originalTrayIcon = null;
+let isFlashing = false;
+let unreadCount = 0;
 
 // Auto-updater configuration
 autoUpdater.autoDownload = false;
@@ -60,6 +64,23 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Pencere odaklandiginda flash'i durdur
+  mainWindow.on('focus', () => {
+    stopTrayFlash();
+    mainWindow.webContents.send('window-focused');
+  });
+
+  // Pencere odak kaybettiginde
+  mainWindow.on('blur', () => {
+    mainWindow.webContents.send('window-blurred');
+  });
+
+  // Pencere gosterildiginde
+  mainWindow.on('show', () => {
+    stopTrayFlash();
+    mainWindow.webContents.send('window-shown');
   });
 }
 
@@ -148,6 +169,136 @@ ipcMain.on('install-update', () => {
 ipcMain.on('check-for-updates', () => {
   checkForUpdates(true);
 });
+
+// ==================== NATIVE NOTIFICATION HANDLERS ====================
+
+// Native Notification goster
+ipcMain.handle('show-native-notification', async (event, data) => {
+  const { title, body, icon, roomId, silent = false } = data;
+
+  const notification = new Notification({
+    title: title || 'Optima HR',
+    body: body || '',
+    icon: icon || path.join(__dirname, 'assets/icon.png'),
+    silent: silent,
+  });
+
+  notification.on('click', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+      if (roomId) {
+        mainWindow.webContents.send('navigate-to-room', roomId);
+      }
+    }
+  });
+
+  notification.show();
+  return true;
+});
+
+// Badge Count (macOS dock badge)
+ipcMain.handle('set-badge-count', async (event, count) => {
+  unreadCount = count;
+
+  if (process.platform === 'darwin') {
+    app.dock.setBadge(count > 0 ? String(count) : '');
+  } else if (process.platform === 'win32') {
+    if (mainWindow) {
+      if (count > 0) {
+        mainWindow.setOverlayIcon(null, `${count} okunmamis mesaj`);
+      } else {
+        mainWindow.setOverlayIcon(null, '');
+      }
+    }
+  }
+
+  if (tray) {
+    const tooltip = count > 0
+      ? `Optima HR (${count} okunmamis)`
+      : 'Optima HR';
+    tray.setToolTip(tooltip);
+  }
+
+  return true;
+});
+
+// Tray Flash (yanip sonen ikon)
+ipcMain.handle('flash-tray-icon', async (event, flash) => {
+  if (flash && !isFlashing) {
+    startTrayFlash();
+  } else if (!flash && isFlashing) {
+    stopTrayFlash();
+  }
+  return true;
+});
+
+// Flash'i durdur
+ipcMain.handle('stop-flashing', async () => {
+  stopTrayFlash();
+  return true;
+});
+
+// Pencere durumu sorgula
+ipcMain.handle('get-window-state', async () => {
+  if (!mainWindow) return { focused: false, visible: false };
+  return {
+    focused: mainWindow.isFocused(),
+    visible: mainWindow.isVisible(),
+    minimized: mainWindow.isMinimized(),
+  };
+});
+
+// Tray flash baslat
+function startTrayFlash() {
+  if (isFlashing || !tray) return;
+
+  isFlashing = true;
+
+  const iconPath = path.join(__dirname, 'assets/tray-icon.png');
+  originalTrayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+
+  const alertIconPath = path.join(__dirname, 'assets/tray-icon-alert.png');
+  let alertIcon;
+  try {
+    alertIcon = nativeImage.createFromPath(alertIconPath).resize({ width: 16, height: 16 });
+  } catch {
+    alertIcon = originalTrayIcon;
+  }
+
+  let showAlert = true;
+
+  trayFlashInterval = setInterval(() => {
+    if (tray) {
+      tray.setImage(showAlert ? alertIcon : originalTrayIcon);
+      showAlert = !showAlert;
+    }
+  }, 500);
+
+  if (process.platform === 'win32' && mainWindow) {
+    mainWindow.flashFrame(true);
+  }
+}
+
+// Tray flash durdur
+function stopTrayFlash() {
+  if (!isFlashing) return;
+
+  isFlashing = false;
+
+  if (trayFlashInterval) {
+    clearInterval(trayFlashInterval);
+    trayFlashInterval = null;
+  }
+
+  if (tray && originalTrayIcon) {
+    tray.setImage(originalTrayIcon);
+  }
+
+  if (process.platform === 'win32' && mainWindow) {
+    mainWindow.flashFrame(false);
+  }
+}
 
 // App events
 app.on('ready', () => {

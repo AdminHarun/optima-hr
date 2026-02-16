@@ -2,8 +2,8 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
 /**
- * ChatRoomMember - Tracks membership for group chat rooms
- * Links users (admins and applicants) to chat rooms
+ * ChatRoomMember - Tracks membership for chat rooms
+ * Links users (employees and applicants) to chat rooms
  */
 const ChatRoomMember = sequelize.define('ChatRoomMember', {
   id: {
@@ -17,14 +17,14 @@ const ChatRoomMember = sequelize.define('ChatRoomMember', {
     comment: 'Reference to chat_rooms table'
   },
   member_type: {
-    type: DataTypes.ENUM('admin', 'applicant'),
+    type: DataTypes.ENUM('employee', 'applicant', 'admin'),
     allowNull: false,
-    comment: 'Type of member'
+    comment: 'Type of member: employee, applicant, or admin (legacy)'
   },
   member_id: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    comment: 'ID of the member (admin_id or applicant_id)'
+    comment: 'ID of the member (employee_id or applicant_id)'
   },
   member_name: {
     type: DataTypes.STRING(255),
@@ -41,6 +41,21 @@ const ChatRoomMember = sequelize.define('ChatRoomMember', {
     allowNull: false,
     defaultValue: 'member',
     comment: 'Role in the group: owner, admin, or member'
+  },
+  nickname: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    comment: 'Custom nickname for this room'
+  },
+  muted_until: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Muted until this timestamp (null = not muted)'
+  },
+  is_pinned: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether this room is pinned for the member'
   },
   is_active: {
     type: DataTypes.BOOLEAN,

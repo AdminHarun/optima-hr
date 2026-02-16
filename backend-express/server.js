@@ -282,6 +282,16 @@ const runMigrations = async () => {
       console.log('⚠️ Management tables note:', mgmtErr.message);
     }
 
+    // Run hybrid chat migration for new columns
+    try {
+      console.log('🔄 Running hybrid chat migration...');
+      const hybridChatMigration = require('./migrations/20240215_hybrid_chat');
+      await hybridChatMigration.up();
+      console.log('✅ Hybrid chat migration completed');
+    } catch (hybridErr) {
+      console.log('⚠️ Hybrid chat migration note:', hybridErr.message);
+    }
+
     // Initialize video call tables (already included in migrations)
     await videoCallService.initializeTables();
 

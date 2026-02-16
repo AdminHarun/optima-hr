@@ -342,7 +342,7 @@ function AdminSidebar() {
       {/* Sidebar Footer */}
       <Box sx={{ mt: 'auto', p: 2, color: 'var(--theme-sidebar-text, white)', textAlign: 'center' }}>
         <Typography variant="caption" sx={{ opacity: 0.6 }}>
-          v1.0.0 - OPTIMA HR Management System
+          v1.5.0 - OPTIMA HR Management System
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 1 }}>
           <Chip

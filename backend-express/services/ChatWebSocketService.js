@@ -965,7 +965,6 @@ class ChatWebSocketService {
 
     return stats;
   }
-}
 
 // ==================== YENİ PRESENCE & STATUS HANDLERS ====================
 
@@ -1342,6 +1341,7 @@ class ChatWebSocketService {
       await redisService.clearTyping(client.roomId, client.userType, client.userId);
     }
   }
+}
 
 // Create singleton instance
 const chatWebSocketService = new ChatWebSocketService();

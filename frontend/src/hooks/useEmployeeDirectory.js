@@ -10,9 +10,9 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getConfig } from '../config/config';
+import { API_BASE_URL } from '../config/config';
 
-const API_BASE = getConfig().API_URL;
+const API_BASE = API_BASE_URL;
 
 export function useEmployeeDirectory(token) {
   // State

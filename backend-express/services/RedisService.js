@@ -34,6 +34,14 @@ class RedisService {
     }
   }
 
+  // Public connect method
+  async connect() {
+    if (this.useMock) {
+      return true;
+    }
+    return this._connect();
+  }
+
   _connect() {
     try {
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
@@ -427,6 +435,31 @@ class RedisService {
 
   async invalidateRoomCache(roomId) {
     const key = `room:${roomId}:messages`;
+    return this.del(key);
+  }
+
+  // ==================== PRESENCE PUBLISH ====================
+
+  async publishPresenceChange(userType, userId, status) {
+    return this.publish('presence:changes', {
+      userType,
+      userId,
+      status,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  async publishMessageStatus(roomId, messageId, status, data) {
+    return this.publish(`message:status:${roomId}`, {
+      messageId,
+      status,
+      data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  async clearTyping(roomId, userType, userId) {
+    const key = `typing:${roomId}:${userType}:${userId}`;
     return this.del(key);
   }
 

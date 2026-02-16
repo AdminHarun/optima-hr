@@ -139,6 +139,7 @@ export const THEMES = [
         bg: 'rgba(255, 255, 255, 0.12)',
         border: 'rgba(255, 255, 255, 0.25)',
         shadow: '0 8px 32px rgba(139, 92, 246, 0.2)',
+        text: '#FFFFFF',
       },
       header: {
         bg: 'rgba(139, 92, 246, 0.2)',
@@ -183,6 +184,7 @@ export const THEMES = [
         bg: 'rgba(255, 255, 255, 0.12)',
         border: 'rgba(255, 255, 255, 0.25)',
         shadow: '0 8px 32px rgba(6, 182, 212, 0.2)',
+        text: '#FFFFFF',
       },
       header: {
         bg: 'rgba(6, 182, 212, 0.2)',
@@ -676,7 +678,11 @@ export const ThemeProvider = ({ children }) => {
     root.style.setProperty('--theme-card-bg', colors.card.bg);
     root.style.setProperty('--theme-card-border', colors.card.border);
     root.style.setProperty('--theme-card-shadow', colors.card.shadow);
-    root.style.setProperty('--theme-card-text', colors.card.text || (theme.isBasic ? '#1a1a1a' : '#FFFFFF'));
+    // Text color - default to white for glass themes, dark for basic themes
+    const textColor = colors.card.text || (theme.isBasic ? '#1a1a1a' : '#FFFFFF');
+    root.style.setProperty('--theme-card-text', textColor);
+    // Also set as body color for inheritance
+    document.body.style.color = textColor;
 
     // Header colors
     root.style.setProperty('--theme-header-bg', colors.header.bg);

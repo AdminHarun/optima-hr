@@ -404,3 +404,82 @@ code {
   border: 1px solid var(--theme-card-border) !important;
   border-radius: 12px !important;
 }
+
+/* ==================== THEME TEXT COLORS ==================== */
+/* Override hardcoded text colors to use theme variables */
+
+/* Typography should use theme text color */
+.MuiTypography-root {
+  color: var(--theme-card-text, inherit);
+}
+
+/* Specific overrides for common text elements */
+.MuiPaper-root .MuiTypography-root,
+.MuiCard-root .MuiTypography-root,
+.MuiDialog-root .MuiTypography-root {
+  color: var(--theme-card-text) !important;
+}
+
+/* Keep white text in sidebar and header */
+.MuiDrawer-paper .MuiTypography-root {
+  color: var(--theme-sidebar-text) !important;
+}
+
+.MuiAppBar-root .MuiTypography-root {
+  color: var(--theme-header-text) !important;
+}
+
+/* Input and form elements */
+.MuiInputBase-input,
+.MuiInputLabel-root,
+.MuiFormLabel-root {
+  color: var(--theme-card-text) !important;
+}
+
+/* Table text */
+.MuiTableCell-root {
+  color: var(--theme-card-text) !important;
+}
+
+/* List items */
+.MuiListItemText-primary,
+.MuiListItemText-secondary {
+  color: var(--theme-card-text) !important;
+}
+
+/* Menu items */
+.MuiMenuItem-root {
+  color: var(--theme-card-text) !important;
+}
+
+/* Chip text */
+.MuiChip-label {
+  color: var(--theme-card-text) !important;
+}
+
+/* Tab text */
+.MuiTab-root {
+  color: var(--theme-card-text) !important;
+}
+
+.MuiTab-root.Mui-selected {
+  color: var(--theme-primary) !important;
+}
+
+/* Icon buttons and icons */
+.MuiIconButton-root {
+  color: var(--theme-card-text) !important;
+}
+
+/* Exclude specific colored elements */
+.MuiButton-contained,
+.MuiButton-contained .MuiTypography-root,
+.MuiAlert-root .MuiTypography-root,
+.MuiChip-colorPrimary .MuiChip-label,
+.MuiChip-colorSecondary .MuiChip-label,
+.MuiChip-colorSuccess .MuiChip-label,
+.MuiChip-colorError .MuiChip-label,
+.MuiChip-colorWarning .MuiChip-label,
+.MuiChip-colorInfo .MuiChip-label {
+  color: inherit !important;
+}

@@ -17,7 +17,6 @@ import webSocketService from '../../services/webSocketService';
 import notificationService from '../../services/notificationService';
 import electronNotificationService from '../../services/electronNotificationService';
 import { IncomingCallNotification } from '../videoCall';
-import { ChatContext } from '../../contexts/ChatContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
 const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';

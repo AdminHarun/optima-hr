@@ -31,7 +31,7 @@ import {
   Menu as MenuIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { ChatProvider, useChatContext } from '../../contexts/ChatContext';
+import { ChatProvider, useChat } from '../../contexts/ChatContext';
 import { EmployeeDirectoryPanel } from './EmployeeDirectory';
 import ChatSidebar from './ChatSidebar';
 import ChatContainer from './ChatContainer';
@@ -64,7 +64,7 @@ const ChatLayoutContent = ({
     connectionStatus,
     switchChannel,
     setActiveRoom
-  } = useChatContext();
+  } = useChat();
 
   const [activeTab, setActiveTab] = useState(CHANNEL_TABS.EXTERNAL);
   const [directoryOpen, setDirectoryOpen] = useState(false);

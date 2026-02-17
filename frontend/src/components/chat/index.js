@@ -13,6 +13,14 @@ export { default as ChatSidebar } from './ChatSidebar';
 export { default as VideoCallModal } from './VideoCallModal';
 export { default as CreateGroupModal } from './CreateGroupModal';
 
+// Channel System Components
+export { default as ChannelSidebar } from './ChannelSidebar';
+export { default as ChannelChatView } from './ChannelChatView';
+export { default as ThreadPanel } from './ThreadPanel';
+export { default as MentionInput } from './MentionInput';
+export { default as GlobalSearchModal } from './GlobalSearchModal';
+export { default as StatusSelector } from './StatusSelector';
+
 // Modern Glassmorphism Components
 export * from './modern';
 

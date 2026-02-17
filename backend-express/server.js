@@ -19,9 +19,18 @@ const bulkRoutes = require('./routes/bulk');
 const invitationRoutes = require('./routes/invitations');
 const applicationRoutes = require('./routes/applications');
 const chatRoutes = require('./routes/chat');
+const channelRoutes = require('./routes/channels');
+const searchRoutes = require('./routes/search');
 const recordingRoutes = require('./routes/recordings');
 const linkPreviewRoutes = require('./routes/link-preview');
 const managementRoutes = require('./routes/management');
+const mediaRoutes = require('./routes/media');
+const voiceRoutes = require('./routes/voice');
+const scheduledRoutes = require('./routes/scheduled');
+const bookmarkRoutes = require('./routes/bookmarks');
+const pinRoutes = require('./routes/pins');
+const readReceiptRoutes = require('./routes/read-receipts');
+const screenShareRoutes = require('./routes/screen-share');
 
 const app = express();
 const server = http.createServer(app);
@@ -58,9 +67,18 @@ app.use('/api/employees', bulkRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/chat/api', chatRoutes);
+app.use('/api/channels', channelRoutes);
+app.use('/api/search', searchRoutes);
 app.use('/api/recordings', recordingRoutes);
 app.use('/api/link-preview', linkPreviewRoutes);
 app.use('/api/management', managementRoutes);
+app.use('/api/media', mediaRoutes);
+app.use('/api/voice', voiceRoutes);
+app.use('/api/scheduled', scheduledRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/pins', pinRoutes);
+app.use('/api/read-receipts', readReceiptRoutes);
+app.use('/api/screen-share', screenShareRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -187,6 +205,14 @@ const runMigrations = async () => {
       console.log('⚠️ Chat migration note:', chatMigrationErr.message);
     }
 
+    // Run channel tables migration
+    try {
+      const { syncChannelTables } = require('./migrations/syncChannelTables');
+      await syncChannelTables(sequelize);
+    } catch (channelMigrationErr) {
+      console.log('⚠️ Channel migration note:', channelMigrationErr.message);
+    }
+
     // Initialize employee tables
     try {
       const { Employee, EmployeeDocument } = require('./models');
@@ -290,6 +316,75 @@ const runMigrations = async () => {
       console.log('✅ Hybrid chat migration completed');
     } catch (hybridErr) {
       console.log('⚠️ Hybrid chat migration note:', hybridErr.message);
+    }
+
+    // Run employee status migration (Task 1.5)
+    try {
+      console.log('🔄 Running employee status migration...');
+      const employeeStatusMigration = require('./migrations/20240220_employee_status');
+      await employeeStatusMigration.up();
+      console.log('✅ Employee status migration completed');
+    } catch (statusErr) {
+      console.log('⚠️ Employee status migration note:', statusErr.message);
+    }
+
+    // Run offline message queue migration (Task 1.6)
+    try {
+      console.log('🔄 Running offline message queue migration...');
+      const offlineQueueMigration = require('./migrations/20240220_offline_message_queue');
+      await offlineQueueMigration.up();
+      console.log('✅ Offline message queue migration completed');
+    } catch (offlineErr) {
+      console.log('⚠️ Offline message queue migration note:', offlineErr.message);
+    }
+
+    // Initialize offline messaging service
+    try {
+      const offlineMessagingService = require('./services/OfflineMessagingService');
+      await offlineMessagingService.initialize();
+      console.log('✅ Offline messaging service initialized');
+    } catch (offlineSvcErr) {
+      console.log('⚠️ Offline messaging service note:', offlineSvcErr.message);
+    }
+
+    // Run scheduled messages migration (Task 2.4)
+    try {
+      console.log('🔄 Running scheduled messages migration...');
+      const scheduledMigration = require('./migrations/20240220_scheduled_messages');
+      await scheduledMigration.up();
+      console.log('✅ Scheduled messages migration completed');
+    } catch (scheduledErr) {
+      console.log('⚠️ Scheduled messages migration note:', scheduledErr.message);
+    }
+
+    // Initialize scheduled message service
+    try {
+      const scheduledMessageService = require('./services/ScheduledMessageService');
+      await scheduledMessageService.initialize();
+      console.log('✅ Scheduled message service initialized');
+    } catch (scheduledSvcErr) {
+      console.log('⚠️ Scheduled message service note:', scheduledSvcErr.message);
+    }
+
+    // Run message bookmarks migration (Task 2.6)
+    try {
+      console.log('🔄 Running message bookmarks migration...');
+      const bookmarksMigration = require('./migrations/20240220_message_bookmarks');
+      await bookmarksMigration.up();
+      console.log('✅ Message bookmarks migration completed');
+    } catch (bookmarksErr) {
+      console.log('⚠️ Message bookmarks migration note:', bookmarksErr.message);
+    }
+
+    // Initialize screen share service (Task 2.3)
+    try {
+      console.log('🔄 Initializing screen share service...');
+      const screenShareService = require('./services/ScreenShareService');
+      await screenShareService.initializeTables();
+      screenShareService.setWebSocketService(chatWebSocketService);
+      console.log('✅ Screen share service initialized');
+    } catch (screenShareErr) {
+      console.log('⚠️ Screen share service note:', screenShareErr.message);
     }
 
     // Initialize video call tables (already included in migrations)

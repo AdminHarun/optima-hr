@@ -100,6 +100,27 @@ router.get('/rooms/applicant_rooms/', async (req, res) => {
       limit: 100
     });
 
+    // Tüm applicant_id'leri topla
+    const applicantIds = rooms
+      .map(room => room.applicant_id)
+      .filter(id => id != null);
+
+    // ApplicantProfile'ları tek sorguda getir
+    const profiles = applicantIds.length > 0
+      ? await ApplicantProfile.findAll({
+          where: { id: { [Op.in]: applicantIds } },
+          attributes: [
+            'id', 'first_name', 'last_name', 'email', 'phone',
+            'profile_created_ip', 'profile_created_location',
+            'device_info', 'is_vpn', 'vpn_score',
+            'profile_created_at', 'invitation_link_id', 'site_code'
+          ]
+        })
+      : [];
+
+    // Profile'ları ID'ye göre map'le
+    const profileMap = new Map(profiles.map(p => [p.id, p.toJSON()]));
+
     // Get unread count and format room data for each room
     const roomsWithCounts = await Promise.all(
       rooms.map(async (room) => {
@@ -127,11 +148,24 @@ router.get('/rooms/applicant_rooms/', async (req, res) => {
           }
         }
 
+        // Applicant profil bilgisini ekle
+        const applicantProfile = room.applicant_id ? profileMap.get(room.applicant_id) : null;
+
         return {
           ...room.toJSON(),
           room_id: roomId, // Add virtual room_id field
           unread_count: unreadCount,
-          last_message: lastMessage
+          last_message: lastMessage,
+          // Profil bilgileri
+          applicant_profile: applicantProfile,
+          // Geriye uyumluluk için düz alanlar
+          phone: applicantProfile?.phone || null,
+          profile_created_at: applicantProfile?.profile_created_at || room.created_at,
+          profile_created_ip: applicantProfile?.profile_created_ip || null,
+          profile_created_location: applicantProfile?.profile_created_location || null,
+          device_info: applicantProfile?.device_info || null,
+          is_vpn: applicantProfile?.is_vpn || false,
+          vpn_score: applicantProfile?.vpn_score || 0
         };
       })
     );
@@ -146,29 +180,66 @@ router.get('/rooms/applicant_rooms/', async (req, res) => {
 // Get or create applicant room
 router.post('/rooms/get_or_create_applicant_room/', async (req, res) => {
   try {
-    const { applicant_id, applicant_email, applicant_name } = req.body;
+    const { applicant_id, applicant_email, applicant_name, site_code } = req.body;
+    const headerSiteCode = getSiteCode(req);
 
     if (!applicant_id) {
       return res.status(400).json({ error: 'applicant_id is required' });
     }
 
+    const parsedApplicantId = parseInt(applicant_id);
+
     // Find or create room
     let room = await ChatRoom.findOne({
       where: {
         room_type: 'applicant',
-        applicant_id: parseInt(applicant_id)
+        applicant_id: parsedApplicantId
       }
     });
 
     if (!room) {
+      // Applicant profil bilgilerini al
+      let profileInfo = { email: applicant_email, name: applicant_name, site_code: site_code || headerSiteCode };
+
+      if (!applicant_email || !applicant_name) {
+        const profile = await ApplicantProfile.findByPk(parsedApplicantId);
+        if (profile) {
+          profileInfo.email = applicant_email || profile.email;
+          profileInfo.name = applicant_name || `${profile.first_name} ${profile.last_name}`.trim();
+          profileInfo.site_code = site_code || headerSiteCode || profile.site_code;
+        }
+      }
+
+      const finalName = profileInfo.name || `Başvuran ${parsedApplicantId}`;
+
       room = await ChatRoom.create({
+        site_code: profileInfo.site_code || null,
         room_type: 'applicant',
-        applicant_id: parseInt(applicant_id),
-        applicant_email: applicant_email || `applicant_${applicant_id}@temp.com`,
-        applicant_name: applicant_name || `Applicant ${applicant_id}`,
+        channel_type: 'EXTERNAL',
+        applicant_id: parsedApplicantId,
+        applicant_email: profileInfo.email || `applicant_${parsedApplicantId}@temp.com`,
+        applicant_name: finalName,
+        room_name: finalName,
         is_active: true
       });
-      console.log(`✅ Created new chat room for applicant ${applicant_id}`);
+      console.log(`✅ Created new chat room for applicant ${parsedApplicantId} (${room.applicant_name})`);
+    } else {
+      // Mevcut odayı güncelle (eksik alanlar varsa)
+      const updates = {};
+      if (!room.channel_type) updates.channel_type = 'EXTERNAL';
+      if (!room.site_code && (site_code || headerSiteCode)) updates.site_code = site_code || headerSiteCode;
+      if (applicant_name && room.applicant_name !== applicant_name) {
+        updates.applicant_name = applicant_name;
+        updates.room_name = applicant_name;
+      }
+      if (applicant_email && room.applicant_email !== applicant_email) {
+        updates.applicant_email = applicant_email;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await room.update(updates);
+        console.log(`✅ Updated chat room for applicant ${parsedApplicantId}:`, updates);
+      }
     }
 
     res.json({ room });
@@ -214,6 +285,8 @@ router.get('/rooms/:roomId/messages/', async (req, res) => {
     const { roomId } = req.params;
     const { page = 1, page_size = 50 } = req.query;
 
+    console.log(`📨 GET /rooms/${roomId}/messages/ - Fetching messages`);
+
     // Resolve room ID - could be integer PK or string identifier like "applicant_123" or "group_4"
     let dbRoomId = parseInt(roomId);
     if (isNaN(dbRoomId)) {
@@ -227,38 +300,56 @@ router.get('/rooms/:roomId/messages/', async (req, res) => {
           where: { id: dbRoomId, room_type: 'group', is_active: true }
         });
         if (!room) {
+          console.log(`❌ Group room not found: ${roomId}`);
           return res.status(404).json({ error: 'Group not found' });
         }
       } else if (parts[0] === 'applicant' && parts[1]) {
         const applicantId = parseInt(parts[1]);
+
+        if (isNaN(applicantId)) {
+          console.log(`❌ Invalid applicant ID in room identifier: ${roomId}`);
+          return res.status(400).json({ error: 'Invalid applicant ID' });
+        }
+
         let room = await ChatRoom.findOne({ where: { room_type: 'applicant', applicant_id: applicantId } });
 
         // Room yoksa otomatik oluştur
         if (!room) {
-          console.log('🔧 Chat room not found, creating automatically for applicant:', applicantId);
+          console.log(`🔧 Chat room not found for applicant ${applicantId}, creating automatically...`);
           try {
             // Applicant bilgilerini al
             const ApplicantProfile = require('../models/ApplicantProfile');
             const profile = await ApplicantProfile.findByPk(applicantId);
 
+            if (!profile) {
+              console.log(`⚠️ ApplicantProfile not found for ID ${applicantId}, creating room with default values`);
+            }
+
             room = await ChatRoom.create({
               room_type: 'applicant',
+              channel_type: 'EXTERNAL',
               applicant_id: applicantId,
               applicant_email: profile?.email || `applicant_${applicantId}@temp.com`,
-              applicant_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
-              room_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+              applicant_name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : `Başvuran ${applicantId}`,
+              room_name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : `Başvuran ${applicantId}`,
               site_code: profile?.site_code || null,
               is_active: true
             });
-            console.log('✅ Chat room created automatically:', room.id);
+            console.log(`✅ Chat room created automatically: ID=${room.id} for applicant=${applicantId}`);
           } catch (createError) {
-            console.error('❌ Failed to create chat room:', createError.message);
-            return res.status(404).json({ error: 'Chat room not found and could not be created' });
+            console.error(`❌ Failed to create chat room for applicant ${applicantId}:`, createError.message);
+            return res.status(500).json({
+              error: 'Chat room could not be created',
+              details: process.env.NODE_ENV === 'development' ? createError.message : undefined
+            });
           }
+        } else {
+          console.log(`✅ Found existing chat room: ID=${room.id} for applicant=${applicantId}`);
         }
         dbRoomId = room.id;
       } else {
-        return res.status(400).json({ error: 'Invalid room identifier' });
+        console.log(`❌ Invalid room identifier format: ${roomId}`);
+        return res.status(400).json({ error: 'Invalid room identifier format. Expected: applicant_ID or group_ID' });
       }
     }
 

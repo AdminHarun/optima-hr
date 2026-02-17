@@ -8,6 +8,11 @@ const ChatRoomMember = require('./ChatRoomMember');
 const EmployeePresence = require('./EmployeePresence');
 const MessageReadReceipt = require('./MessageReadReceipt');
 const Employee = require('./Employee');
+const Channel = require('./Channel');
+const ChannelMember = require('./ChannelMember');
+const OfflineMessageQueue = require('./OfflineMessageQueue');
+const ScheduledMessage = require('./ScheduledMessage');
+const MessageBookmark = require('./MessageBookmark');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -57,6 +62,18 @@ ChatMessage.hasMany(ChatMessage, {
 ChatMessage.belongsTo(ChatMessage, {
   foreignKey: 'reply_to_id',
   as: 'reply_to'
+});
+
+// ChatMessage - Employee (sender) ilişkisi
+ChatMessage.belongsTo(Employee, {
+  foreignKey: 'sender_id',
+  as: 'sender_employee',
+  constraints: false
+});
+Employee.hasMany(ChatMessage, {
+  foreignKey: 'sender_id',
+  as: 'sent_messages',
+  constraints: false
 });
 
 // ChatRoomMember associations
@@ -110,6 +127,57 @@ ChatRoom.belongsTo(ChatMessage, {
   as: 'pinned_message'
 });
 
+// ==================== CHANNEL (KANAL) SİSTEMİ ====================
+
+// Channel - ChannelMember ilişkisi
+Channel.hasMany(ChannelMember, {
+  foreignKey: 'channel_id',
+  as: 'members',
+  onDelete: 'CASCADE'
+});
+ChannelMember.belongsTo(Channel, {
+  foreignKey: 'channel_id',
+  as: 'channel'
+});
+
+// Channel - Employee (creator) ilişkisi
+Channel.belongsTo(Employee, {
+  foreignKey: 'created_by',
+  as: 'creator'
+});
+
+// ChannelMember - Employee ilişkisi
+ChannelMember.belongsTo(Employee, {
+  foreignKey: 'employee_id',
+  as: 'employee'
+});
+Employee.hasMany(ChannelMember, {
+  foreignKey: 'employee_id',
+  as: 'channel_memberships'
+});
+
+// Channel - ChatMessage ilişkisi (kanal mesajları)
+Channel.hasMany(ChatMessage, {
+  foreignKey: 'channel_id',
+  as: 'messages'
+});
+ChatMessage.belongsTo(Channel, {
+  foreignKey: 'channel_id',
+  as: 'channel'
+});
+
+// ==================== BOOKMARK SİSTEMİ (Task 2.6) ====================
+
+// MessageBookmark - ChatMessage ilişkisi
+ChatMessage.hasMany(MessageBookmark, {
+  foreignKey: 'message_id',
+  as: 'bookmarks'
+});
+MessageBookmark.belongsTo(ChatMessage, {
+  foreignKey: 'message_id',
+  as: 'message'
+});
+
 module.exports = {
   InvitationLink,
   ApplicantProfile,
@@ -122,5 +190,10 @@ module.exports = {
   Employee,
   Site,
   AdminUser,
-  AuditLog
+  AuditLog,
+  Channel,
+  ChannelMember,
+  OfflineMessageQueue,
+  ScheduledMessage,
+  MessageBookmark
 };

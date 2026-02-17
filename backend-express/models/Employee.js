@@ -199,6 +199,10 @@ const Employee = sequelize.define('Employee', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  avatar_url: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+  },
   deactivated_at: {
     type: DataTypes.DATE,
     allowNull: true,
@@ -206,6 +210,35 @@ const Employee = sequelize.define('Employee', {
   restored_at: {
     type: DataTypes.DATE,
     allowNull: true,
+  },
+
+  // Status System (Task 1.5)
+  status: {
+    type: DataTypes.ENUM('online', 'away', 'busy', 'offline'),
+    defaultValue: 'offline',
+    allowNull: false,
+  },
+  custom_status: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'Custom status message (e.g., "In a meeting")'
+  },
+  custom_status_emoji: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+    comment: 'Emoji for custom status'
+  },
+  last_seen_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'Last activity timestamp'
+  },
+
+  // Push Notifications (Task 1.6)
+  push_token: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'FCM or APNS push notification token'
   },
 }, {
   tableName: 'employees_employee',

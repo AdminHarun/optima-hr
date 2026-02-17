@@ -15,8 +15,18 @@ const ChatMessage = sequelize.define('ChatMessage', {
   },
   room_id: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-    comment: 'Reference to chat_rooms table'
+    allowNull: true,
+    comment: 'Reference to chat_rooms table (DM veya eski grup chatler için)'
+  },
+  channel_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Reference to channels table (kanal mesajları için)'
+  },
+  thread_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Parent message ID for threaded replies'
   },
   sender_type: {
     type: DataTypes.ENUM('admin', 'applicant', 'system', 'employee'),
@@ -126,6 +136,28 @@ const ChatMessage = sequelize.define('ChatMessage', {
     type: DataTypes.DATE,
     allowNull: true,
     comment: 'Mesajin okundugu zaman'
+  },
+
+  // Task 2.6: Pin System
+  is_pinned: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    comment: 'Whether message is pinned in channel/room'
+  },
+  pinned_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: 'When the message was pinned'
+  },
+  pinned_by_type: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    comment: 'Type of user who pinned (employee, admin)'
+  },
+  pinned_by_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'ID of user who pinned'
   }
 }, {
   tableName: 'chat_messages',
@@ -138,6 +170,12 @@ const ChatMessage = sequelize.define('ChatMessage', {
     },
     {
       fields: ['room_id']
+    },
+    {
+      fields: ['channel_id']
+    },
+    {
+      fields: ['thread_id']
     },
     {
       fields: ['sender_type']
@@ -162,6 +200,9 @@ const ChatMessage = sequelize.define('ChatMessage', {
     },
     {
       fields: ['delivery_status']
+    },
+    {
+      fields: ['is_pinned']
     }
   ]
 });
@@ -239,6 +280,60 @@ ChatMessage.createSystemMessage = async function(roomId, content, metadata = nul
     content,
     delivery_status: 'sent',
     metadata
+  });
+};
+
+// Task 2.6: Pin a message
+ChatMessage.pinMessage = async function(messageId, pinnedByType, pinnedById) {
+  const message = await this.findByPk(messageId);
+  if (!message) {
+    throw new Error('Message not found');
+  }
+
+  await message.update({
+    is_pinned: true,
+    pinned_at: new Date(),
+    pinned_by_type: pinnedByType,
+    pinned_by_id: pinnedById
+  });
+
+  return message;
+};
+
+// Task 2.6: Unpin a message
+ChatMessage.unpinMessage = async function(messageId) {
+  const message = await this.findByPk(messageId);
+  if (!message) {
+    throw new Error('Message not found');
+  }
+
+  await message.update({
+    is_pinned: false,
+    pinned_at: null,
+    pinned_by_type: null,
+    pinned_by_id: null
+  });
+
+  return message;
+};
+
+// Task 2.6: Get pinned messages for a channel
+ChatMessage.getPinnedMessages = async function(channelId, roomId, limit = 50) {
+  const where = {
+    is_pinned: true,
+    is_deleted: false
+  };
+
+  if (channelId) {
+    where.channel_id = channelId;
+  } else if (roomId) {
+    where.room_id = roomId;
+  }
+
+  return this.findAll({
+    where,
+    order: [['pinned_at', 'DESC']],
+    limit
   });
 };
 

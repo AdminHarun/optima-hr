@@ -1,9 +1,10 @@
 // src/pages/admin/ChatPageNew.js - Professional Chat UI (inspired by reference design)
 import React, { useState, useEffect } from 'react';
 import { Box, Avatar, Badge, Typography, TextField, InputAdornment, Fade, IconButton, Divider, Tabs, Tab, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon, Group as GroupIcon, Person as PersonIcon, GroupAdd as GroupAddIcon } from '@mui/icons-material';
-import { ChatContainer } from '../../components/chat';
+import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon, Group as GroupIcon, Person as PersonIcon, GroupAdd as GroupAddIcon, Tag as TagIcon } from '@mui/icons-material';
+import { ChatContainer, ChannelSidebar, ChannelChatView } from '../../components/chat';
 import CreateGroupModal from '../../components/chat/CreateGroupModal';
+import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
 
@@ -17,12 +18,15 @@ const getSiteHeaders = () => {
 };
 
 function ChatPageNew() {
+  const { currentUser } = useEmployeeAuth();
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [channels, setChannels] = useState([]);
+  const [selectedChannel, setSelectedChannel] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredRoom, setHoveredRoom] = useState(null);
-  const [activeTab, setActiveTab] = useState(0); // 0: Kişiler, 1: Gruplar
+  const [activeTab, setActiveTab] = useState(0); // 0: Kişiler, 1: Gruplar, 2: Kanallar
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addMenuAnchor, setAddMenuAnchor] = useState(null);
 
@@ -405,6 +409,19 @@ function ChatPageNew() {
               icon={<GroupIcon sx={{ fontSize: 18 }} />}
               iconPosition="start"
               label={`Gruplar${groups.length > 0 ? ` (${groups.length})` : ''}`}
+              sx={{
+                minHeight: 36,
+                fontSize: '13px',
+                fontWeight: 600,
+                textTransform: 'none',
+                flex: 1,
+                '&.Mui-selected': { color: '#6366f1' }
+              }}
+            />
+            <Tab
+              icon={<TagIcon sx={{ fontSize: 18 }} />}
+              iconPosition="start"
+              label={`Kanallar${channels.length > 0 ? ` (${channels.length})` : ''}`}
               sx={{
                 minHeight: 36,
                 fontSize: '13px',
@@ -851,12 +868,36 @@ function ChatPageNew() {
               )}
             </Box>
           )}
+
+          {/* Tab 2: Kanallar (Channels) */}
+          {activeTab === 2 && (
+            <ChannelSidebar
+              onChannelSelect={(channel) => {
+                setSelectedChannel(channel);
+                setSelectedRoom(null); // Clear room selection
+              }}
+              selectedChannelId={selectedChannel?.id}
+            />
+          )}
         </Box>
       </Box>
 
       {/* Main Chat Area */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {selectedRoom ? (
+        {/* Channel Chat View (when activeTab === 2 and channel selected) */}
+        {activeTab === 2 && selectedChannel ? (
+          <ChannelChatView
+            channel={selectedChannel}
+            currentUserId={currentUser?.id || 1}
+            currentUserName={currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Admin'}
+            onLeaveChannel={() => {
+              setSelectedChannel(null);
+            }}
+            onChannelUpdate={() => {
+              // Refresh channels by re-rendering ChannelSidebar
+            }}
+          />
+        ) : selectedRoom ? (
           <ChatContainer
             roomId={selectedRoom.roomId}
             roomName={selectedRoom.name}

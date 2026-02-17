@@ -695,6 +695,293 @@ router.get('/internal-rooms', async (req, res) => {
   }
 });
 
+// ==================== STATUS SYSTEM ENDPOINTS (Task 1.5) ====================
+
+// GET /api/employees/me - Get current user info
+router.get('/me', async (req, res) => {
+  try {
+    const currentUserId = req.session?.employeeId || req.headers['x-employee-id'];
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const employee = await Employee.findByPk(currentUserId, {
+      attributes: [
+        'id', 'employee_id', 'first_name', 'last_name', 'email',
+        'department', 'position', 'profile_picture', 'avatar_url',
+        'status', 'custom_status', 'custom_status_emoji', 'last_seen_at'
+      ]
+    });
+
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    // Add online status from presence service
+    const isOnline = presenceService.isOnline(`employee_${currentUserId}`);
+
+    res.json({
+      ...employee.toJSON(),
+      isOnline,
+      name: `${employee.first_name} ${employee.last_name}`
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({ error: 'Kullanici bilgisi yuklenirken hata olustu' });
+  }
+});
+
+// PUT /api/employees/me/status - Update current user's status
+router.put('/me/status', async (req, res) => {
+  try {
+    const currentUserId = req.session?.employeeId || req.headers['x-employee-id'];
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { status, customStatus, customEmoji } = req.body;
+
+    const employee = await Employee.findByPk(currentUserId);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    // Build update object
+    const updateData = {};
+
+    // Update presence status (online, away, busy, offline)
+    if (status) {
+      const validStatuses = ['online', 'away', 'busy', 'offline'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status. Must be one of: online, away, busy, offline' });
+      }
+      updateData.status = status;
+    }
+
+    // Update custom status text and emoji
+    if (customStatus !== undefined) {
+      updateData.custom_status = customStatus;
+    }
+    if (customEmoji !== undefined) {
+      updateData.custom_status_emoji = customEmoji;
+    }
+
+    // Update last_seen_at
+    updateData.last_seen_at = new Date();
+
+    await employee.update(updateData);
+
+    // Broadcast status change via WebSocket
+    const chatWebSocketService = require('../services/ChatWebSocketService');
+    chatWebSocketService.broadcastToSite(employee.site_code || 'FXB', 'user_status_change', {
+      userId: currentUserId,
+      status: employee.status,
+      customStatus: employee.custom_status,
+      customEmoji: employee.custom_status_emoji,
+      lastSeenAt: employee.last_seen_at
+    });
+
+    res.json({
+      success: true,
+      status: employee.status,
+      customStatus: employee.custom_status,
+      customEmoji: employee.custom_status_emoji,
+      lastSeenAt: employee.last_seen_at
+    });
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({ error: 'Durum guncellenirken hata olustu' });
+  }
+});
+
+// GET /api/employees/:id/status - Get specific user's status
+router.get('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const employee = await Employee.findByPk(id, {
+      attributes: ['id', 'first_name', 'last_name', 'status', 'custom_status', 'custom_status_emoji', 'last_seen_at']
+    });
+
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    // Add online status from presence service
+    const isOnline = presenceService.isOnline(`employee_${id}`);
+
+    res.json({
+      id: employee.id,
+      name: `${employee.first_name} ${employee.last_name}`,
+      status: employee.status || 'offline',
+      customStatus: employee.custom_status,
+      customEmoji: employee.custom_status_emoji,
+      lastSeenAt: employee.last_seen_at,
+      isOnline
+    });
+  } catch (error) {
+    console.error('Get user status error:', error);
+    res.status(500).json({ error: 'Kullanici durumu yuklenirken hata olustu' });
+  }
+});
+
+// GET /api/employees/statuses - Get all online/active users with their statuses
+router.get('/statuses', async (req, res) => {
+  try {
+    const siteCode = getSiteCode(req);
+    const where = { is_active: true };
+    addSiteFilter(where, siteCode);
+
+    const employees = await Employee.findAll({
+      where,
+      attributes: ['id', 'first_name', 'last_name', 'status', 'custom_status', 'custom_status_emoji', 'last_seen_at', 'profile_picture']
+    });
+
+    // Add online status from presence service
+    const statuses = employees.map(emp => ({
+      id: emp.id,
+      name: `${emp.first_name} ${emp.last_name}`,
+      avatar: emp.profile_picture,
+      status: emp.status || 'offline',
+      customStatus: emp.custom_status,
+      customEmoji: emp.custom_status_emoji,
+      lastSeenAt: emp.last_seen_at,
+      isOnline: presenceService.isOnline(`employee_${emp.id}`)
+    }));
+
+    // Sort: online first, then by status, then by name
+    const statusOrder = { online: 0, away: 1, busy: 2, offline: 3 };
+    statuses.sort((a, b) => {
+      // Online users first
+      if (a.isOnline !== b.isOnline) return a.isOnline ? -1 : 1;
+      // Then by status
+      const statusDiff = (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3);
+      if (statusDiff !== 0) return statusDiff;
+      // Then by name
+      return a.name.localeCompare(b.name, 'tr');
+    });
+
+    res.json({ statuses });
+  } catch (error) {
+    console.error('Get all statuses error:', error);
+    res.status(500).json({ error: 'Kullanici durumlari yuklenirken hata olustu' });
+  }
+});
+
+// ==================== OFFLINE MESSAGING ENDPOINTS (Task 1.6) ====================
+
+// GET /api/employees/me/pending-messages - Get pending offline messages count
+router.get('/me/pending-messages/count', async (req, res) => {
+  try {
+    const currentUserId = req.session?.employeeId || req.headers['x-employee-id'];
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const offlineMessagingService = require('../services/OfflineMessagingService');
+    const count = await offlineMessagingService.getUnreadCount('employee', currentUserId);
+
+    res.json({ count });
+  } catch (error) {
+    console.error('Get pending messages count error:', error);
+    res.status(500).json({ error: 'Failed to get pending messages count' });
+  }
+});
+
+// GET /api/employees/me/pending-messages - Get pending offline messages
+router.get('/me/pending-messages', async (req, res) => {
+  try {
+    const currentUserId = req.session?.employeeId || req.headers['x-employee-id'];
+    const { limit = 100 } = req.query;
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const offlineMessagingService = require('../services/OfflineMessagingService');
+    const messages = await offlineMessagingService.deliverPendingMessages('employee', currentUserId);
+
+    res.json({
+      messages: messages.map(m => ({
+        id: m.id,
+        messageId: m.message_id,
+        channelId: m.channel_id,
+        roomId: m.room_id,
+        content: m.content,
+        senderName: m.sender_name,
+        senderType: m.sender_type,
+        createdAt: m.created_at
+      })),
+      count: messages.length
+    });
+  } catch (error) {
+    console.error('Get pending messages error:', error);
+    res.status(500).json({ error: 'Failed to get pending messages' });
+  }
+});
+
+// POST /api/employees/me/push-token - Register push notification token
+router.post('/me/push-token', async (req, res) => {
+  try {
+    const currentUserId = req.session?.employeeId || req.headers['x-employee-id'];
+    const { token, platform } = req.body;
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+
+    const employee = await Employee.findByPk(currentUserId);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    await employee.update({
+      push_token: token
+    });
+
+    console.log(`📱 Push token registered for employee ${currentUserId} (${platform || 'unknown'})`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Register push token error:', error);
+    res.status(500).json({ error: 'Failed to register push token' });
+  }
+});
+
+// DELETE /api/employees/me/push-token - Unregister push notification token
+router.delete('/me/push-token', async (req, res) => {
+  try {
+    const currentUserId = req.session?.employeeId || req.headers['x-employee-id'];
+
+    if (!currentUserId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const employee = await Employee.findByPk(currentUserId);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    await employee.update({
+      push_token: null
+    });
+
+    console.log(`📱 Push token unregistered for employee ${currentUserId}`);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Unregister push token error:', error);
+    res.status(500).json({ error: 'Failed to unregister push token' });
+  }
+});
+
 // POST /api/employees/group - Create internal group chat
 router.post('/group', async (req, res) => {
   try {

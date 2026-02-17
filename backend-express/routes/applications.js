@@ -364,21 +364,51 @@ router.post('/submit', upload.fields([
       chat_token: chatToken
     });
 
-    // Chat odasi olustur
+    // Chat odasi olustur (findOrCreate ile duplicate'leri önle)
     try {
       const ChatRoom = require('../models/ChatRoom');
-      await ChatRoom.create({
-        site_code: invitation.site_code || null,
-        room_type: 'applicant',
-        applicant_id: profile.id,
-        applicant_email: profile.email,
-        applicant_name: `${profile.first_name} ${profile.last_name}`,
-        room_name: `${profile.first_name} ${profile.last_name}`,
-        is_active: true
+      const applicantName = `${profile.first_name} ${profile.last_name}`.trim();
+
+      // Önce mevcut odayı kontrol et
+      let existingRoom = await ChatRoom.findOne({
+        where: {
+          room_type: 'applicant',
+          applicant_id: profile.id
+        }
       });
-      console.log('✅ Chat odası oluşturuldu:', profile.id);
+
+      if (existingRoom) {
+        console.log(`ℹ️ Chat odası zaten mevcut: ID=${existingRoom.id} for applicant=${profile.id}`);
+        // Oda varsa bilgileri güncelle
+        await existingRoom.update({
+          applicant_email: profile.email,
+          applicant_name: applicantName,
+          room_name: applicantName,
+          site_code: invitation.site_code || profile.site_code || null,
+          is_active: true
+        });
+      } else {
+        // Yeni oda oluştur
+        existingRoom = await ChatRoom.create({
+          site_code: invitation.site_code || profile.site_code || null,
+          room_type: 'applicant',
+          channel_type: 'EXTERNAL',
+          applicant_id: profile.id,
+          applicant_email: profile.email,
+          applicant_name: applicantName,
+          room_name: applicantName,
+          is_active: true
+        });
+        console.log(`✅ Chat odası oluşturuldu: ID=${existingRoom.id} for applicant=${profile.id}`);
+      }
     } catch (chatErr) {
-      console.error('⚠️ Chat odası oluşturulamadı:', chatErr.message);
+      // Unique constraint violation - oda zaten var, devam et
+      if (chatErr.name === 'SequelizeUniqueConstraintError') {
+        console.log(`ℹ️ Chat odası zaten mevcut (constraint): applicant=${profile.id}`);
+      } else {
+        console.error('⚠️ Chat odası oluşturulamadı:', chatErr.message);
+        // Kritik hata değil, oda sonradan otomatik oluşturulabilir
+      }
     }
 
     res.json({

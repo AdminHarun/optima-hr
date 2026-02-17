@@ -1,5 +1,5 @@
 // src/pages/ApplicantChat.js - WebSocket Enabled Chat for Applicants
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -134,75 +134,65 @@ function ApplicantChat() {
     loadGroups();
   }, [applicantInfo?.id]);
 
-  // WebSocket bağlantısını kur
-  useEffect(() => {
-    if (!applicantInfo?.id) return;
+  // Load messages from server with retry logic (MUST be defined before WebSocket useEffect)
+  const loadMessages = useCallback(async (retryCount = 0) => {
+    if (!applicantInfo?.id) {
+      console.log('⏳ loadMessages: applicantInfo.id not ready yet');
+      return;
+    }
 
     const roomId = `applicant_${applicantInfo.id}`;
-    console.log('💬 Applicant connecting to room:', roomId);
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
 
-    // Connect to WebSocket
-    const wsUrl = `${WS_BASE_URL}/ws/applicant-chat/${roomId}`;
-    webSocketService.connect(wsUrl, 'applicant');
-
-    // Connection handler
-    const unsubscribeConnection = webSocketService.onConnection((event) => {
-      console.log('🔌 Connection event:', event);
-
-      if (event.type === 'connected') {
-        setIsConnected(true);
-        setError(null);
-        // Load initial messages
-        loadMessages();
-      } else if (event.type === 'disconnected') {
-        setIsConnected(false);
-        setError('Bağlantı kesildi. Yeniden bağlanılıyor...');
-      }
-    });
-
-    // Message handler
-    const unsubscribeMessage = webSocketService.onMessage((data) => {
-      console.log('📨 Message received:', data);
-      handleIncomingMessage(data);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      console.log('🧹 Cleaning up WebSocket connection');
-      unsubscribeConnection();
-      unsubscribeMessage();
-      webSocketService.disconnect();
-      setMessages([]);
-    };
-  }, [applicantInfo?.id]);
-
-  // Load messages from server
-  const loadMessages = async () => {
-    if (!applicantInfo?.id) return;
+    console.log(`📡 Loading messages for room: ${roomId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
     try {
-      const roomId = `applicant_${applicantInfo.id}`;
       const response = await fetch(`${API_BASE_URL}/chat/api/rooms/${roomId}/messages`, {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
       });
 
+      console.log(`📡 Messages API response status: ${response.status}`);
+
       if (!response.ok) {
-        throw new Error('Failed to load messages');
+        const errorText = await response.text();
+        console.error(`❌ Messages API error: ${response.status} - ${errorText}`);
+
+        // Retry for server errors (5xx) or if room not found (404 - might be creating)
+        if ((response.status >= 500 || response.status === 404) && retryCount < maxRetries) {
+          console.log(`🔄 Retrying in ${retryDelay}ms...`);
+          setTimeout(() => loadMessages(retryCount + 1), retryDelay);
+          return;
+        }
+
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to load messages'}`);
       }
 
       const data = await response.json();
-      console.log('📥 Messages loaded:', data.messages.length);
+      console.log('📥 Messages loaded successfully:', data.messages?.length || 0, 'messages');
 
       setMessages(data.messages || []);
       setError(null);
     } catch (err) {
-      console.error('❌ Error loading messages:', err);
-      setError('Mesajlar yüklenemedi');
+      console.error('❌ Error loading messages:', err.message);
+
+      // Retry for network errors
+      if (err.name === 'TypeError' && retryCount < maxRetries) {
+        console.log(`🔄 Network error, retrying in ${retryDelay}ms...`);
+        setTimeout(() => loadMessages(retryCount + 1), retryDelay);
+        return;
+      }
+
+      setError('Mesajlar yüklenemedi. Lütfen sayfayı yenileyin.');
       setMessages([]);
     }
-  };
+  }, [applicantInfo?.id]);
 
-  // Handle incoming WebSocket messages
+  // Handle incoming WebSocket messages (MUST be defined before WebSocket useEffect)
   const handleIncomingMessage = useCallback((data) => {
     switch (data.type) {
       case 'chat_message':
@@ -291,6 +281,52 @@ function ApplicantChat() {
         console.log('Unknown message type:', data.type);
     }
   }, []);
+
+  // WebSocket bağlantısını kur
+  useEffect(() => {
+    if (!applicantInfo?.id) return;
+
+    const roomId = `applicant_${applicantInfo.id}`;
+    console.log('💬 Applicant connecting to room:', roomId);
+
+    // Connect to WebSocket
+    const wsUrl = `${WS_BASE_URL}/ws/applicant-chat/${roomId}`;
+    webSocketService.connect(wsUrl, 'applicant');
+
+    // Connection handler
+    const unsubscribeConnection = webSocketService.onConnection((event) => {
+      console.log('🔌 Connection event:', event);
+
+      if (event.type === 'connected') {
+        setIsConnected(true);
+        setError(null);
+        // Load initial messages with small delay to ensure room exists
+        setTimeout(() => loadMessages(), 100);
+      } else if (event.type === 'disconnected') {
+        setIsConnected(false);
+        setError('Bağlantı kesildi. Yeniden bağlanılıyor...');
+      } else if (event.type === 'reconnecting') {
+        setError(`Yeniden bağlanılıyor... (${event.attempt}/${event.maxAttempts})`);
+      } else if (event.type === 'failed') {
+        setError('Bağlantı kurulamadı. Lütfen sayfayı yenileyin.');
+      }
+    });
+
+    // Message handler
+    const unsubscribeMessage = webSocketService.onMessage((data) => {
+      console.log('📨 Message received:', data);
+      handleIncomingMessage(data);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      console.log('🧹 Cleaning up WebSocket connection');
+      unsubscribeConnection();
+      unsubscribeMessage();
+      webSocketService.disconnect();
+      setMessages([]);
+    };
+  }, [applicantInfo?.id, loadMessages, handleIncomingMessage]);
 
   // Send message via WebSocket
   const sendMessage = () => {

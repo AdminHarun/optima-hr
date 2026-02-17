@@ -8,6 +8,10 @@ const url = require('url');
 const redisService = require('./RedisService');
 const { authenticateWebSocket } = require('../middleware/chatAuth');
 
+// Task 2.5: Enhanced services
+const readReceiptService = require('./ReadReceiptService');
+const typingIndicatorService = require('./TypingIndicatorService');
+
 class ChatWebSocketService {
   constructor() {
     this.wss = null;
@@ -43,6 +47,10 @@ class ChatWebSocketService {
     this.wss.on('connection', (ws, req) => {
       this.handleConnection(ws, req);
     });
+
+    // Task 2.5: Initialize enhanced services
+    readReceiptService.setWebSocketService(this);
+    typingIndicatorService.setWebSocketService(this);
 
     console.log('✅ WebSocket server initialized on /ws');
   }
@@ -96,8 +104,8 @@ class ChatWebSocketService {
       return;
     }
 
-    const connectionType = pathParts[1]; // admin-chat or applicant-chat
-    const roomIdentifier = pathParts[2]; // applicant_123
+    const connectionType = pathParts[1]; // admin-chat, applicant-chat, or channel
+    const roomIdentifier = pathParts[2]; // applicant_123 or channel_id
 
     let userType, roomId;
 
@@ -107,6 +115,11 @@ class ChatWebSocketService {
     } else if (connectionType === 'applicant-chat') {
       userType = 'applicant';
       roomId = roomIdentifier;
+    } else if (connectionType === 'channel') {
+      // Kanal bağlantısı: /ws/channel/:channelId
+      userType = 'employee'; // Kanal kullanıcıları employee
+      roomId = `channel_${roomIdentifier}`;
+      console.log(`📺 Channel WebSocket connection: ${roomId}`);
     } else {
       console.error('❌ Unknown connection type:', connectionType);
       ws.close(4000, 'Unknown connection type');
@@ -251,6 +264,26 @@ class ChatWebSocketService {
         case 'video_call_end':
           await this.handleVideoCallEnd(clientId, message);
           break;
+        // Channel Events
+        case 'subscribe_channels':
+          await this.handleSubscribeChannels(clientId, message);
+          break;
+        case 'unsubscribe_channel':
+          await this.handleUnsubscribeChannel(clientId, message);
+          break;
+        case 'channel_typing':
+          this.handleChannelTyping(clientId, message);
+          break;
+        // Thread Events
+        case 'subscribe_thread':
+          await this.handleSubscribeThread(clientId, message);
+          break;
+        case 'unsubscribe_thread':
+          await this.handleUnsubscribeThread(clientId, message);
+          break;
+        case 'thread_typing':
+          this.handleThreadTyping(clientId, message);
+          break;
         default:
           console.warn(`❓ Unknown message type from ${clientId}:`, message.type);
       }
@@ -347,11 +380,29 @@ class ChatWebSocketService {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    // Broadcast typing indicator to other clients in room (not sender)
+    // Task 2.5: Use enhanced typing indicator service
+    if (message.is_typing) {
+      typingIndicatorService.startTyping(
+        client.roomId,
+        client.userType,
+        client.userId,
+        client.userName || 'Unknown',
+        client.userAvatar
+      );
+    } else {
+      typingIndicatorService.stopTyping(
+        client.roomId,
+        client.userType,
+        client.userId
+      );
+    }
+
+    // Also broadcast legacy format for backwards compatibility
     this.broadcastToRoom(client.roomId, {
       type: 'typing_indicator',
       clientId,
       user_type: client.userType,
+      user_name: client.userName,
       is_typing: message.is_typing,
       timestamp: new Date().toISOString()
     }, clientId);
@@ -362,8 +413,16 @@ class ChatWebSocketService {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    // Broadcast typing preview content to other clients in room (not sender)
-    // Only admins should see applicant's typing preview
+    // Task 2.5: Use enhanced typing preview
+    typingIndicatorService.handleTypingPreview(
+      client.roomId,
+      client.userType,
+      client.userId,
+      client.userName || 'Unknown',
+      message.content || ''
+    );
+
+    // Also broadcast legacy format for backwards compatibility
     this.broadcastToRoom(client.roomId, {
       type: 'typing_preview',
       clientId,
@@ -603,11 +662,16 @@ class ChatWebSocketService {
         const ApplicantProfile = require('../models/ApplicantProfile');
         const profile = await ApplicantProfile.findByPk(applicantId);
 
+        const applicantName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : `Başvuran ${applicantId}`;
+
         room = await ChatRoom.create({
+          site_code: profile?.site_code || null,
           room_type: 'applicant',
+          channel_type: 'EXTERNAL',
           applicant_id: applicantId,
           applicant_email: profile?.email || `applicant_${applicantId}@temp.com`,
-          applicant_name: profile ? `${profile.first_name} ${profile.last_name}` : `Applicant ${applicantId}`,
+          applicant_name: applicantName,
+          room_name: applicantName,
           is_active: true
         });
         console.log(`✅ Created new chat room for applicant ${applicantId} (${room.applicant_name})`);
@@ -624,6 +688,9 @@ class ChatWebSocketService {
     if (!client) return;
 
     console.log(`🔌 Client ${clientId} disconnected:`, code, reason);
+
+    // Task 2.5: Clear typing state on disconnect
+    typingIndicatorService.handleUserDisconnect(client.userType, client.userId);
 
     // Cleanup (Redis, presence, etc.)
     await this.cleanupClient(clientId);
@@ -918,6 +985,182 @@ class ChatWebSocketService {
     }
   }
 
+  // ==================== CHANNEL HANDLERS ====================
+
+  /**
+   * Birden fazla kanala abone ol
+   */
+  async handleSubscribeChannels(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { channelIds } = message;
+    if (!Array.isArray(channelIds)) return;
+
+    const subscribedChannels = [];
+
+    for (const channelId of channelIds) {
+      const roomId = `channel_${channelId}`;
+
+      // Odaya ekle
+      if (!this.rooms.has(roomId)) {
+        this.rooms.set(roomId, new Set());
+      }
+      this.rooms.get(roomId).add(clientId);
+      subscribedChannels.push(channelId);
+    }
+
+    console.log(`📺 Client ${clientId} subscribed to ${subscribedChannels.length} channels`);
+
+    this.sendToClient(clientId, {
+      type: 'channels_subscribed',
+      channelIds: subscribedChannels,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Kanaldan aboneliği kaldır
+   */
+  async handleUnsubscribeChannel(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { channelId } = message;
+    const roomId = `channel_${channelId}`;
+
+    if (this.rooms.has(roomId)) {
+      this.rooms.get(roomId).delete(clientId);
+
+      if (this.rooms.get(roomId).size === 0) {
+        this.rooms.delete(roomId);
+      }
+    }
+
+    console.log(`📺 Client ${clientId} unsubscribed from channel ${channelId}`);
+
+    this.sendToClient(clientId, {
+      type: 'channel_unsubscribed',
+      channelId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Kanal typing indicator
+   */
+  handleChannelTyping(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { channelId, isTyping } = message;
+    const roomId = `channel_${channelId}`;
+
+    this.broadcastToRoom(roomId, {
+      type: 'channel_typing_indicator',
+      channelId,
+      userId: client.userId,
+      userName: client.userName,
+      isTyping,
+      timestamp: new Date().toISOString()
+    }, clientId);
+  }
+
+  /**
+   * Kanala mesaj broadcast et (external call için)
+   */
+  broadcastChannelMessage(channelId, message) {
+    const roomId = `channel_${channelId}`;
+    this.broadcastToRoom(roomId, {
+      type: 'channel_message',
+      channelId,
+      message,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Kanala generic event broadcast et (Task 2.6: pins, vb.)
+   */
+  broadcastToChannel(channelId, event) {
+    const roomId = `channel_${channelId}`;
+    this.broadcastToRoom(roomId, event);
+  }
+
+  // ==================== THREAD HANDLERS ====================
+
+  /**
+   * Thread'e abone ol
+   */
+  async handleSubscribeThread(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { threadId } = message;
+    const roomId = `thread_${threadId}`;
+
+    // Thread room'una ekle
+    if (!this.rooms.has(roomId)) {
+      this.rooms.set(roomId, new Set());
+    }
+    this.rooms.get(roomId).add(clientId);
+
+    console.log(`📺 Client ${clientId} subscribed to thread ${threadId}`);
+
+    this.sendToClient(clientId, {
+      type: 'thread_subscribed',
+      threadId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Thread aboneliğini kaldır
+   */
+  async handleUnsubscribeThread(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { threadId } = message;
+    const roomId = `thread_${threadId}`;
+
+    if (this.rooms.has(roomId)) {
+      this.rooms.get(roomId).delete(clientId);
+
+      if (this.rooms.get(roomId).size === 0) {
+        this.rooms.delete(roomId);
+      }
+    }
+
+    console.log(`📺 Client ${clientId} unsubscribed from thread ${threadId}`);
+
+    this.sendToClient(clientId, {
+      type: 'thread_unsubscribed',
+      threadId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * Thread typing indicator
+   */
+  handleThreadTyping(clientId, message) {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const { threadId, isTyping } = message;
+    const roomId = `thread_${threadId}`;
+
+    this.broadcastToRoom(roomId, {
+      type: 'thread_typing_indicator',
+      threadId,
+      userId: client.userId,
+      userName: client.userName,
+      isTyping,
+      timestamp: new Date().toISOString()
+    }, clientId);
+  }
+
   // Get online status for all rooms (for admin)
   getRoomOnlineStatus() {
     const onlineStatus = {};
@@ -1008,6 +1251,14 @@ class ChatWebSocketService {
       if (user.employeeId) {
         await redisService.setUserOnline('employee', user.employeeId, 'web');
         await EmployeePresence.updateStatus(user.employeeId, 'online', 'web');
+
+        // Deliver pending offline messages (Task 1.6)
+        try {
+          const offlineMessagingService = require('./OfflineMessagingService');
+          await offlineMessagingService.onUserOnline('employee', user.employeeId);
+        } catch (offlineErr) {
+          console.error('Error delivering offline messages:', offlineErr);
+        }
       }
 
       this.sendToClient(clientId, {
@@ -1307,6 +1558,48 @@ class ChatWebSocketService {
         });
       }
     }
+  }
+
+  /**
+   * Site'deki tum kullanicilara mesaj yayinla
+   */
+  broadcastToSite(siteCode, eventType, data) {
+    let sentCount = 0;
+
+    for (const [clientId, client] of this.clients.entries()) {
+      // Site kodu eslesen tum client'lara gonder
+      // siteCode null ise veya client'in siteCode'u esliyorsa gonder
+      if (!siteCode || client.siteCode === siteCode || !client.siteCode) {
+        this.sendToClient(clientId, {
+          type: eventType,
+          ...data,
+          timestamp: new Date().toISOString()
+        });
+        sentCount++;
+      }
+    }
+
+    console.log(`📡 Broadcasted ${eventType} to ${sentCount} clients in site ${siteCode || 'all'}`);
+  }
+
+  /**
+   * Belirli bir kullaniciya mention bildirimi gonder
+   */
+  sendMentionNotification(userId, notification) {
+    const userKey = `employee:${userId}`;
+    const sockets = this.userSockets.get(userKey);
+
+    if (sockets && sockets.size > 0) {
+      for (const clientId of sockets) {
+        this.sendToClient(clientId, {
+          type: 'mention_notification',
+          ...notification,
+          timestamp: new Date().toISOString()
+        });
+      }
+      return true;
+    }
+    return false;
   }
 
   /**

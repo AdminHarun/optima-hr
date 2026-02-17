@@ -79,6 +79,13 @@ const syncChatTables = async (sequelize) => {
       { name: 'last_message_at', sql: "ALTER TABLE chat_rooms ADD COLUMN last_message_at TIMESTAMP WITH TIME ZONE" },
       { name: 'metadata', sql: "ALTER TABLE chat_rooms ADD COLUMN metadata JSONB" },
       { name: 'site_code', sql: "ALTER TABLE chat_rooms ADD COLUMN site_code VARCHAR(50)" },
+      { name: 'channel_type', sql: "ALTER TABLE chat_rooms ADD COLUMN channel_type VARCHAR(20) NOT NULL DEFAULT 'EXTERNAL'" },
+      { name: 'department', sql: "ALTER TABLE chat_rooms ADD COLUMN department VARCHAR(50)" },
+      { name: 'is_announcement', sql: "ALTER TABLE chat_rooms ADD COLUMN is_announcement BOOLEAN NOT NULL DEFAULT false" },
+      { name: 'announcement_only', sql: "ALTER TABLE chat_rooms ADD COLUMN announcement_only BOOLEAN NOT NULL DEFAULT false" },
+      { name: 'pinned_message_id', sql: "ALTER TABLE chat_rooms ADD COLUMN pinned_message_id INTEGER" },
+      { name: 'avatar_url', sql: "ALTER TABLE chat_rooms ADD COLUMN avatar_url VARCHAR(500)" },
+      { name: 'description', sql: "ALTER TABLE chat_rooms ADD COLUMN description TEXT" },
       { name: 'created_at', sql: "ALTER TABLE chat_rooms ADD COLUMN created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()" },
       { name: 'updated_at', sql: "ALTER TABLE chat_rooms ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()" }
     ];
@@ -200,6 +207,84 @@ const syncChatTables = async (sequelize) => {
     }
 
     console.log('✅ chat_messages table synced');
+
+    // ============================================
+    // 3.5. Sync chat_room_members table columns
+    // ============================================
+    console.log('📝 Checking chat_room_members table columns...');
+
+    // Create ENUM types for chat_room_members
+    await sequelize.query(`
+      DO $$ BEGIN
+        CREATE TYPE enum_chat_room_members_member_type AS ENUM ('employee', 'applicant', 'admin');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+
+    await sequelize.query(`
+      DO $$ BEGIN
+        CREATE TYPE enum_chat_room_members_role AS ENUM ('owner', 'admin', 'member');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+
+    // Create chat_room_members table if not exists
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS chat_room_members (
+        id SERIAL PRIMARY KEY,
+        room_id INTEGER NOT NULL,
+        member_type VARCHAR(20) NOT NULL,
+        member_id INTEGER,
+        member_name VARCHAR(255) NOT NULL,
+        member_email VARCHAR(255),
+        role VARCHAR(20) NOT NULL DEFAULT 'member',
+        nickname VARCHAR(100),
+        muted_until TIMESTAMP WITH TIME ZONE,
+        is_pinned BOOLEAN DEFAULT false,
+        is_active BOOLEAN DEFAULT true,
+        joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        left_at TIMESTAMP WITH TIME ZONE,
+        last_read_at TIMESTAMP WITH TIME ZONE,
+        last_read_message_id INTEGER,
+        notifications_enabled BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Add missing columns to chat_room_members
+    const memberColumns = [
+      { name: 'nickname', sql: "ALTER TABLE chat_room_members ADD COLUMN nickname VARCHAR(100)" },
+      { name: 'muted_until', sql: "ALTER TABLE chat_room_members ADD COLUMN muted_until TIMESTAMP WITH TIME ZONE" },
+      { name: 'is_pinned', sql: "ALTER TABLE chat_room_members ADD COLUMN is_pinned BOOLEAN DEFAULT false" },
+      { name: 'notifications_enabled', sql: "ALTER TABLE chat_room_members ADD COLUMN notifications_enabled BOOLEAN DEFAULT true" },
+      { name: 'last_read_message_id', sql: "ALTER TABLE chat_room_members ADD COLUMN last_read_message_id INTEGER" },
+      { name: 'last_read_at', sql: "ALTER TABLE chat_room_members ADD COLUMN last_read_at TIMESTAMP WITH TIME ZONE" },
+      { name: 'left_at', sql: "ALTER TABLE chat_room_members ADD COLUMN left_at TIMESTAMP WITH TIME ZONE" },
+      { name: 'joined_at', sql: "ALTER TABLE chat_room_members ADD COLUMN joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()" },
+      { name: 'is_active', sql: "ALTER TABLE chat_room_members ADD COLUMN is_active BOOLEAN DEFAULT true" },
+      { name: 'role', sql: "ALTER TABLE chat_room_members ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'member'" },
+      { name: 'member_email', sql: "ALTER TABLE chat_room_members ADD COLUMN member_email VARCHAR(255)" }
+    ];
+
+    for (const col of memberColumns) {
+      try {
+        const [result] = await sequelize.query(`
+          SELECT column_name FROM information_schema.columns
+          WHERE table_name = 'chat_room_members' AND column_name = '${col.name}'
+        `);
+        if (result.length === 0) {
+          await sequelize.query(col.sql);
+          console.log(`  ✅ Added chat_room_members.${col.name}`);
+        }
+      } catch (e) {
+        // Column might already exist
+      }
+    }
+
+    console.log('✅ chat_room_members table synced');
 
     // ============================================
     // 4. Create indexes

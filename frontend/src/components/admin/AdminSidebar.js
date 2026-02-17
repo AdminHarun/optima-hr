@@ -37,7 +37,8 @@ import {
   ExpandLess,
   ExpandMore,
   SupervisorAccount as ManagementIcon,
-  AccountCircle as AccountCircleIcon
+  AccountCircle as AccountCircleIcon,
+  ViewKanban as KanbanIcon
 } from '@mui/icons-material';
 
 // Optima Logo import
@@ -114,6 +115,12 @@ function AdminSidebar() {
       title: 'Görevler',
       icon: <AssignmentIcon />,
       path: '/admin/tasks',
+      permission: null
+    },
+    {
+      title: 'Kanban Panosu',
+      icon: <KanbanIcon />,
+      path: '/admin/kanban',
       permission: null
     },
     {

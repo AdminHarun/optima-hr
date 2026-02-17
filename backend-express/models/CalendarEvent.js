@@ -1,5 +1,6 @@
 // backend-express/models/CalendarEvent.js
-const { sequelize, DataTypes } = require('../config/database');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 const CalendarEvent = sequelize.define('CalendarEvent', {
     id: {

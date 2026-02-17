@@ -1,5 +1,6 @@
 // backend-express/models/FileFolder.js
-const { sequelize, DataTypes } = require('../config/database');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 const FileFolder = sequelize.define('FileFolder', {
     id: {

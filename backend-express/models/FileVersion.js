@@ -1,5 +1,6 @@
 // backend-express/models/FileVersion.js
-const { sequelize, DataTypes } = require('../config/database');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 const FileVersion = sequelize.define('FileVersion', {
     id: {

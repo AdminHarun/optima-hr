@@ -31,6 +31,7 @@ const bookmarkRoutes = require('./routes/bookmarks');
 const pinRoutes = require('./routes/pins');
 const readReceiptRoutes = require('./routes/read-receipts');
 const screenShareRoutes = require('./routes/screen-share');
+const taskRoutes = require('./routes/tasks');
 
 const app = express();
 const server = http.createServer(app);
@@ -79,6 +80,7 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/pins', pinRoutes);
 app.use('/api/read-receipts', readReceiptRoutes);
 app.use('/api/screen-share', screenShareRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -224,6 +226,17 @@ const runMigrations = async () => {
       console.log('✅ Employee tables synced');
     } catch (empErr) {
       console.log('⚠️ Employee tables note:', empErr.message);
+    }
+
+    // Initialize task management tables
+    try {
+      const { Task, TaskComment } = require('./models/associations');
+      console.log('🔄 Checking task management tables...');
+      try { await Task.sync({ force: false }); } catch (e) { console.log('⚠️ Task sync:', e.message); }
+      try { await TaskComment.sync({ force: false }); } catch (e) { console.log('⚠️ TaskComment sync:', e.message); }
+      console.log('✅ Task management tables synced');
+    } catch (taskErr) {
+      console.log('⚠️ Task tables note:', taskErr.message);
     }
 
     // Add missing columns and fix constraints on job_applications table

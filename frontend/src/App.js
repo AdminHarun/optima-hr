@@ -47,6 +47,7 @@ import CallsPage from './pages/admin/CallsPageNew';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import ProfilePage from './pages/admin/ProfilePage';
+import TasksPage from './pages/TasksPage';
 
 // Utils
 import './utils/createDemoData';
@@ -130,6 +131,7 @@ function AdminRoutes() {
                     </AdminProtectedRoute>
                 } />
                 <Route path="calendar" element={<CalendarPage />} />
+                <Route path="tasks" element={<TasksPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="reports" element={
                     <AdminProtectedRoute requiredPermission={PERMISSIONS.VIEW_LIMITED_REPORTS}>

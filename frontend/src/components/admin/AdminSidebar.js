@@ -111,6 +111,12 @@ function AdminSidebar() {
       permission: PERMISSIONS.VIEW_FULL_REPORTS
     },
     {
+      title: 'Görevler',
+      icon: <AssignmentIcon />,
+      path: '/admin/tasks',
+      permission: null
+    },
+    {
       title: 'Raporlar',
       icon: <AssessmentIcon />,
       path: '/admin/reports',

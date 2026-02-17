@@ -13,6 +13,8 @@ const ChannelMember = require('./ChannelMember');
 const OfflineMessageQueue = require('./OfflineMessageQueue');
 const ScheduledMessage = require('./ScheduledMessage');
 const MessageBookmark = require('./MessageBookmark');
+const Task = require('./Task');
+const TaskComment = require('./TaskComment');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -178,6 +180,45 @@ MessageBookmark.belongsTo(ChatMessage, {
   as: 'message'
 });
 
+// ==================== TASK (GÖREV) YÖNETİMİ ====================
+
+// Task - Employee (creator) ilişkisi
+Task.belongsTo(Employee, {
+  foreignKey: 'created_by',
+  as: 'creator'
+});
+Employee.hasMany(Task, {
+  foreignKey: 'created_by',
+  as: 'created_tasks'
+});
+
+// Task - Employee (assignee) ilişkisi
+Task.belongsTo(Employee, {
+  foreignKey: 'assigned_to',
+  as: 'assignee'
+});
+Employee.hasMany(Task, {
+  foreignKey: 'assigned_to',
+  as: 'assigned_tasks'
+});
+
+// TaskComment - Task ilişkisi
+Task.hasMany(TaskComment, {
+  foreignKey: 'task_id',
+  as: 'comments',
+  onDelete: 'CASCADE'
+});
+TaskComment.belongsTo(Task, {
+  foreignKey: 'task_id',
+  as: 'task'
+});
+
+// TaskComment - Employee ilişkisi
+TaskComment.belongsTo(Employee, {
+  foreignKey: 'employee_id',
+  as: 'author'
+});
+
 module.exports = {
   InvitationLink,
   ApplicantProfile,
@@ -195,5 +236,7 @@ module.exports = {
   ChannelMember,
   OfflineMessageQueue,
   ScheduledMessage,
-  MessageBookmark
+  MessageBookmark,
+  Task,
+  TaskComment
 };

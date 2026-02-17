@@ -18,8 +18,8 @@ import notificationService from '../../services/notificationService';
 import electronNotificationService from '../../services/electronNotificationService';
 import { IncomingCallNotification } from '../videoCall';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
-const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
+import { API_BASE_URL } from '../../config/config';
+import { WS_BASE_URL } from '../../config/config';
 
 const getSiteHeaders = () => {
   const currentSite = localStorage.getItem('optima_current_site') || 'FXB';

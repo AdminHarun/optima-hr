@@ -1,7 +1,7 @@
 // Enhanced Chat API service with backend integration
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../config/config';
 
 class ChatApiService {
   constructor() {
@@ -116,7 +116,7 @@ class ChatApiService {
     try {
       // Get applicant rooms from database
       const rooms = await this.getApplicantRooms();
-      
+
       // Transform to frontend format
       return rooms.map(room => ({
         id: `applicant_${room.applicant_id}`,

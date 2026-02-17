@@ -1,5 +1,6 @@
 // Invitation Service - API ile LocalStorage hibrit yaklaşım
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:9000') + '/api';
+import { API_BASE_URL as BASE_URL } from '../config/config';
+const API_BASE_URL = BASE_URL + '/api';
 
 class InvitationService {
   _getCurrentSite() {

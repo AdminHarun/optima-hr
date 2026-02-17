@@ -73,6 +73,11 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env': {}
+    'process.env': JSON.stringify({
+      REACT_APP_API_URL: process.env.VITE_API_URL || process.env.REACT_APP_API_URL || '',
+      REACT_APP_WS_URL: process.env.VITE_WS_URL || process.env.REACT_APP_WS_URL || '',
+      REACT_APP_PUBLIC_URL: process.env.VITE_PUBLIC_URL || process.env.REACT_APP_PUBLIC_URL || '',
+      NODE_ENV: process.env.NODE_ENV || 'production',
+    }),
   }
 })

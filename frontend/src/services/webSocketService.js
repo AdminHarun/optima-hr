@@ -1,5 +1,5 @@
 // Enhanced WebSocket service with auto-reconnect and heartbeat
-const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
+import { WS_BASE_URL } from '../config/config';
 
 class WebSocketService {
   constructor() {

@@ -1,7 +1,7 @@
 // File Upload Service - Chat dosya yükleme
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../config/config';
 
 class FileUploadService {
   // Tek dosya yükleme

@@ -23,10 +23,21 @@ const getEnv = (viteKey, craKey, defaultValue) => {
   return defaultValue;
 };
 
-// Base URLs
-export const API_BASE_URL = getEnv('VITE_API_URL', 'REACT_APP_API_URL', 'http://localhost:9000');
-export const WS_BASE_URL = getEnv('VITE_WS_URL', 'REACT_APP_WS_URL', 'ws://localhost:9000');
-export const PUBLIC_URL = getEnv('VITE_PUBLIC_URL', 'REACT_APP_PUBLIC_URL', 'http://localhost:3000');
+// Auto-detect production environment based on hostname
+const isProduction = typeof window !== 'undefined' && window.location.hostname === 'optima-hr.net';
+
+// Base URLs - auto-detect production, fallback to env vars, then localhost for dev
+export const API_BASE_URL = isProduction
+  ? 'https://api.optima-hr.net'
+  : getEnv('VITE_API_URL', 'REACT_APP_API_URL', 'http://localhost:9000');
+
+export const WS_BASE_URL = isProduction
+  ? 'wss://api.optima-hr.net'
+  : getEnv('VITE_WS_URL', 'REACT_APP_WS_URL', 'ws://localhost:9000');
+
+export const PUBLIC_URL = isProduction
+  ? 'https://optima-hr.net'
+  : getEnv('VITE_PUBLIC_URL', 'REACT_APP_PUBLIC_URL', 'http://localhost:3000');
 
 // API Endpoints
 export const API_ENDPOINTS = {

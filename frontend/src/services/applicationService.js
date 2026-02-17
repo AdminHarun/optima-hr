@@ -1,5 +1,6 @@
 // Application Service - Form ve profil API entegrasyonu
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:9000') + '/api';
+import { API_BASE_URL as BASE_URL } from '../config/config';
+const API_BASE_URL = BASE_URL + '/api';
 
 class ApplicationService {
   // Site kodlarini al
@@ -7,7 +8,7 @@ class ApplicationService {
     try {
       const sites = JSON.parse(localStorage.getItem('sites') || '[]');
       if (sites.length > 0) return sites.map(s => s.code);
-    } catch (e) {}
+    } catch (e) { }
     return ['FXB', 'MTD', 'ZBH'];
   }
 

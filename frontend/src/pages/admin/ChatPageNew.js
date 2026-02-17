@@ -6,7 +6,7 @@ import { ChatContainer, ChannelSidebar, ChannelChatView } from '../../components
 import CreateGroupModal from '../../components/chat/CreateGroupModal';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../../config/config';
 
 /**
  * Professional Chat Interface
@@ -482,257 +482,257 @@ function ChatPageNew() {
           {/* Tab 0: Kişiler (Applicant Chats) */}
           {activeTab === 0 && (
             <>
-          {/* Recent Chats Section */}
-          {!searchTerm && recentChats.length > 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ px: 2.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 600,
-                    color: '#374151',
-                    fontSize: '13px',
-                    textTransform: 'none'
-                  }}
-                >
-                  Son Sohbetler
-                </Typography>
-                <IconButton size="small" sx={{ padding: 0.5 }}>
-                  <MoreVertIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
-                </IconButton>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 1.5, px: 2.5, overflowX: 'auto', pb: 1.5 }}>
-                {recentChats.map((room) => (
-                  <Box
-                    key={`recent-${room.id}`}
-                    onClick={() => handleRoomSelect(room)}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      minWidth: 60
-                    }}
-                  >
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      badgeContent={
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            bgcolor: room.participantOnline ? '#10b981' : '#d1d5db',
-                            border: '2px solid white'
-                          }}
-                        />
-                      }
-                    >
-                      <Avatar
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          fontSize: '18px',
-                          fontWeight: 600,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {getInitials(room.firstName, room.lastName)}
-                      </Avatar>
-                    </Badge>
+              {/* Recent Chats Section */}
+              {!searchTerm && recentChats.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ px: 2.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography
-                      variant="caption"
+                      variant="subtitle2"
                       sx={{
-                        mt: 0.75,
-                        fontSize: '12px',
-                        fontWeight: 500,
+                        fontWeight: 600,
                         color: '#374151',
-                        maxWidth: 60,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        textAlign: 'center'
+                        fontSize: '13px',
+                        textTransform: 'none'
                       }}
                     >
-                      {room.firstName || room.name.split(' ')[0]}
+                      Son Sohbetler
                     </Typography>
+                    <IconButton size="small" sx={{ padding: 0.5 }}>
+                      <MoreVertIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
+                    </IconButton>
                   </Box>
-                ))}
-              </Box>
-            </Box>
-          )}
 
-          {/* Divider */}
-          {!searchTerm && recentChats.length > 0 && (
-            <Divider sx={{ mx: 2.5, my: 1 }} />
-          )}
-
-          {/* All Chats Section */}
-          <Box>
-            <Box sx={{ px: 2.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '13px',
-                  textTransform: 'none'
-                }}
-              >
-                Tüm Sohbetler
-              </Typography>
-              <IconButton size="small" sx={{ padding: 0.5 }}>
-                <MoreVertIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
-              </IconButton>
-            </Box>
-
-            {allChats.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4, px: 3 }}>
-                <Typography variant="body2" sx={{ color: '#9ca3af', fontSize: '14px' }}>
-                  {searchTerm ? `"${searchTerm}" için sonuç bulunamadı` : 'Henüz sohbet yok'}
-                </Typography>
-              </Box>
-            ) : (
-              allChats.map((room) => {
-                const isSelected = selectedRoom?.id === room.id;
-                const hasUnread = room.unreadCount > 0;
-
-                return (
-                  <Box
-                    key={room.id}
-                    onClick={() => handleRoomSelect(room)}
-                    onMouseEnter={() => setHoveredRoom(room.id)}
-                    onMouseLeave={() => setHoveredRoom(null)}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      px: 2.5,
-                      py: 1.5,
-                      cursor: 'pointer',
-                      bgcolor: isSelected ? '#f3f4f6' : 'transparent',
-                      borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
-                      '&:hover': {
-                        bgcolor: '#f9fafb'
-                      },
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                      badgeContent={
-                        <Box
-                          sx={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: '50%',
-                            bgcolor: room.participantOnline ? '#10b981' : '#d1d5db',
-                            border: '2px solid white'
-                          }}
-                        />
-                      }
-                    >
-                      <Avatar
+                  <Box sx={{ display: 'flex', gap: 1.5, px: 2.5, overflowX: 'auto', pb: 1.5 }}>
+                    {recentChats.map((room) => (
+                      <Box
+                        key={`recent-${room.id}`}
+                        onClick={() => handleRoomSelect(room)}
                         sx={{
-                          width: 44,
-                          height: 44,
-                          background: isSelected
-                            ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                            : 'linear-gradient(135deg, #a0aec0 0%, #cbd5e0 100%)',
-                          fontSize: '16px',
-                          fontWeight: 600
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          minWidth: 60
                         }}
                       >
-                        {getInitials(room.firstName, room.lastName)}
-                      </Avatar>
-                    </Badge>
-
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: hasUnread ? 600 : 500,
-                            color: '#111827',
-                            fontSize: '14px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          badgeContent={
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                bgcolor: room.participantOnline ? '#10b981' : '#d1d5db',
+                                border: '2px solid white'
+                              }}
+                            />
+                          }
                         >
-                          {room.name}
-                        </Typography>
+                          <Avatar
+                            sx={{
+                              width: 56,
+                              height: 56,
+                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                              fontSize: '18px',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {getInitials(room.firstName, room.lastName)}
+                          </Avatar>
+                        </Badge>
                         <Typography
                           variant="caption"
                           sx={{
-                            color: '#6b7280',
-                            fontSize: '11px',
-                            ml: 1,
-                            flexShrink: 0
-                          }}
-                        >
-                          {formatTime(room.lastMessageTime)}
-                        </Typography>
-                      </Box>
-
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: hasUnread ? '#374151' : '#9ca3af',
-                            fontSize: '13px',
-                            fontWeight: hasUnread ? 500 : 400,
+                            mt: 0.75,
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: '#374151',
+                            maxWidth: 60,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            flex: 1
+                            textAlign: 'center'
                           }}
                         >
-                          {room.lastMessage}
+                          {room.firstName || room.name.split(' ')[0]}
                         </Typography>
-                        {hasUnread && (
-                          <Box
-                            sx={{
-                              minWidth: 20,
-                              height: 20,
-                              borderRadius: '10px',
-                              bgcolor: '#ef4444',
-                              color: 'white',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              px: 0.75,
-                              ml: 1,
-                              flexShrink: 0
-                            }}
-                          >
-                            {room.unreadCount}
-                          </Box>
-                        )}
                       </Box>
-                      <Typography
-                        variant="caption"
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Divider */}
+              {!searchTerm && recentChats.length > 0 && (
+                <Divider sx={{ mx: 2.5, my: 1 }} />
+              )}
+
+              {/* All Chats Section */}
+              <Box>
+                <Box sx={{ px: 2.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 600,
+                      color: '#374151',
+                      fontSize: '13px',
+                      textTransform: 'none'
+                    }}
+                  >
+                    Tüm Sohbetler
+                  </Typography>
+                  <IconButton size="small" sx={{ padding: 0.5 }}>
+                    <MoreVertIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
+                  </IconButton>
+                </Box>
+
+                {allChats.length === 0 ? (
+                  <Box sx={{ textAlign: 'center', py: 4, px: 3 }}>
+                    <Typography variant="body2" sx={{ color: '#9ca3af', fontSize: '14px' }}>
+                      {searchTerm ? `"${searchTerm}" için sonuç bulunamadı` : 'Henüz sohbet yok'}
+                    </Typography>
+                  </Box>
+                ) : (
+                  allChats.map((room) => {
+                    const isSelected = selectedRoom?.id === room.id;
+                    const hasUnread = room.unreadCount > 0;
+
+                    return (
+                      <Box
+                        key={room.id}
+                        onClick={() => handleRoomSelect(room)}
+                        onMouseEnter={() => setHoveredRoom(room.id)}
+                        onMouseLeave={() => setHoveredRoom(null)}
                         sx={{
-                          color: room.participantOnline ? '#10b981' : '#9ca3af',
-                          fontSize: '11px',
-                          fontWeight: room.participantOnline ? 600 : 400,
-                          mt: 0.25
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.5,
+                          px: 2.5,
+                          py: 1.5,
+                          cursor: 'pointer',
+                          bgcolor: isSelected ? '#f3f4f6' : 'transparent',
+                          borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
+                          '&:hover': {
+                            bgcolor: '#f9fafb'
+                          },
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        {room.participantOnline ? 'Çevrimiçi' : (room.lastSeen ? `Son görülme: ${formatLastSeen(room.lastSeen)}` : 'Çevrimdışı')}
-                      </Typography>
-                    </Box>
-                  </Box>
-                );
-              })
-            )}
-          </Box>
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                          badgeContent={
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                bgcolor: room.participantOnline ? '#10b981' : '#d1d5db',
+                                border: '2px solid white'
+                              }}
+                            />
+                          }
+                        >
+                          <Avatar
+                            sx={{
+                              width: 44,
+                              height: 44,
+                              background: isSelected
+                                ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                                : 'linear-gradient(135deg, #a0aec0 0%, #cbd5e0 100%)',
+                              fontSize: '16px',
+                              fontWeight: 600
+                            }}
+                          >
+                            {getInitials(room.firstName, room.lastName)}
+                          </Avatar>
+                        </Badge>
+
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{
+                                fontWeight: hasUnread ? 600 : 500,
+                                color: '#111827',
+                                fontSize: '14px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {room.name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: '#6b7280',
+                                fontSize: '11px',
+                                ml: 1,
+                                flexShrink: 0
+                              }}
+                            >
+                              {formatTime(room.lastMessageTime)}
+                            </Typography>
+                          </Box>
+
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: hasUnread ? '#374151' : '#9ca3af',
+                                fontSize: '13px',
+                                fontWeight: hasUnread ? 500 : 400,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1
+                              }}
+                            >
+                              {room.lastMessage}
+                            </Typography>
+                            {hasUnread && (
+                              <Box
+                                sx={{
+                                  minWidth: 20,
+                                  height: 20,
+                                  borderRadius: '10px',
+                                  bgcolor: '#ef4444',
+                                  color: 'white',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  px: 0.75,
+                                  ml: 1,
+                                  flexShrink: 0
+                                }}
+                              >
+                                {room.unreadCount}
+                              </Box>
+                            )}
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: room.participantOnline ? '#10b981' : '#9ca3af',
+                              fontSize: '11px',
+                              fontWeight: room.participantOnline ? 600 : 400,
+                              mt: 0.25
+                            }}
+                          >
+                            {room.participantOnline ? 'Çevrimiçi' : (room.lastSeen ? `Son görülme: ${formatLastSeen(room.lastSeen)}` : 'Çevrimdışı')}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })
+                )}
+              </Box>
             </>
           )}
 

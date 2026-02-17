@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// API Base URL - Vite compatible with CRA fallback
-const API_URL = import.meta.env.VITE_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:9000';
+// API Base URL - from centralized config with production auto-detection
+import { API_BASE_URL } from '../config/config';
+const API_URL = API_BASE_URL;
 
 // Create axios instance
 const api = axios.create({
@@ -16,16 +17,16 @@ api.interceptors.request.use(
   (config) => {
     // Get current site from localStorage
     const currentSite = localStorage.getItem('optima_current_site') || 'FXB';
-    
+
     // Add site header
     config.headers['X-Site-Id'] = currentSite;
-    
+
     // Add auth token if exists
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => {

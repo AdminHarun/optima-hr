@@ -131,58 +131,52 @@ const runMigrations = async () => {
   try {
     console.log('🔄 Running background migrations...');
 
-    // Add site_code columns for multi-tenant isolation (idempotent)
+    // Add columns using IF NOT EXISTS to avoid PostgreSQL stderr noise
     try {
-      const qi = sequelize.getQueryInterface();
-      const addColumnIfNotExists = async (table, column, type) => {
+      const addColumnSafe = async (table, column, type) => {
         try {
-          await qi.addColumn(table, column, type);
-          console.log(`  ✅ Added ${column} to ${table}`);
+          await sequelize.query(`ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${column}" ${type}`);
         } catch (e) {
-          if (e.message && e.message.includes('already exists')) {
-            // Column already exists, skip
-          } else {
-            console.log(`  ⚠️ ${table}.${column}: ${e.message}`);
-          }
+          console.log(`  ⚠️ ${table}.${column}: ${e.message}`);
         }
       };
       console.log('🔄 Checking site_code columns for multi-tenant isolation...');
-      await addColumnIfNotExists('employees_employee', 'site_code', { type: 'VARCHAR(50)', allowNull: true });
-      await addColumnIfNotExists('applicant_profiles', 'site_code', { type: 'VARCHAR(50)', allowNull: true });
-      await addColumnIfNotExists('job_applications', 'site_code', { type: 'VARCHAR(50)', allowNull: true });
-      await addColumnIfNotExists('chat_rooms', 'site_code', { type: 'VARCHAR(50)', allowNull: true });
+      await addColumnSafe('employees_employee', 'site_code', 'VARCHAR(50)');
+      await addColumnSafe('applicant_profiles', 'site_code', 'VARCHAR(50)');
+      await addColumnSafe('job_applications', 'site_code', 'VARCHAR(50)');
+      await addColumnSafe('chat_rooms', 'site_code', 'VARCHAR(50)');
       console.log('✅ Site isolation columns checked');
 
       // Applicant auth columns
       console.log('🔄 Checking applicant auth columns...');
-      await addColumnIfNotExists('applicant_profiles', 'password_hash', { type: 'VARCHAR(255)', allowNull: true });
-      await addColumnIfNotExists('applicant_profiles', 'security_question', { type: 'VARCHAR(500)', allowNull: true });
-      await addColumnIfNotExists('applicant_profiles', 'security_answer_hash', { type: 'VARCHAR(255)', allowNull: true });
+      await addColumnSafe('applicant_profiles', 'password_hash', 'VARCHAR(255)');
+      await addColumnSafe('applicant_profiles', 'security_question', 'VARCHAR(500)');
+      await addColumnSafe('applicant_profiles', 'security_answer_hash', 'VARCHAR(255)');
       console.log('✅ Applicant auth columns checked');
 
       // Applicant device tracking columns
       console.log('🔄 Checking applicant device tracking columns...');
-      await addColumnIfNotExists('applicant_profiles', 'device_info', { type: 'JSONB', allowNull: true });
-      await addColumnIfNotExists('applicant_profiles', 'vpn_score', { type: 'INTEGER', allowNull: true, defaultValue: 0 });
-      await addColumnIfNotExists('applicant_profiles', 'is_vpn', { type: 'BOOLEAN', allowNull: true, defaultValue: false });
+      await addColumnSafe('applicant_profiles', 'device_info', 'JSONB');
+      await addColumnSafe('applicant_profiles', 'vpn_score', 'INTEGER DEFAULT 0');
+      await addColumnSafe('applicant_profiles', 'is_vpn', 'BOOLEAN DEFAULT false');
       console.log('✅ Applicant device tracking columns checked');
 
       // Chat message columns
       console.log('🔄 Checking chat message columns...');
-      await addColumnIfNotExists('chat_messages', 'reply_to_message_id', { type: 'VARCHAR(100)', allowNull: true });
+      await addColumnSafe('chat_messages', 'reply_to_message_id', 'VARCHAR(100)');
       console.log('✅ Chat message columns checked');
 
       // Chat room columns for group chat
       console.log('🔄 Checking chat room columns for group chat...');
-      await addColumnIfNotExists('chat_rooms', 'description', { type: 'TEXT', allowNull: true });
+      await addColumnSafe('chat_rooms', 'description', 'TEXT');
       console.log('✅ Chat room group columns checked');
 
       // Pin columns (must be added BEFORE ChatMessage.sync() to avoid index errors)
       console.log('🔄 Checking pin columns...');
-      await addColumnIfNotExists('chat_messages', 'is_pinned', { type: 'BOOLEAN', allowNull: true, defaultValue: false });
-      await addColumnIfNotExists('chat_messages', 'pinned_at', { type: 'DATE', allowNull: true });
-      await addColumnIfNotExists('chat_messages', 'pinned_by_type', { type: 'VARCHAR(20)', allowNull: true });
-      await addColumnIfNotExists('chat_messages', 'pinned_by_id', { type: 'INTEGER', allowNull: true });
+      await addColumnSafe('chat_messages', 'is_pinned', 'BOOLEAN DEFAULT false');
+      await addColumnSafe('chat_messages', 'pinned_at', 'TIMESTAMP');
+      await addColumnSafe('chat_messages', 'pinned_by_type', 'VARCHAR(20)');
+      await addColumnSafe('chat_messages', 'pinned_by_id', 'INTEGER');
       console.log('✅ Pin columns checked');
     } catch (migrationErr) {
       console.log('⚠️ Site code migration note:', migrationErr.message);

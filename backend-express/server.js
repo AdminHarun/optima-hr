@@ -176,6 +176,14 @@ const runMigrations = async () => {
       console.log('🔄 Checking chat room columns for group chat...');
       await addColumnIfNotExists('chat_rooms', 'description', { type: 'TEXT', allowNull: true });
       console.log('✅ Chat room group columns checked');
+
+      // Pin columns (must be added BEFORE ChatMessage.sync() to avoid index errors)
+      console.log('🔄 Checking pin columns...');
+      await addColumnIfNotExists('chat_messages', 'is_pinned', { type: 'BOOLEAN', allowNull: true, defaultValue: false });
+      await addColumnIfNotExists('chat_messages', 'pinned_at', { type: 'DATE', allowNull: true });
+      await addColumnIfNotExists('chat_messages', 'pinned_by_type', { type: 'VARCHAR(20)', allowNull: true });
+      await addColumnIfNotExists('chat_messages', 'pinned_by_id', { type: 'INTEGER', allowNull: true });
+      console.log('✅ Pin columns checked');
     } catch (migrationErr) {
       console.log('⚠️ Site code migration note:', migrationErr.message);
     }

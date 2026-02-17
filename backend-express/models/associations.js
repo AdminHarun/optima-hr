@@ -16,6 +16,9 @@ const MessageBookmark = require('./MessageBookmark');
 const Task = require('./Task');
 const TaskComment = require('./TaskComment');
 const CalendarEvent = require('./CalendarEvent');
+const ManagedFile = require('./ManagedFile');
+const FileFolder = require('./FileFolder');
+const FileVersion = require('./FileVersion');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -230,6 +233,53 @@ Employee.hasMany(CalendarEvent, {
   as: 'calendar_events'
 });
 
+// ManagedFile - Employee ilişkisi
+ManagedFile.belongsTo(Employee, {
+  foreignKey: 'uploaded_by',
+  as: 'uploader'
+});
+Employee.hasMany(ManagedFile, {
+  foreignKey: 'uploaded_by',
+  as: 'uploaded_files'
+});
+
+// ManagedFile - FileFolder ilişkisi
+ManagedFile.belongsTo(FileFolder, {
+  foreignKey: 'folder_id',
+  as: 'folder'
+});
+FileFolder.hasMany(ManagedFile, {
+  foreignKey: 'folder_id',
+  as: 'files'
+});
+
+// FileFolder - self-referencing
+FileFolder.hasMany(FileFolder, {
+  foreignKey: 'parent_id',
+  as: 'subfolders'
+});
+FileFolder.belongsTo(FileFolder, {
+  foreignKey: 'parent_id',
+  as: 'parent'
+});
+
+// FileVersion - ManagedFile ilişkisi
+FileVersion.belongsTo(ManagedFile, {
+  foreignKey: 'file_id',
+  as: 'file'
+});
+ManagedFile.hasMany(FileVersion, {
+  foreignKey: 'file_id',
+  as: 'versions',
+  onDelete: 'CASCADE'
+});
+
+// FileVersion - Employee ilişkisi
+FileVersion.belongsTo(Employee, {
+  foreignKey: 'uploaded_by',
+  as: 'uploader'
+});
+
 module.exports = {
   InvitationLink,
   ApplicantProfile,
@@ -250,5 +300,8 @@ module.exports = {
   MessageBookmark,
   Task,
   TaskComment,
-  CalendarEvent
+  CalendarEvent,
+  ManagedFile,
+  FileFolder,
+  FileVersion
 };

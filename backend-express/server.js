@@ -33,6 +33,7 @@ const readReceiptRoutes = require('./routes/read-receipts');
 const screenShareRoutes = require('./routes/screen-share');
 const taskRoutes = require('./routes/tasks');
 const calendarRoutes = require('./routes/calendar');
+const fileRoutes = require('./routes/files');
 
 const app = express();
 const server = http.createServer(app);
@@ -83,6 +84,7 @@ app.use('/api/read-receipts', readReceiptRoutes);
 app.use('/api/screen-share', screenShareRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/files', fileRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -249,6 +251,18 @@ const runMigrations = async () => {
       console.log('✅ Calendar tables synced');
     } catch (calErr) {
       console.log('⚠️ Calendar tables note:', calErr.message);
+    }
+
+    // Initialize file management tables
+    try {
+      const { ManagedFile, FileFolder, FileVersion } = require('./models/associations');
+      console.log('🔄 Checking file management tables...');
+      try { await FileFolder.sync({ force: false }); } catch (e) { console.log('⚠️ FileFolder sync:', e.message); }
+      try { await ManagedFile.sync({ force: false }); } catch (e) { console.log('⚠️ ManagedFile sync:', e.message); }
+      try { await FileVersion.sync({ force: false }); } catch (e) { console.log('⚠️ FileVersion sync:', e.message); }
+      console.log('✅ File management tables synced');
+    } catch (fileErr) {
+      console.log('⚠️ File tables note:', fileErr.message);
     }
 
     // Add missing columns and fix constraints on job_applications table

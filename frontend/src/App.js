@@ -49,6 +49,7 @@ import SettingsPage from './pages/admin/SettingsPage';
 import ProfilePage from './pages/admin/ProfilePage';
 import TasksPage from './pages/TasksPage';
 import KanbanBoard from './pages/KanbanBoard';
+import FilesPage from './pages/FilesPage';
 
 // Utils
 import './utils/createDemoData';
@@ -134,6 +135,7 @@ function AdminRoutes() {
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="tasks" element={<TasksPage />} />
                 <Route path="kanban" element={<KanbanBoard />} />
+                <Route path="files" element={<FilesPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="reports" element={
                     <AdminProtectedRoute requiredPermission={PERMISSIONS.VIEW_LIMITED_REPORTS}>

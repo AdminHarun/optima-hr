@@ -9,7 +9,7 @@ import {
 } from '@mui/icons-material';
 import notificationService from '../services/notificationService';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../config/config';
 const STORAGE_KEY = 'optima_notifications_state';
 
 const NotificationContext = createContext();

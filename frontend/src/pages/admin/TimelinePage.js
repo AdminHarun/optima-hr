@@ -38,7 +38,8 @@ import {
 } from '@mui/icons-material';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../../config/config';
+const API_URL = API_BASE_URL;
 
 function TimelinePage() {
   const [events, setEvents] = useState([]);
@@ -55,7 +56,7 @@ function TimelinePage() {
       // Gerçek API endpoint'i buraya eklenecek
       // const response = await axios.get(`${API_URL}/api/timeline/events`);
       // setEvents(response.data);
-      
+
       // Şu an için boş liste
       setEvents([]);
     } catch (error) {
@@ -67,9 +68,9 @@ function TimelinePage() {
   };
 
   const formatDate = (date) => {
-    const options = { 
-      year: 'numeric', 
-      month: 'long', 
+    const options = {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -90,7 +91,7 @@ function TimelinePage() {
   };
 
   const getEventIcon = (type) => {
-    switch(type) {
+    switch (type) {
       case 'employee_hired': return <PersonAddIcon />;
       case 'employee_terminated': return <PersonRemoveIcon />;
       case 'leave_approved': return <EventNoteIcon />;
@@ -109,7 +110,7 @@ function TimelinePage() {
           <Typography variant="h5" fontWeight="bold">
             Sistem Akışı
           </Typography>
-          
+
           <Box sx={{ display: 'flex', gap: 2 }}>
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Filtrele</InputLabel>
@@ -127,7 +128,7 @@ function TimelinePage() {
                 <MenuItem value="email_sent">E-postalar</MenuItem>
               </Select>
             </FormControl>
-            
+
             <IconButton onClick={loadEvents} disabled={loading}>
               <RefreshIcon />
             </IconButton>

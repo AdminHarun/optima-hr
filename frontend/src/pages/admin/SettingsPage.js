@@ -34,7 +34,8 @@ import {
 import { useSite } from '../../contexts/SiteContext';
 import { useEmployeeAuth, PERMISSIONS } from '../../auth/employee/EmployeeAuthContext';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../../config/config';
+const API_BASE = API_BASE_URL;
 
 // ============================================================
 // OPTIMA RENK PALETI
@@ -353,7 +354,7 @@ export default function SettingsPage() {
         if (res.ok) {
           setUseBackend(true);
           // Init tables
-          try { await api('/init', { method: 'POST' }); } catch {}
+          try { await api('/init', { method: 'POST' }); } catch { }
         }
       } catch {
         setUseBackend(false);
@@ -494,7 +495,7 @@ export default function SettingsPage() {
             ...s, ...siteForm, updated_at: new Date().toLocaleDateString('tr-TR')
           } : s);
           setSites(updated);
-          try { ctxUpdateSite(editingSite.code, { name: siteForm.name, color: siteForm.color, isActive: siteForm.is_active }); } catch {}
+          try { ctxUpdateSite(editingSite.code, { name: siteForm.name, color: siteForm.color, isActive: siteForm.is_active }); } catch { }
           addLocalAuditLog('UPDATE', 'SITE', siteForm.name, {
             eski: { ad: editingSite.name, kod: editingSite.code, durum: editingSite.is_active ? 'Aktif' : 'Pasif' },
             yeni: { ad: siteForm.name, kod: siteForm.code, durum: siteForm.is_active ? 'Aktif' : 'Pasif' }
@@ -502,7 +503,7 @@ export default function SettingsPage() {
         } else {
           const newSite = { ...siteForm, id: Date.now(), total_employees: 0, total_applications: 0, created_at: new Date().toLocaleDateString('tr-TR'), updated_at: new Date().toLocaleDateString('tr-TR') };
           setSites([...sites, newSite]);
-          try { ctxAddSite({ code: siteForm.code, name: siteForm.name, color: siteForm.color, isActive: siteForm.is_active }); } catch {}
+          try { ctxAddSite({ code: siteForm.code, name: siteForm.name, color: siteForm.color, isActive: siteForm.is_active }); } catch { }
           addLocalAuditLog('CREATE', 'SITE', siteForm.name, {
             site_kodu: siteForm.code, aciklama: siteForm.description || '-', durum: siteForm.is_active ? 'Aktif' : 'Pasif'
           });
@@ -525,7 +526,7 @@ export default function SettingsPage() {
         loadSitesFromBackend();
       } else {
         setSites(sites.filter(s => s.id !== item.id));
-        try { ctxDeleteSite(item.code); } catch {}
+        try { ctxDeleteSite(item.code); } catch { }
         addLocalAuditLog('DELETE', 'SITE', item.name, { site_kodu: item.code, durum: item.is_active ? 'Aktif' : 'Pasif' });
       }
       setDeleteDialog({ open: false, type: '', item: null });
@@ -543,7 +544,7 @@ export default function SettingsPage() {
       } else {
         const updated = sites.map(s => s.id === site.id ? { ...s, is_active: !s.is_active, updated_at: new Date().toLocaleDateString('tr-TR') } : s);
         setSites(updated);
-        try { ctxUpdateSite(site.code, { isActive: !site.is_active }); } catch {}
+        try { ctxUpdateSite(site.code, { isActive: !site.is_active }); } catch { }
         addLocalAuditLog(site.is_active ? 'DEACTIVATE' : 'ACTIVATE', 'SITE', site.name, { site_kodu: site.code, yeni_durum: site.is_active ? 'Pasif' : 'Aktif' });
       }
       setSnackbar({ open: true, message: `Site ${site.is_active ? 'deaktif' : 'aktif'} edildi`, severity: 'success' });
@@ -1812,7 +1813,7 @@ export default function SettingsPage() {
     try {
       const session = JSON.parse(localStorage.getItem('employee_session') || '{}');
       sessionInfo = session;
-    } catch {}
+    } catch { }
 
     const loginTime = sessionInfo.loginTime ? new Date(sessionInfo.loginTime) : null;
     const now = new Date();
@@ -2074,80 +2075,80 @@ export default function SettingsPage() {
 
       <Box sx={{ p: { xs: 1.5, md: 3 }, maxWidth: 1400, mx: 'auto' }}>
 
-      {/* Loading bar */}
-      {backendLoading && <LinearProgress sx={{ mb: 1, borderRadius: 1, '& .MuiLinearProgress-bar': { background: COLORS.gradient } }} />}
+        {/* Loading bar */}
+        {backendLoading && <LinearProgress sx={{ mb: 1, borderRadius: 1, '& .MuiLinearProgress-bar': { background: COLORS.gradient } }} />}
 
-      {/* Confluence-style: Left Nav + Content */}
-      <Box sx={{ display: 'flex', gap: 3 }}>
-        {/* Left Navigation */}
-        <Paper sx={{
-          width: 260, minWidth: 260, borderRadius: 3, overflow: 'hidden',
-          boxShadow: '0 4px 20px rgba(28, 97, 171, 0.08)',
-          border: '1px solid rgba(28, 97, 171, 0.08)',
-          alignSelf: 'flex-start',
-          position: 'sticky', top: 24,
-        }}>
-          <List sx={{ py: 1 }}>
-            {visibleSections.map((section) => (
-              <ListItemButton
-                key={section.key}
-                selected={activeSection === section.key}
-                onClick={() => handleSectionChange(section.key)}
-                sx={{
-                  mx: 1, my: 0.3, borderRadius: 2,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    backgroundColor: 'rgba(28, 97, 171, 0.06)',
-                  },
-                  '&.Mui-selected': {
-                    backgroundColor: 'rgba(28, 97, 171, 0.1)',
-                    borderLeft: `3px solid ${COLORS.primary}`,
+        {/* Confluence-style: Left Nav + Content */}
+        <Box sx={{ display: 'flex', gap: 3 }}>
+          {/* Left Navigation */}
+          <Paper sx={{
+            width: 260, minWidth: 260, borderRadius: 3, overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(28, 97, 171, 0.08)',
+            border: '1px solid rgba(28, 97, 171, 0.08)',
+            alignSelf: 'flex-start',
+            position: 'sticky', top: 24,
+          }}>
+            <List sx={{ py: 1 }}>
+              {visibleSections.map((section) => (
+                <ListItemButton
+                  key={section.key}
+                  selected={activeSection === section.key}
+                  onClick={() => handleSectionChange(section.key)}
+                  sx={{
+                    mx: 1, my: 0.3, borderRadius: 2,
+                    transition: 'all 0.2s ease',
                     '&:hover': {
-                      backgroundColor: 'rgba(28, 97, 171, 0.14)',
+                      backgroundColor: 'rgba(28, 97, 171, 0.06)',
                     },
-                  },
-                }}
-              >
-                <ListItemIcon sx={{
-                  minWidth: 36,
-                  color: activeSection === section.key ? COLORS.primary : '#999',
-                }}>
-                  {section.icon}
-                </ListItemIcon>
-                <ListItemText
-                  primary={section.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.88rem',
-                    fontWeight: activeSection === section.key ? 700 : 500,
-                    color: activeSection === section.key ? COLORS.primary : '#555',
+                    '&.Mui-selected': {
+                      backgroundColor: 'rgba(28, 97, 171, 0.1)',
+                      borderLeft: `3px solid ${COLORS.primary}`,
+                      '&:hover': {
+                        backgroundColor: 'rgba(28, 97, 171, 0.14)',
+                      },
+                    },
                   }}
-                />
-              </ListItemButton>
-            ))}
-          </List>
-        </Paper>
+                >
+                  <ListItemIcon sx={{
+                    minWidth: 36,
+                    color: activeSection === section.key ? COLORS.primary : '#999',
+                  }}>
+                    {section.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={section.label}
+                    primaryTypographyProps={{
+                      fontSize: '0.88rem',
+                      fontWeight: activeSection === section.key ? 700 : 500,
+                      color: activeSection === section.key ? COLORS.primary : '#555',
+                    }}
+                  />
+                </ListItemButton>
+              ))}
+            </List>
+          </Paper>
 
-        {/* Content Area */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {renderSectionContent()}
+          {/* Content Area */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {renderSectionContent()}
+          </Box>
         </Box>
+
+        {/* Dialogs */}
+        {renderSiteDialog()}
+        {renderUserDialog()}
+        {renderPermissionDialog()}
+        {renderDeleteDialog()}
+
+        {/* Snackbar */}
+        <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+          <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}
+            sx={{ borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Box>
-
-      {/* Dialogs */}
-      {renderSiteDialog()}
-      {renderUserDialog()}
-      {renderPermissionDialog()}
-      {renderDeleteDialog()}
-
-      {/* Snackbar */}
-      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}
-          sx={{ borderRadius: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
     </Box>
   );
 }

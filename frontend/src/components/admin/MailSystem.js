@@ -45,12 +45,12 @@ import {
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../../config/config';
 const API_URL = `${API_BASE_URL}/mail/api`;
 
 function MailSystem() {
   const { currentUser } = useEmployeeAuth();
-  
+
   // States
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedMail, setSelectedMail] = useState(null);
@@ -62,7 +62,7 @@ function MailSystem() {
   const [mails, setMails] = useState([]);
   const [emailSettings, setEmailSettings] = useState(null);
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' });
-  
+
   // Compose mail states
   const [composeMail, setComposeMail] = useState({
     to: '',
@@ -71,7 +71,7 @@ function MailSystem() {
     subject: '',
     body: ''
   });
-  
+
   // Settings states
   const [settingsForm, setSettingsForm] = useState({
     email_address: '',
@@ -86,7 +86,7 @@ function MailSystem() {
     gmail_address: '',
     gmail_app_password: ''
   });
-  
+
   // Auto-sync emails every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -103,33 +103,33 @@ function MailSystem() {
     loadEmails();
     loadSettings();
   }, [selectedFolder]);
-  
+
   // Load emails from backend
   const loadEmails = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
       const headers = token ? { 'Authorization': `Token ${token}` } : {};
-      
+
       const response = await axios.get(`${API_URL}/emails/`, {
         headers,
-        params: { 
+        params: {
           folder: selectedFolder.toUpperCase() // inbox -> INBOX
         }
       });
-      
+
       const emails = response.data.results || response.data || [];
-      
+
       // Klasöre göre filtreleme
       let filteredEmails = emails;
       if (selectedFolder === 'sent') {
-        filteredEmails = emails.filter(mail => 
-          mail.sender_email === currentUser?.email || 
+        filteredEmails = emails.filter(mail =>
+          mail.sender_email === currentUser?.email ||
           mail.from_email === currentUser?.email ||
           mail.is_sent === true
         );
       } else if (selectedFolder === 'inbox') {
-        filteredEmails = emails.filter(mail => 
+        filteredEmails = emails.filter(mail =>
           mail.recipient_email === currentUser?.email ||
           mail.to_email === currentUser?.email ||
           mail.folder === 'inbox' ||
@@ -142,7 +142,7 @@ function MailSystem() {
       } else if (selectedFolder === 'spam') {
         filteredEmails = emails.filter(mail => mail.is_spam === true);
       }
-      
+
       setMails(filteredEmails);
     } catch (error) {
       console.error('Error loading emails:', error);
@@ -155,7 +155,7 @@ function MailSystem() {
       setLoading(false);
     }
   };
-  
+
   // Load email settings
   const loadSettings = async () => {
     try {
@@ -271,7 +271,7 @@ function MailSystem() {
       }
     }
   };
-  
+
   // Sync emails from Gmail
   const syncEmails = async () => {
     if (!emailSettings) {
@@ -279,12 +279,12 @@ function MailSystem() {
       setSettingsDialogOpen(true);
       return;
     }
-    
+
     setSyncing(true);
     try {
       const token = localStorage.getItem('authToken');
       const headers = token ? { 'Authorization': `Token ${token}` } : {};
-      
+
       const response = await axios.post(`${API_URL}/emails/sync/`, {}, { headers });
       if (response.data.success) {
         showAlert(`${response.data.new_emails || 0} yeni e-posta senkronize edildi`, 'success');
@@ -299,7 +299,7 @@ function MailSystem() {
       setSyncing(false);
     }
   };
-  
+
   // Send email
   const handleSendMail = async () => {
     if (!emailSettings) {
@@ -307,11 +307,11 @@ function MailSystem() {
       setSettingsDialogOpen(true);
       return;
     }
-    
+
     try {
       const token = localStorage.getItem('authToken');
       const headers = token ? { 'Authorization': `Token ${token}` } : {};
-      
+
       const response = await axios.post(`${API_URL}/emails/send/`, composeMail, { headers });
       if (response.data.success) {
         showAlert('E-posta başarıyla gönderildi', 'success');
@@ -328,16 +328,16 @@ function MailSystem() {
       showAlert('E-posta gönderilirken hata oluştu', 'error');
     }
   };
-  
+
   // Mark email as read
   const markAsRead = async (emailId) => {
     try {
       const token = localStorage.getItem('authToken');
       const headers = token ? { 'Authorization': `Token ${token}` } : {};
-      
+
       await axios.post(`${API_URL}/emails/${emailId}/mark_read/`, {}, { headers });
-      setMails(prevMails => 
-        prevMails.map(m => 
+      setMails(prevMails =>
+        prevMails.map(m =>
           m.id === emailId ? { ...m, is_read: true } : m
         )
       );
@@ -345,17 +345,17 @@ function MailSystem() {
       console.error('Error marking email as read:', error);
     }
   };
-  
+
   // Toggle star
   const toggleStar = async (email) => {
     try {
       const token = localStorage.getItem('authToken');
       const headers = token ? { 'Authorization': `Token ${token}` } : {};
-      
+
       const response = await axios.post(`${API_URL}/emails/${email.id}/toggle_star/`, {}, { headers });
       if (response.data.success) {
-        setMails(prevMails => 
-          prevMails.map(m => 
+        setMails(prevMails =>
+          prevMails.map(m =>
             m.id === email.id ? { ...m, is_starred: response.data.starred } : m
           )
         );
@@ -364,13 +364,13 @@ function MailSystem() {
       console.error('Error toggling star:', error);
     }
   };
-  
+
   // Move to trash
   const moveToTrash = async (emailId) => {
     try {
       const token = localStorage.getItem('authToken');
       const headers = token ? { 'Authorization': `Token ${token}` } : {};
-      
+
       await axios.post(`${API_URL}/emails/${emailId}/move_to_trash/`, {}, { headers });
       showAlert('E-posta çöp kutusuna taşındı', 'success');
       loadEmails();
@@ -380,12 +380,12 @@ function MailSystem() {
       showAlert('E-posta taşınamadı', 'error');
     }
   };
-  
+
   // Show alert
   const showAlert = (message, severity = 'success') => {
     setAlert({ open: true, message, severity });
   };
-  
+
   // Filter emails based on search
   const filteredMails = mails.filter(mail => {
     if (!searchQuery) return true;
@@ -397,7 +397,7 @@ function MailSystem() {
       mail.body?.toLowerCase().includes(query)
     );
   });
-  
+
   // Format date
   const formatDate = (date) => {
     if (!date) return '';
@@ -405,7 +405,7 @@ function MailSystem() {
     const now = new Date();
     const diff = now - mailDate;
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
+
     if (days === 0) {
       return mailDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
     } else if (days === 1) {
@@ -414,7 +414,7 @@ function MailSystem() {
       return mailDate.toLocaleDateString('tr-TR');
     }
   };
-  
+
   // Get folder counts
   const getUnreadCount = (folder) => {
     if (folder === 'inbox') {
@@ -422,13 +422,13 @@ function MailSystem() {
     }
     return 0;
   };
-  
+
   return (
     <Box sx={{ display: 'flex', height: '100%', bgcolor: '#f5f5f5' }}>
       {/* Sidebar */}
-      <Paper sx={{ 
-        width: 240, 
-        p: 2, 
+      <Paper sx={{
+        width: 240,
+        p: 2,
         borderRadius: 0,
         borderRight: '1px solid #e0e0e0'
       }}>
@@ -447,9 +447,9 @@ function MailSystem() {
         >
           Yeni Mail
         </Button>
-        
+
         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          <IconButton 
+          <IconButton
             onClick={syncEmails}
             disabled={syncing}
             title="Gmail'den senkronize et"
@@ -457,16 +457,16 @@ function MailSystem() {
           >
             {syncing ? <CircularProgress size={20} /> : <SyncIcon />}
           </IconButton>
-          
-          <IconButton 
+
+          <IconButton
             onClick={() => setSettingsDialogOpen(true)}
             title="E-posta ayarları"
             size="small"
           >
             <SettingsIcon />
           </IconButton>
-          
-          <IconButton 
+
+          <IconButton
             onClick={loadEmails}
             title="Yenile"
             size="small"
@@ -474,7 +474,7 @@ function MailSystem() {
             <RefreshIcon />
           </IconButton>
         </Box>
-        
+
         <List>
           <ListItem
             button
@@ -497,7 +497,7 @@ function MailSystem() {
               <Chip size="small" label={getUnreadCount('inbox')} color="error" />
             )}
           </ListItem>
-          
+
           <ListItem
             button
             selected={selectedFolder === 'sent'}
@@ -516,7 +516,7 @@ function MailSystem() {
             </ListItemAvatar>
             <ListItemText primary="Gönderilenler" />
           </ListItem>
-          
+
           <ListItem
             button
             selected={selectedFolder === 'drafts'}
@@ -531,7 +531,7 @@ function MailSystem() {
             </ListItemAvatar>
             <ListItemText primary="Taslaklar" />
           </ListItem>
-          
+
           <ListItem
             button
             selected={selectedFolder === 'spam'}
@@ -546,7 +546,7 @@ function MailSystem() {
             </ListItemAvatar>
             <ListItemText primary="Spam" />
           </ListItem>
-          
+
           <ListItem
             button
             selected={selectedFolder === 'trash'}
@@ -561,7 +561,7 @@ function MailSystem() {
             <ListItemText primary="Çöp Kutusu" />
           </ListItem>
         </List>
-        
+
         {emailSettings && (
           <Box sx={{ mt: 2, p: 1, bgcolor: 'rgba(0,0,0,0.05)', borderRadius: 1 }}>
             <Typography variant="caption" color="text.secondary">
@@ -573,10 +573,10 @@ function MailSystem() {
           </Box>
         )}
       </Paper>
-      
+
       {/* Mail List */}
-      <Box sx={{ 
-        width: 400, 
+      <Box sx={{
+        width: 400,
         borderRight: '1px solid #e0e0e0',
         display: 'flex',
         flexDirection: 'column',
@@ -584,14 +584,14 @@ function MailSystem() {
         bgcolor: 'white'
       }}>
         {/* Header */}
-        <Box sx={{ 
-          p: 2, 
+        <Box sx={{
+          p: 2,
           borderBottom: '1px solid #e0e0e0',
-          background: selectedFolder === 'sent' ? 
+          background: selectedFolder === 'sent' ?
             'linear-gradient(135deg, rgba(139, 185, 74, 0.1), rgba(139, 185, 74, 0.05))' :
             'linear-gradient(135deg, rgba(28, 97, 171, 0.1), rgba(28, 97, 171, 0.05))'
         }}>
-          <Typography variant="h6" sx={{ 
+          <Typography variant="h6" sx={{
             fontWeight: 600,
             color: selectedFolder === 'sent' ? '#8bb94a' : '#1c61ab',
             display: 'flex',
@@ -605,7 +605,7 @@ function MailSystem() {
             {selectedFolder === 'trash' && <><TrashIcon /> Çöp Kutusu</>}
           </Typography>
         </Box>
-        
+
         {/* Search */}
         <Box sx={{ p: 2, borderBottom: '1px solid #e0e0e0' }}>
           <TextField
@@ -623,29 +623,29 @@ function MailSystem() {
             }}
           />
         </Box>
-        
+
         {/* Mails */}
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <CircularProgress />
           </Box>
         ) : (
-          <List sx={{ 
-            p: 1, 
-            flexGrow: 1, 
+          <List sx={{
+            p: 1,
+            flexGrow: 1,
             overflow: 'auto',
             maxHeight: 'calc(100vh - 200px)'
           }}>
             {filteredMails.length === 0 ? (
               <Box sx={{ textAlign: 'center', p: 4 }}>
                 <Typography variant="body2" color="text.secondary">
-                  {searchQuery ? 'Arama sonucu bulunamadı' : 
-                   selectedFolder === 'inbox' ? 'Gelen kutunuzda mail yok' :
-                   selectedFolder === 'sent' ? 'Gönderilmiş mail yok' :
-                   'Bu klasörde mail yok'}
+                  {searchQuery ? 'Arama sonucu bulunamadı' :
+                    selectedFolder === 'inbox' ? 'Gelen kutunuzda mail yok' :
+                      selectedFolder === 'sent' ? 'Gönderilmiş mail yok' :
+                        'Bu klasörde mail yok'}
                 </Typography>
                 {selectedFolder === 'inbox' && !emailSettings && (
-                  <Button 
+                  <Button
                     onClick={() => setSettingsDialogOpen(true)}
                     sx={{ mt: 2 }}
                     variant="outlined"
@@ -675,23 +675,23 @@ function MailSystem() {
                 >
                   <Box sx={{ width: '100%' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Avatar sx={{ 
-                        width: 32, 
-                        height: 32, 
+                      <Avatar sx={{
+                        width: 32,
+                        height: 32,
                         mr: 1.5,
                         bgcolor: selectedFolder === 'sent' ? '#8bb94a' : '#1c61ab'
                       }}>
-                        {selectedFolder === 'sent' ? 
+                        {selectedFolder === 'sent' ?
                           (mail.recipient_name?.[0] || mail.to_email?.[0] || 'K') :
                           (mail.sender_name?.[0] || mail.from_email?.[0] || 'G')
                         }
                       </Avatar>
                       <Box sx={{ flexGrow: 1 }}>
-                        <Typography 
-                          variant="body2" 
+                        <Typography
+                          variant="body2"
                           sx={{ fontWeight: mail.is_read ? 400 : 600 }}
                         >
-                          {selectedFolder === 'sent' ? 
+                          {selectedFolder === 'sent' ?
                             `Kime: ${mail.recipient_name || mail.to_email || 'Alıcı'}` :
                             (mail.sender_name || mail.from_email || 'Gönderen')
                           }
@@ -701,18 +701,18 @@ function MailSystem() {
                         {formatDate(mail.created_at || mail.date)}
                       </Typography>
                     </Box>
-                    
-                    <Typography 
-                      variant="body2" 
+
+                    <Typography
+                      variant="body2"
                       sx={{ fontWeight: mail.is_read ? 400 : 600, mb: 0.5 }}
                     >
                       {mail.subject}
                     </Typography>
-                    
-                    <Typography 
-                      variant="caption" 
+
+                    <Typography
+                      variant="caption"
                       color="text.secondary"
-                      sx={{ 
+                      sx={{
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
@@ -721,7 +721,7 @@ function MailSystem() {
                     >
                       {mail.body || mail.snippet}
                     </Typography>
-                    
+
                     <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
                       {mail.is_important && (
                         <Chip size="small" label="Önemli" color="error" sx={{ height: 20 }} />
@@ -750,22 +750,22 @@ function MailSystem() {
           </List>
         )}
       </Box>
-      
+
       {/* Mail Content */}
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         {selectedMail ? (
           <>
             {/* Actions */}
-            <Box sx={{ 
-              p: 2, 
+            <Box sx={{
+              p: 2,
               borderBottom: '1px solid #e0e0e0',
               display: 'flex',
               gap: 1
             }}>
               {selectedFolder !== 'sent' && (
-                <Button 
-                  startIcon={<ReplyIcon />} 
-                  variant="outlined" 
+                <Button
+                  startIcon={<ReplyIcon />}
+                  variant="outlined"
                   size="small"
                   onClick={() => {
                     setComposeMail({
@@ -781,10 +781,10 @@ function MailSystem() {
                   Yanıtla
                 </Button>
               )}
-              <Button 
-                startIcon={<DeleteIcon />} 
-                variant="outlined" 
-                size="small" 
+              <Button
+                startIcon={<DeleteIcon />}
+                variant="outlined"
+                size="small"
                 color="error"
                 onClick={() => moveToTrash(selectedMail.id)}
               >
@@ -794,18 +794,18 @@ function MailSystem() {
               <IconButton><ArchiveIcon /></IconButton>
               <IconButton><MoreVertIcon /></IconButton>
             </Box>
-            
+
             {/* Content */}
-            <Box sx={{ 
-              flexGrow: 1, 
-              p: 3, 
+            <Box sx={{
+              flexGrow: 1,
+              p: 3,
               overflow: 'auto',
               maxHeight: 'calc(100vh - 200px)'
             }}>
               <Typography variant="h5" gutterBottom>
                 {selectedMail.subject}
               </Typography>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                 <Avatar sx={{ bgcolor: selectedFolder === 'sent' ? '#8bb94a' : '#1c61ab' }}>
                   {selectedFolder === 'sent' ?
@@ -815,37 +815,37 @@ function MailSystem() {
                 </Avatar>
                 <Box>
                   <Typography variant="body1" fontWeight="medium">
-                    {selectedFolder === 'sent' ? 
+                    {selectedFolder === 'sent' ?
                       `Kime: ${selectedMail.recipient_name || selectedMail.to_email || 'Alıcı'}` :
                       (selectedMail.sender_name || selectedMail.from_email || 'Bilinmeyen')
                     }
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {selectedFolder === 'sent' ? 
+                    {selectedFolder === 'sent' ?
                       `${selectedMail.to_email || ''} • ${new Date(selectedMail.created_at || selectedMail.date).toLocaleString('tr-TR')}` :
                       `${selectedMail.sender_email || selectedMail.from_email} • ${new Date(selectedMail.created_at || selectedMail.date).toLocaleString('tr-TR')}`
                     }
                   </Typography>
                 </Box>
               </Box>
-              
+
               {selectedMail.html_body ? (
-                <Box 
-                  sx={{ 
-                    '& *': { 
+                <Box
+                  sx={{
+                    '& *': {
                       maxWidth: '100%',
                       wordBreak: 'break-word'
                     },
                     lineHeight: 1.6
                   }}
-                  dangerouslySetInnerHTML={{ 
-                    __html: selectedMail.html_body 
+                  dangerouslySetInnerHTML={{
+                    __html: selectedMail.html_body
                   }}
                 />
               ) : (
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
+                <Typography
+                  variant="body1"
+                  sx={{
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
                     lineHeight: 1.6
@@ -854,7 +854,7 @@ function MailSystem() {
                   {selectedMail.body || selectedMail.snippet}
                 </Typography>
               )}
-              
+
               {selectedMail.attachments?.length > 0 && (
                 <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
                   <Typography variant="body2" fontWeight="medium">
@@ -873,9 +873,9 @@ function MailSystem() {
             </Box>
           </>
         ) : (
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             height: '100%'
           }}>
@@ -888,7 +888,7 @@ function MailSystem() {
           </Box>
         )}
       </Box>
-      
+
       {/* Compose Dialog */}
       <Dialog
         open={composeDialogOpen}
@@ -896,13 +896,13 @@ function MailSystem() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
           color: 'white'
         }}>
           Yeni Mail
         </DialogTitle>
-        
+
         <DialogContent sx={{ mt: 2 }}>
           <TextField
             fullWidth
@@ -911,7 +911,7 @@ function MailSystem() {
             onChange={(e) => setComposeMail({ ...composeMail, to: e.target.value })}
             sx={{ mb: 2 }}
           />
-          
+
           <TextField
             fullWidth
             label="CC"
@@ -919,7 +919,7 @@ function MailSystem() {
             onChange={(e) => setComposeMail({ ...composeMail, cc: e.target.value })}
             sx={{ mb: 2 }}
           />
-          
+
           <TextField
             fullWidth
             label="Konu"
@@ -927,7 +927,7 @@ function MailSystem() {
             onChange={(e) => setComposeMail({ ...composeMail, subject: e.target.value })}
             sx={{ mb: 2 }}
           />
-          
+
           <TextField
             fullWidth
             label="Mesaj"
@@ -937,11 +937,11 @@ function MailSystem() {
             onChange={(e) => setComposeMail({ ...composeMail, body: e.target.value })}
           />
         </DialogContent>
-        
+
         <DialogActions>
           <Button onClick={() => setComposeDialogOpen(false)}>İptal</Button>
-          <Button 
-            variant="contained" 
+          <Button
+            variant="contained"
             onClick={handleSendMail}
             startIcon={<SendIcon />}
             sx={{
@@ -955,7 +955,7 @@ function MailSystem() {
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Settings Dialog */}
       <Dialog
         open={settingsDialogOpen}
@@ -1086,7 +1086,7 @@ function MailSystem() {
           </Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Alert Snackbar */}
       <Snackbar
         open={alert.open}
@@ -1094,8 +1094,8 @@ function MailSystem() {
         onClose={() => setAlert({ ...alert, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert 
-          onClose={() => setAlert({ ...alert, open: false })} 
+        <Alert
+          onClose={() => setAlert({ ...alert, open: false })}
           severity={alert.severity}
           sx={{ width: '100%' }}
         >

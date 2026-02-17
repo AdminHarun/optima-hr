@@ -58,7 +58,8 @@ import {
   VpnLock as VpnIcon
 } from '@mui/icons-material';
 
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:9000') + '/api';
+import { API_BASE_URL as BASE_URL } from '../config/config';
+const API_BASE_URL = BASE_URL + '/api';
 
 const getCurrentSiteCode = () => localStorage.getItem('optima_current_site') || 'FXB';
 
@@ -179,39 +180,39 @@ function ProfileManagement() {
     sessions.forEach(session => {
       const profileId = session.profileId;
       const profile = profiles.find(p => p.id === profileId);
-      
+
       if (profile && session.deviceInfo) {
         const ip = session.deviceInfo.ip_address;
         const userAgent = session.deviceInfo.userAgent;
         const fingerprint = generateDeviceFingerprint(session.deviceInfo);
-        
+
         // IP analizi
         if (ip && ip !== 'unknown') {
           if (!ipMap[ip]) ipMap[ip] = [];
           if (!ipMap[ip].find(p => p.profileId === profileId)) {
-            ipMap[ip].push({ 
-              profileId, 
-              email: profile.email, 
+            ipMap[ip].push({
+              profileId,
+              email: profile.email,
               name: `${profile.firstName} ${profile.lastName}`,
-              loginTime: session.loginTime 
+              loginTime: session.loginTime
             });
           }
         }
-        
+
         // Device fingerprint analizi (MAC benzeri)
         if (fingerprint) {
           if (!macMap[fingerprint]) macMap[fingerprint] = [];
           if (!macMap[fingerprint].find(p => p.profileId === profileId)) {
-            macMap[fingerprint].push({ 
-              profileId, 
-              email: profile.email, 
+            macMap[fingerprint].push({
+              profileId,
+              email: profile.email,
               name: `${profile.firstName} ${profile.lastName}`,
               loginTime: session.loginTime,
               deviceInfo: session.deviceInfo
             });
           }
         }
-        
+
         // Profil analizi oluştur
         if (!analysis[profileId]) {
           analysis[profileId] = {
@@ -221,13 +222,13 @@ function ProfileManagement() {
             sessions: []
           };
         }
-        
+
         if (ip) analysis[profileId].ips.add(ip);
         if (fingerprint) analysis[profileId].devices.add(fingerprint);
         analysis[profileId].sessions.push(session);
       }
     });
-    
+
     // Şüpheli profilleri bul
     Object.values(ipMap).forEach(ipUsers => {
       if (ipUsers.length > 1) {
@@ -245,7 +246,7 @@ function ProfileManagement() {
         });
       }
     });
-    
+
     Object.values(macMap).forEach(deviceUsers => {
       if (deviceUsers.length > 1) {
         deviceUsers.forEach(user => {
@@ -266,7 +267,7 @@ function ProfileManagement() {
         });
       }
     });
-    
+
     // VPN kullanan profilleri de supheli olarak ekle
     sessions.forEach(session => {
       const profileId = session.profileId;
@@ -294,7 +295,7 @@ function ProfileManagement() {
 
     console.log('IP/MAC Analizi:', { ipMap, macMap, suspicious });
   };
-  
+
   // Basit hash fonksiyonu (djb2 algoritması)
   const simpleHash = (str) => {
     let hash = 5381;
@@ -334,14 +335,14 @@ function ProfileManagement() {
     const hash = simpleHash(primaryFingerprint);
     return `DEV-${hash.substring(0, 8)}`;
   };
-  
+
   // Cihaz benzerlik skoru hesapla (0-100)
   const calculateDeviceSimilarity = (device1, device2) => {
     if (!device1 || !device2) return 0;
-    
+
     let score = 0;
     let totalChecks = 0;
-    
+
     // Canvas karsilastirma (en onemli - %40 agirlik)
     if (device1.canvasFingerprint && device2.canvasFingerprint) {
       totalChecks += 40;
@@ -349,7 +350,7 @@ function ProfileManagement() {
         score += 40;
       }
     }
-    
+
     // WebGL karsilastirma (%20 agirlik)
     if (device1.webglFingerprint && device2.webglFingerprint) {
       totalChecks += 20;
@@ -357,7 +358,7 @@ function ProfileManagement() {
         score += 20;
       }
     }
-    
+
     // Audio karsilastirma (%15 agirlik)
     if (device1.audioFingerprint && device2.audioFingerprint) {
       totalChecks += 15;
@@ -365,7 +366,7 @@ function ProfileManagement() {
         score += 15;
       }
     }
-    
+
     // Diger ozellikler (%25 agirlik)
     const otherChecks = [
       { prop: 'userAgent', weight: 5 },
@@ -376,14 +377,14 @@ function ProfileManagement() {
       { prop: 'platform', weight: 3 },
       { prop: 'hardwareConcurrency', weight: 3 }
     ];
-    
+
     otherChecks.forEach(check => {
       totalChecks += check.weight;
       if (device1[check.prop] && device2[check.prop] && device1[check.prop] === device2[check.prop]) {
         score += check.weight;
       }
     });
-    
+
     return totalChecks > 0 ? Math.round((score / totalChecks) * 100) : 0;
   };
 
@@ -493,9 +494,9 @@ function ProfileManagement() {
     const security = securities.find(s => s.profileId === profile.id);
     const profileSessions = sessions.filter(s => s.profileId === profile.id);
     const profileAnalysis = ipMacAnalysis.analysis ? ipMacAnalysis.analysis[profile.id] : null;
-    
-    setSelectedProfile({ 
-      ...profile, 
+
+    setSelectedProfile({
+      ...profile,
       security,
       sessions: profileSessions,
       analysis: profileAnalysis
@@ -515,13 +516,13 @@ function ProfileManagement() {
         // Güvenlik bilgilerini sil
         const updatedSecurities = securities.filter(s => s.profileId !== profileId);
         localStorage.setItem(`user_securities_${siteCode}`, JSON.stringify(updatedSecurities));
-        
+
         // Session'ı da temizle (eğer bu profil aktifse)
         const currentSession = JSON.parse(localStorage.getItem('current_session') || '{}');
         if (currentSession.profileId === profileId) {
           localStorage.removeItem('current_session');
         }
-        
+
         loadProfiles();
       } catch (error) {
         console.error('Profil silme hatası:', error);
@@ -544,7 +545,7 @@ function ProfileManagement() {
     switch (activeTab) {
       case 0: return activeProfiles;
       case 1: return inactiveProfiles;
-      case 2: return suspiciousProfiles.map(s => 
+      case 2: return suspiciousProfiles.map(s =>
         profiles.find(p => p.id === s.profileId)
       ).filter(Boolean);
       case 3: return []; // Ağ analizi için profil listesi gereksiz
@@ -677,17 +678,17 @@ function ProfileManagement() {
 
       {/* Şüpheli Profil Uyarısı */}
       {suspiciousProfiles.length > 0 && (
-        <Alert 
-          severity="warning" 
-          sx={{ 
+        <Alert
+          severity="warning"
+          sx={{
             mb: 3,
             background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 152, 0, 0.1))',
             border: '1px solid rgba(255, 193, 7, 0.3)'
           }}
           action={
-            <Button 
-              color="inherit" 
-              size="small" 
+            <Button
+              color="inherit"
+              size="small"
               onClick={() => setActiveTab(2)}
               startIcon={<WarningIcon />}
             >
@@ -704,15 +705,15 @@ function ProfileManagement() {
         </Alert>
       )}
       <Paper sx={{ mb: 2 }}>
-        <Tabs 
-          value={activeTab} 
+        <Tabs
+          value={activeTab}
           onChange={(e, newValue) => setActiveTab(newValue)}
           indicatorColor="primary"
           textColor="primary"
         >
           <Tab label={`Aktif Profiller (${activeProfiles.length})`} />
           <Tab label={`Pasif Profiller (${inactiveProfiles.length})`} />
-          <Tab 
+          <Tab
             label={
               <Badge badgeContent={suspiciousProfiles.length} color="error">
                 <Box display="flex" alignItems="center" gap={1}>
@@ -720,15 +721,15 @@ function ProfileManagement() {
                   Şüpheli Profiller
                 </Box>
               </Badge>
-            } 
+            }
           />
-          <Tab 
+          <Tab
             label={
               <Box display="flex" alignItems="center" gap={1}>
                 <NetworkIcon fontSize="small" />
                 Ağ Analizi
               </Box>
-            } 
+            }
           />
         </Tabs>
       </Paper>
@@ -746,7 +747,7 @@ function ProfileManagement() {
             <NetworkIcon color="primary" />
             Ağ Analizi Raporu
           </Typography>
-          
+
           {Object.keys(ipMacAnalysis.ipMap || {}).length === 0 ? (
             <Alert severity="info">
               Henüz yeterli session verisi bulunmuyor. Profil oluşturma işlemleri sonrasında analiz verileri görünecektir.
@@ -772,16 +773,16 @@ function ProfileManagement() {
                         </TableHead>
                         <TableBody>
                           {Object.entries(ipMacAnalysis.ipMap || {}).map(([ip, users]) => (
-                            <TableRow key={ip} sx={{ 
+                            <TableRow key={ip} sx={{
                               bgcolor: users.length > 1 ? 'rgba(255, 193, 7, 0.1)' : 'transparent'
                             }}>
                               <TableCell>{ip}</TableCell>
                               <TableCell>{users.length}</TableCell>
                               <TableCell>
                                 {users.length > 1 ? (
-                                  <Chip 
-                                    label="Şüpheli" 
-                                    color="warning" 
+                                  <Chip
+                                    label="Şüpheli"
+                                    color="warning"
                                     size="small"
                                     icon={<WarningIcon />}
                                   />
@@ -797,7 +798,7 @@ function ProfileManagement() {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               {/* Cihaz Analizi */}
               <Grid item xs={12} md={6}>
                 <Card>
@@ -817,7 +818,7 @@ function ProfileManagement() {
                         </TableHead>
                         <TableBody>
                           {Object.entries(ipMacAnalysis.macMap || {}).map(([deviceId, users]) => (
-                            <TableRow key={deviceId} sx={{ 
+                            <TableRow key={deviceId} sx={{
                               bgcolor: users.length > 1 ? 'rgba(255, 193, 7, 0.1)' : 'transparent'
                             }}>
                               <TableCell sx={{ fontFamily: 'monospace', fontSize: '12px' }}>
@@ -826,9 +827,9 @@ function ProfileManagement() {
                               <TableCell>{users.length}</TableCell>
                               <TableCell>
                                 {users.length > 1 ? (
-                                  <Chip 
-                                    label="Şüpheli" 
-                                    color="warning" 
+                                  <Chip
+                                    label="Şüpheli"
+                                    color="warning"
                                     size="small"
                                     icon={<WarningIcon />}
                                   />
@@ -844,7 +845,7 @@ function ProfileManagement() {
                   </CardContent>
                 </Card>
               </Grid>
-              
+
               {/* Detaylı Şüpheli Profil Listesi */}
               {suspiciousProfiles.length > 0 && (
                 <Grid item xs={12}>
@@ -855,13 +856,13 @@ function ProfileManagement() {
                         Şüpheli Profiller Detayı
                       </Typography>
                       {suspiciousProfiles.map((suspicious, index) => (
-                        <Alert 
+                        <Alert
                           key={suspicious.profileId}
-                          severity="warning" 
+                          severity="warning"
                           sx={{ mb: 2 }}
                           action={
-                            <Button 
-                              size="small" 
+                            <Button
+                              size="small"
                               onClick={() => {
                                 const profile = profiles.find(p => p.id === suspicious.profileId);
                                 handleViewProfile(profile);
@@ -891,185 +892,185 @@ function ProfileManagement() {
         </Paper>
       ) : (
         // Normal Profil Listesi
-      <Paper sx={{
-        background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.02), rgba(139, 185, 74, 0.02))',
-        border: '1px solid rgba(28, 97, 171, 0.1)',
-        borderRadius: '16px'
-      }}>
-        {getDisplayProfiles().length === 0 ? (
-          <Box p={4} textAlign="center">
-            <PersonIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" color="text.secondary">
-              {searchTerm ? 'Arama kriterlerine uygun profil bulunamadı' : 'Henüz profil bulunmuyor'}
-            </Typography>
-          </Box>
-        ) : (
-          <Grid container spacing={2} sx={{ p: 2 }}>
-            {getDisplayProfiles().map((profile) => {
-              const suspicious = suspiciousProfiles.find(s => s.profileId === profile.id);
-              const profileSession = sessions.find(s => String(s.profileId) === String(profile.id));
-              const vpnScore = profile.vpnScore || profileSession?.deviceInfo?.vpnScore || 0;
-              const profileIp = profile.profileCreatedIp || profileSession?.deviceInfo?.ip_address;
-              return (
-                <Grid item xs={12} sm={6} md={4} key={profile.id}>
-                  <Card sx={{
-                    borderRadius: '16px',
-                    border: '1px solid',
-                    borderColor: !profile.isActive ? 'rgba(220, 38, 38, 0.25)'
-                      : suspicious ? 'rgba(255, 193, 7, 0.35)'
-                      : 'rgba(28, 97, 171, 0.12)',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 12px 40px rgba(28, 97, 171, 0.15)'
-                    }
-                  }}>
-                    <CardContent sx={{ pb: 1 }}>
-                      <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-                        <Badge
-                          overlap="circular"
-                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                          badgeContent={
-                            <Box sx={{
-                              width: 14, height: 14, borderRadius: '50%',
-                              bgcolor: profile.isActive ? '#8bb94a' : '#dc2626',
-                              border: '2px solid #fff'
-                            }} />
-                          }
-                        >
-                          <Avatar sx={{
-                            width: 48, height: 48,
-                            background: profile.isActive
-                              ? 'linear-gradient(135deg, #1c61ab, #8bb94a)'
-                              : 'linear-gradient(135deg, #666, #999)',
-                            fontWeight: 700, fontSize: '1rem'
-                          }}>
-                            {profile.firstName?.[0]}{profile.lastName?.[0]}
-                          </Avatar>
-                        </Badge>
-                        <Box flex={1} minWidth={0}>
-                          <Typography variant="subtitle1" fontWeight={700} noWrap>
-                            {profile.firstName} {profile.lastName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: '0.8rem' }}>
-                            {profile.email}
-                          </Typography>
-                        </Box>
-                      </Box>
-
-                      <Box display="flex" flexWrap="wrap" gap={0.5} mb={1.5}>
-                        <Chip
-                          label={profile.isActive ? 'Aktif' : 'Pasif'}
-                          size="small"
-                          sx={{
-                            fontSize: '10px', height: 22,
-                            bgcolor: profile.isActive ? 'rgba(139, 185, 74, 0.12)' : 'rgba(220, 38, 38, 0.1)',
-                            color: profile.isActive ? '#6b9137' : '#dc2626',
-                            fontWeight: 600
-                          }}
-                        />
-                        {profile.chatToken && (
-                          <Chip
-                            label="Chat"
-                            size="small"
-                            sx={{
-                              fontSize: '10px', height: 22,
-                              bgcolor: 'rgba(28, 97, 171, 0.1)',
-                              color: '#1c61ab', fontWeight: 600
-                            }}
-                          />
-                        )}
-                        {suspicious && (
-                          <Chip
-                            label="Supheli"
-                            size="small"
-                            icon={<WarningIcon sx={{ fontSize: '14px !important' }} />}
-                            sx={{
-                              fontSize: '10px', height: 22,
-                              bgcolor: 'rgba(255, 193, 7, 0.15)',
-                              color: '#e65100', fontWeight: 600
-                            }}
-                          />
-                        )}
-                        {vpnScore > 50 && (
-                          <Chip
-                            label="VPN"
-                            size="small"
-                            icon={<VpnIcon sx={{ fontSize: '14px !important' }} />}
-                            sx={{
-                              fontSize: '10px', height: 22,
-                              bgcolor: 'rgba(156, 39, 176, 0.1)',
-                              color: '#7b1fa2', fontWeight: 600
-                            }}
-                          />
-                        )}
-                      </Box>
-
-                      <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
-                        {profile.phone && (
-                          <Box display="flex" alignItems="center" gap={0.5} mb={0.3}>
-                            <PhoneIcon sx={{ fontSize: 14 }} />
-                            <Typography variant="caption">{profile.phone}</Typography>
+        <Paper sx={{
+          background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.02), rgba(139, 185, 74, 0.02))',
+          border: '1px solid rgba(28, 97, 171, 0.1)',
+          borderRadius: '16px'
+        }}>
+          {getDisplayProfiles().length === 0 ? (
+            <Box p={4} textAlign="center">
+              <PersonIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                {searchTerm ? 'Arama kriterlerine uygun profil bulunamadı' : 'Henüz profil bulunmuyor'}
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={2} sx={{ p: 2 }}>
+              {getDisplayProfiles().map((profile) => {
+                const suspicious = suspiciousProfiles.find(s => s.profileId === profile.id);
+                const profileSession = sessions.find(s => String(s.profileId) === String(profile.id));
+                const vpnScore = profile.vpnScore || profileSession?.deviceInfo?.vpnScore || 0;
+                const profileIp = profile.profileCreatedIp || profileSession?.deviceInfo?.ip_address;
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={profile.id}>
+                    <Card sx={{
+                      borderRadius: '16px',
+                      border: '1px solid',
+                      borderColor: !profile.isActive ? 'rgba(220, 38, 38, 0.25)'
+                        : suspicious ? 'rgba(255, 193, 7, 0.35)'
+                          : 'rgba(28, 97, 171, 0.12)',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(28, 97, 171, 0.15)'
+                      }
+                    }}>
+                      <CardContent sx={{ pb: 1 }}>
+                        <Box display="flex" alignItems="center" gap={1.5} mb={2}>
+                          <Badge
+                            overlap="circular"
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                            badgeContent={
+                              <Box sx={{
+                                width: 14, height: 14, borderRadius: '50%',
+                                bgcolor: profile.isActive ? '#8bb94a' : '#dc2626',
+                                border: '2px solid #fff'
+                              }} />
+                            }
+                          >
+                            <Avatar sx={{
+                              width: 48, height: 48,
+                              background: profile.isActive
+                                ? 'linear-gradient(135deg, #1c61ab, #8bb94a)'
+                                : 'linear-gradient(135deg, #666, #999)',
+                              fontWeight: 700, fontSize: '1rem'
+                            }}>
+                              {profile.firstName?.[0]}{profile.lastName?.[0]}
+                            </Avatar>
+                          </Badge>
+                          <Box flex={1} minWidth={0}>
+                            <Typography variant="subtitle1" fontWeight={700} noWrap>
+                              {profile.firstName} {profile.lastName}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: '0.8rem' }}>
+                              {profile.email}
+                            </Typography>
                           </Box>
-                        )}
-                        {profileIp && (
-                          <Box display="flex" alignItems="center" gap={0.5} mb={0.3}>
-                            <RouterIcon sx={{ fontSize: 14 }} />
-                            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px' }}>{profileIp}</Typography>
-                          </Box>
-                        )}
-                        <Box display="flex" alignItems="center" gap={0.5}>
-                          <TimeIcon sx={{ fontSize: 14 }} />
-                          <Typography variant="caption">
-                            {new Date(profile.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </Typography>
                         </Box>
-                      </Box>
-                    </CardContent>
 
-                    <Divider />
+                        <Box display="flex" flexWrap="wrap" gap={0.5} mb={1.5}>
+                          <Chip
+                            label={profile.isActive ? 'Aktif' : 'Pasif'}
+                            size="small"
+                            sx={{
+                              fontSize: '10px', height: 22,
+                              bgcolor: profile.isActive ? 'rgba(139, 185, 74, 0.12)' : 'rgba(220, 38, 38, 0.1)',
+                              color: profile.isActive ? '#6b9137' : '#dc2626',
+                              fontWeight: 600
+                            }}
+                          />
+                          {profile.chatToken && (
+                            <Chip
+                              label="Chat"
+                              size="small"
+                              sx={{
+                                fontSize: '10px', height: 22,
+                                bgcolor: 'rgba(28, 97, 171, 0.1)',
+                                color: '#1c61ab', fontWeight: 600
+                              }}
+                            />
+                          )}
+                          {suspicious && (
+                            <Chip
+                              label="Supheli"
+                              size="small"
+                              icon={<WarningIcon sx={{ fontSize: '14px !important' }} />}
+                              sx={{
+                                fontSize: '10px', height: 22,
+                                bgcolor: 'rgba(255, 193, 7, 0.15)',
+                                color: '#e65100', fontWeight: 600
+                              }}
+                            />
+                          )}
+                          {vpnScore > 50 && (
+                            <Chip
+                              label="VPN"
+                              size="small"
+                              icon={<VpnIcon sx={{ fontSize: '14px !important' }} />}
+                              sx={{
+                                fontSize: '10px', height: 22,
+                                bgcolor: 'rgba(156, 39, 176, 0.1)',
+                                color: '#7b1fa2', fontWeight: 600
+                              }}
+                            />
+                          )}
+                        </Box>
 
-                    <Box display="flex" justifyContent="space-around" sx={{ py: 0.5 }}>
-                      <Tooltip title="Detaylar">
-                        <IconButton size="small" onClick={() => handleViewProfile(profile)}
-                          sx={{ color: '#1c61ab' }}>
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Sil">
-                        <IconButton size="small" onClick={() => handleDeleteProfile(profile.id)}
-                          sx={{ color: '#dc2626' }}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {profile.isActive ? (
-                        <Tooltip title="Pasife Al">
-                          <IconButton size="small" onClick={() => handleDeactivateProfile(profile.id)}
-                            sx={{ color: '#ff9800' }}>
-                            <WarningIcon fontSize="small" />
+                        <Box sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+                          {profile.phone && (
+                            <Box display="flex" alignItems="center" gap={0.5} mb={0.3}>
+                              <PhoneIcon sx={{ fontSize: 14 }} />
+                              <Typography variant="caption">{profile.phone}</Typography>
+                            </Box>
+                          )}
+                          {profileIp && (
+                            <Box display="flex" alignItems="center" gap={0.5} mb={0.3}>
+                              <RouterIcon sx={{ fontSize: 14 }} />
+                              <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '10px' }}>{profileIp}</Typography>
+                            </Box>
+                          )}
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <TimeIcon sx={{ fontSize: 14 }} />
+                            <Typography variant="caption">
+                              {new Date(profile.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </CardContent>
+
+                      <Divider />
+
+                      <Box display="flex" justifyContent="space-around" sx={{ py: 0.5 }}>
+                        <Tooltip title="Detaylar">
+                          <IconButton size="small" onClick={() => handleViewProfile(profile)}
+                            sx={{ color: '#1c61ab' }}>
+                            <ViewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      ) : (
-                        <Tooltip title="Aktif Et">
-                          <IconButton size="small" onClick={() => handleActivateProfile(profile.id)}
-                            sx={{ color: '#8bb94a' }}>
-                            <CheckCircleIcon fontSize="small" />
+                        <Tooltip title="Sil">
+                          <IconButton size="small" onClick={() => handleDeleteProfile(profile.id)}
+                            sx={{ color: '#dc2626' }}>
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      )}
-                    </Box>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
-        )}
-      </Paper>
+                        {profile.isActive ? (
+                          <Tooltip title="Pasife Al">
+                            <IconButton size="small" onClick={() => handleDeactivateProfile(profile.id)}
+                              sx={{ color: '#ff9800' }}>
+                              <WarningIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Aktif Et">
+                            <IconButton size="small" onClick={() => handleActivateProfile(profile.id)}
+                              sx={{ color: '#8bb94a' }}>
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
+        </Paper>
       )}
 
       {/* Profil Detay Dialog */}
-      <Dialog 
-        open={detailDialog} 
+      <Dialog
+        open={detailDialog}
         onClose={() => setDetailDialog(false)}
         maxWidth="md"
         fullWidth
@@ -1094,7 +1095,7 @@ function ProfileManagement() {
                 </Box>
               </Box>
             </DialogTitle>
-            
+
             <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
               <Tabs
                 value={detailTab}

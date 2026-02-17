@@ -30,7 +30,8 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../../config/config';
+const API_URL = API_BASE_URL;
 
 /**
  * Applicant Profile Modal Component
@@ -219,9 +220,9 @@ const ApplicantProfileModal = ({ open, onClose, applicantId, onViewForm }) => {
               <Chip
                 label={
                   profile.application.status === 'submitted' ? 'Başvuru Tamamlandı' :
-                  profile.application.status === 'approved' ? 'Onaylandı' :
-                  profile.application.status === 'rejected' ? 'Reddedildi' :
-                  profile.application.status
+                    profile.application.status === 'approved' ? 'Onaylandı' :
+                      profile.application.status === 'rejected' ? 'Reddedildi' :
+                        profile.application.status
                 }
                 size="small"
                 sx={{
@@ -230,14 +231,14 @@ const ApplicantProfileModal = ({ open, onClose, applicantId, onViewForm }) => {
                   fontWeight: 600,
                   backgroundColor:
                     profile.application.status === 'submitted' ? 'rgba(59, 130, 246, 0.12)' :
-                    profile.application.status === 'approved' ? 'rgba(34, 197, 94, 0.12)' :
-                    profile.application.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' :
-                    'rgba(156, 163, 175, 0.12)',
+                      profile.application.status === 'approved' ? 'rgba(34, 197, 94, 0.12)' :
+                        profile.application.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' :
+                          'rgba(156, 163, 175, 0.12)',
                   color:
                     profile.application.status === 'submitted' ? '#3b82f6' :
-                    profile.application.status === 'approved' ? '#22c55e' :
-                    profile.application.status === 'rejected' ? '#ef4444' :
-                    '#6b7280'
+                      profile.application.status === 'approved' ? '#22c55e' :
+                        profile.application.status === 'rejected' ? '#ef4444' :
+                          '#6b7280'
                 }}
               />
             )}

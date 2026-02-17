@@ -24,8 +24,7 @@ import MessageContent from '../components/chat/MessageContent';
 import webSocketService from '../services/webSocketService';
 import { IncomingCallNotification } from '../components/videoCall';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
-const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
+import { API_BASE_URL, WS_BASE_URL } from '../config/config';
 
 function ApplicantChat() {
   const { chatToken } = useParams();
@@ -652,185 +651,185 @@ function ApplicantChat() {
         {activeTab === 0 ? (
           /* Tab 0: HR Chat */
           <>
-        {/* Mesaj Listesi */}
-        <Box sx={{
-          flex: 1,
-          overflowY: 'auto',
-          p: 1,
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <List sx={{ width: '100%', py: 0, display: 'flex', flexDirection: 'column' }}>
-            {messages.map((message) => {
-              const isOwnMessage = message.sender_type === 'applicant';
-              return (
-                <ListItem
-                  key={message.id || message.message_id}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
-                    px: 1,
-                    py: 0.5,
-                  }}
-                >
-                  {/* Avatar ve Mesaj */}
-                  <Box sx={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    maxWidth: '80%',
-                    flexDirection: isOwnMessage ? 'row-reverse' : 'row',
-                    gap: 1
-                  }}>
-                    {/* Avatar */}
-                    <Avatar sx={{
-                      width: 32,
-                      height: 32,
-                      background: isOwnMessage
-                        ? 'linear-gradient(135deg, #8bb94a, #a4d65e)'
-                        : 'linear-gradient(135deg, #1c61ab, #4a9eff)',
-                      fontSize: '14px'
-                    }}>
-                      {isOwnMessage
-                        ? `${applicantInfo.firstName?.[0] || ''}${applicantInfo.lastName?.[0] || ''}`.toUpperCase() || 'B'
-                        : 'İK'
-                      }
-                    </Avatar>
-
-                    {/* Message Container - Baloncuk + Timestamp */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      {/* Mesaj Baloncuğu */}
-                      <Box
-                        sx={{
+            {/* Mesaj Listesi */}
+            <Box sx={{
+              flex: 1,
+              overflowY: 'auto',
+              p: 1,
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <List sx={{ width: '100%', py: 0, display: 'flex', flexDirection: 'column' }}>
+                {messages.map((message) => {
+                  const isOwnMessage = message.sender_type === 'applicant';
+                  return (
+                    <ListItem
+                      key={message.id || message.message_id}
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isOwnMessage ? 'flex-end' : 'flex-start',
+                        px: 1,
+                        py: 0.5,
+                      }}
+                    >
+                      {/* Avatar ve Mesaj */}
+                      <Box sx={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        maxWidth: '80%',
+                        flexDirection: isOwnMessage ? 'row-reverse' : 'row',
+                        gap: 1
+                      }}>
+                        {/* Avatar */}
+                        <Avatar sx={{
+                          width: 32,
+                          height: 32,
                           background: isOwnMessage
                             ? 'linear-gradient(135deg, #8bb94a, #a4d65e)'
-                            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(233, 240, 247, 0.9))',
-                          color: isOwnMessage ? 'white' : 'black',
-                          p: 1.5,
-                          borderRadius: '16px',
-                          borderTopLeftRadius: !isOwnMessage ? '6px' : '16px',
-                          borderTopRightRadius: isOwnMessage ? '6px' : '16px',
-                          wordBreak: 'break-word',
-                          backdropFilter: 'blur(10px)',
-                          border: isOwnMessage ? 'none' : '1px solid rgba(28, 97, 171, 0.2)',
-                          boxShadow: isOwnMessage
-                            ? '0 4px 16px rgba(139, 185, 74, 0.25)'
-                            : '0 2px 8px rgba(28, 97, 171, 0.1)',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: isOwnMessage
-                              ? '0 6px 20px rgba(139, 185, 74, 0.3)'
-                              : '0 4px 12px rgba(28, 97, 171, 0.15)'
+                            : 'linear-gradient(135deg, #1c61ab, #4a9eff)',
+                          fontSize: '14px'
+                        }}>
+                          {isOwnMessage
+                            ? `${applicantInfo.firstName?.[0] || ''}${applicantInfo.lastName?.[0] || ''}`.toUpperCase() || 'B'
+                            : 'İK'
                           }
-                        }}
-                      >
-                        {/* ✅ FIX: Use MessageContent to show images/videos/files */}
-                        <MessageContent
-                          message={message}
-                          isEditing={false}
-                          onSaveEdit={() => {}}
-                          onCancelEdit={() => {}}
-                        />
+                        </Avatar>
+
+                        {/* Message Container - Baloncuk + Timestamp */}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          {/* Mesaj Baloncuğu */}
+                          <Box
+                            sx={{
+                              background: isOwnMessage
+                                ? 'linear-gradient(135deg, #8bb94a, #a4d65e)'
+                                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(233, 240, 247, 0.9))',
+                              color: isOwnMessage ? 'white' : 'black',
+                              p: 1.5,
+                              borderRadius: '16px',
+                              borderTopLeftRadius: !isOwnMessage ? '6px' : '16px',
+                              borderTopRightRadius: isOwnMessage ? '6px' : '16px',
+                              wordBreak: 'break-word',
+                              backdropFilter: 'blur(10px)',
+                              border: isOwnMessage ? 'none' : '1px solid rgba(28, 97, 171, 0.2)',
+                              boxShadow: isOwnMessage
+                                ? '0 4px 16px rgba(139, 185, 74, 0.25)'
+                                : '0 2px 8px rgba(28, 97, 171, 0.1)',
+                              transition: 'all 0.2s ease',
+                              '&:hover': {
+                                transform: 'translateY(-1px)',
+                                boxShadow: isOwnMessage
+                                  ? '0 6px 20px rgba(139, 185, 74, 0.3)'
+                                  : '0 4px 12px rgba(28, 97, 171, 0.15)'
+                              }
+                            }}
+                          >
+                            {/* ✅ FIX: Use MessageContent to show images/videos/files */}
+                            <MessageContent
+                              message={message}
+                              isEditing={false}
+                              onSaveEdit={() => { }}
+                              onCancelEdit={() => { }}
+                            />
+                          </Box>
+
+                          {/* Timestamp - BALONCUĞUN DIŞINDA */}
+                          <Typography variant="caption"
+                            sx={{
+                              opacity: 0.6,
+                              fontSize: '10px',
+                              color: '#718096',
+                              alignSelf: isOwnMessage ? 'flex-end' : 'flex-start',
+                              px: 0.5
+                            }}
+                          >
+                            {new Date(message.created_at).toLocaleTimeString('tr-TR', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                            {message.status && isOwnMessage && ` • ${message.status === 'sending' ? 'Gönderiliyor' : message.status === 'sent' ? 'İletildi' : ''}`}
+                          </Typography>
+                        </Box>
                       </Box>
+                    </ListItem>
+                  );
+                })}
+              </List>
+              {/* Otomatik scroll için referans */}
+              <div ref={messagesEndRef} />
+            </Box>
 
-                      {/* Timestamp - BALONCUĞUN DIŞINDA */}
-                      <Typography variant="caption"
-                        sx={{
-                          opacity: 0.6,
-                          fontSize: '10px',
-                          color: '#718096',
-                          alignSelf: isOwnMessage ? 'flex-end' : 'flex-start',
-                          px: 0.5
-                        }}
-                      >
-                        {new Date(message.created_at).toLocaleTimeString('tr-TR', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                        {message.status && isOwnMessage && ` • ${message.status === 'sending' ? 'Gönderiliyor' : message.status === 'sent' ? 'İletildi' : ''}`}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </ListItem>
-              );
-            })}
-          </List>
-          {/* Otomatik scroll için referans */}
-          <div ref={messagesEndRef} />
-        </Box>
+            <Divider sx={{ borderColor: 'rgba(28, 97, 171, 0.2)' }} />
 
-        <Divider sx={{ borderColor: 'rgba(28, 97, 171, 0.2)' }} />
+            {/* Mesaj Giriş Alanı */}
+            <Box sx={{
+              p: 2,
+              background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.05), rgba(139, 185, 74, 0.05))',
+              backdropFilter: 'blur(10px)',
+              borderTop: '1px solid rgba(28, 97, 171, 0.1)'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  fullWidth
+                  placeholder={isConnected ? "Mesajınızı yazın..." : "Bağlantı bekleniyor..."}
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                  variant="outlined"
+                  size="small"
+                  multiline
+                  maxRows={3}
+                  disabled={!isConnected}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      background: 'rgba(255, 255, 255, 0.9)',
+                      borderRadius: '16px',
+                      '& fieldset': {
+                        borderColor: 'rgba(28, 97, 171, 0.3)',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(28, 97, 171, 0.5)',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#1c61ab',
+                      },
+                    },
+                    '& .MuiOutlinedInput-input': {
+                      padding: '12px 16px',
+                    }
+                  }}
+                />
 
-        {/* Mesaj Giriş Alanı */}
-        <Box sx={{
-          p: 2,
-          background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.05), rgba(139, 185, 74, 0.05))',
-          backdropFilter: 'blur(10px)',
-          borderTop: '1px solid rgba(28, 97, 171, 0.1)'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <TextField
-              fullWidth
-              placeholder={isConnected ? "Mesajınızı yazın..." : "Bağlantı bekleniyor..."}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              variant="outlined"
-              size="small"
-              multiline
-              maxRows={3}
-              disabled={!isConnected}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  borderRadius: '16px',
-                  '& fieldset': {
-                    borderColor: 'rgba(28, 97, 171, 0.3)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(28, 97, 171, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#1c61ab',
-                  },
-                },
-                '& .MuiOutlinedInput-input': {
-                  padding: '12px 16px',
-                }
-              }}
-            />
-
-            <IconButton
-              onClick={sendMessage}
-              disabled={!newMessage.trim() || !isConnected}
-              sx={{
-                background: (newMessage.trim() && isConnected)
-                  ? 'linear-gradient(135deg, #1c61ab, #8bb94a)'
-                  : 'rgba(0, 0, 0, 0.12)',
-                color: (newMessage.trim() && isConnected) ? 'white' : 'rgba(0, 0, 0, 0.26)',
-                '&:hover': {
-                  background: (newMessage.trim() && isConnected)
-                    ? 'linear-gradient(135deg, #8bb94a, #1c61ab)'
-                    : 'rgba(0, 0, 0, 0.12)',
-                  transform: (newMessage.trim() && isConnected) ? 'scale(1.05)' : 'none'
-                },
-                '&:disabled': {
-                  background: 'rgba(0, 0, 0, 0.12)',
-                  color: 'rgba(0, 0, 0, 0.26)'
-                },
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <Send />
-            </IconButton>
-          </Box>
-        </Box>
+                <IconButton
+                  onClick={sendMessage}
+                  disabled={!newMessage.trim() || !isConnected}
+                  sx={{
+                    background: (newMessage.trim() && isConnected)
+                      ? 'linear-gradient(135deg, #1c61ab, #8bb94a)'
+                      : 'rgba(0, 0, 0, 0.12)',
+                    color: (newMessage.trim() && isConnected) ? 'white' : 'rgba(0, 0, 0, 0.26)',
+                    '&:hover': {
+                      background: (newMessage.trim() && isConnected)
+                        ? 'linear-gradient(135deg, #8bb94a, #1c61ab)'
+                        : 'rgba(0, 0, 0, 0.12)',
+                      transform: (newMessage.trim() && isConnected) ? 'scale(1.05)' : 'none'
+                    },
+                    '&:disabled': {
+                      background: 'rgba(0, 0, 0, 0.12)',
+                      color: 'rgba(0, 0, 0, 0.26)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <Send />
+                </IconButton>
+              </Box>
+            </Box>
           </>
         ) : (
           /* Tab 1: Groups */

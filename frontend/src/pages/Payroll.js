@@ -45,7 +45,7 @@ import {
   Upload as UploadIcon
 } from '@mui/icons-material';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+import { API_BASE_URL } from '../config/config';
 
 function Payroll() {
   const [employees, setEmployees] = useState([]);
@@ -61,7 +61,7 @@ function Payroll() {
   // Pozisyonlar
   const positions = {
     'MANAGER': 'Yönetici',
-    'X_OPERATOR': 'X Operatörü', 
+    'X_OPERATOR': 'X Operatörü',
     'CHAT_OPERATOR': 'Chat Operatörü',
     'SUPERVISOR': 'Süpervizör',
     'DEVELOPER': 'Yazılım Geliştirici',
@@ -95,10 +95,10 @@ function Payroll() {
       const updatedPayroll = apiEmployees
         .filter(emp => emp.is_active !== false) // Sadece aktif çalışanlar
         .map(emp => {
-          const existingPayroll = savedPayroll.find(p => 
+          const existingPayroll = savedPayroll.find(p =>
             p.employee_id === emp.employee_id || p.id === emp.id
           );
-          
+
           // Mevcut payroll verisi varsa güncelle
           if (existingPayroll) {
             return {
@@ -117,7 +117,7 @@ function Payroll() {
 
           // Yeni çalışan için varsayılan maaş verisi
           const workingMonths = calculateWorkingMonths(emp.hire_date);
-          
+
           return {
             id: emp.id,
             employee_id: emp.employee_id,
@@ -138,7 +138,7 @@ function Payroll() {
             payment_history: existingPayroll?.payment_history || []
           };
         });
-      
+
       console.log('Payroll listesi oluşturuldu:', updatedPayroll);
 
       setEmployees(apiEmployees);
@@ -153,14 +153,14 @@ function Payroll() {
 
   const calculateWorkingMonths = (hireDate) => {
     if (!hireDate || hireDate === 'Invalid Date') return 0;
-    
+
     try {
       const hire = new Date(hireDate);
       if (isNaN(hire.getTime())) return 0;
-      
+
       const now = new Date();
-      const diffMonths = (now.getFullYear() - hire.getFullYear()) * 12 + 
-                        (now.getMonth() - hire.getMonth());
+      const diffMonths = (now.getFullYear() - hire.getFullYear()) * 12 +
+        (now.getMonth() - hire.getMonth());
       return Math.max(0, diffMonths);
     } catch (error) {
       console.error('Tarih hesaplama hatası:', error);
@@ -186,26 +186,26 @@ function Payroll() {
   };
 
   const handleSave = () => {
-    const updatedPayroll = payrollData.map(emp => 
+    const updatedPayroll = payrollData.map(emp =>
       emp.id === editingId ? editedRow : emp
     );
     setPayrollData(updatedPayroll);
     localStorage.setItem(`payroll_data_${localStorage.getItem('optima_current_site') || 'FXB'}`, JSON.stringify(updatedPayroll));
-    
+
     // Çalışanlar listesini de güncelle (USDT adresi için)
     const employees = JSON.parse(localStorage.getItem('employees') || '[]');
     const updatedEmployees = employees.map(emp => {
       if (emp.id === editingId) {
-        return { 
-          ...emp, 
+        return {
+          ...emp,
           usdt_address: editedRow.usdt_address,
-          net_salary: editedRow.salary 
+          net_salary: editedRow.salary
         };
       }
       return emp;
     });
     localStorage.setItem('employees', JSON.stringify(updatedEmployees));
-    
+
     setEditingId(null);
     setEditedRow({});
   };
@@ -217,14 +217,14 @@ function Payroll() {
 
   const handleFieldChange = (field, value) => {
     const updated = { ...editedRow, [field]: value };
-    
+
     // Ödenecek maaşı otomatik hesapla
     if (field === 'salary' || field === 'deposit') {
       const salary = parseFloat(updated.salary) || 0;
       const deposit = parseFloat(updated.deposit) || 0;
       updated.payable_salary = Math.max(0, salary - deposit);
     }
-    
+
     setEditedRow(updated);
   };
 
@@ -242,9 +242,9 @@ function Payroll() {
 
   const handleExport = () => {
     // CSV olarak dışa aktar
-    const headers = ['İsim', 'Sistem Adı', 'Pozisyon', 'Başlama Tarihi', 'Çalışma Süresi', 
-                     'Depozito', 'Maaş', 'Ödenecek', 'Prim', 'Mesai', 'USDT Adresi', 'Notlar'];
-    
+    const headers = ['İsim', 'Sistem Adı', 'Pozisyon', 'Başlama Tarihi', 'Çalışma Süresi',
+      'Depozito', 'Maaş', 'Ödenecek', 'Prim', 'Mesai', 'USDT Adresi', 'Notlar'];
+
     const data = filteredData.map(emp => [
       emp.name,
       emp.system_name,
@@ -259,12 +259,12 @@ function Payroll() {
       emp.usdt_address,
       emp.notes
     ]);
-    
+
     const csvContent = [
       headers.join(','),
       ...data.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -280,7 +280,7 @@ function Payroll() {
         type: 'salary',
         month: new Date().toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' })
       };
-      
+
       const updatedPayroll = payrollData.map(emp => {
         if (emp.id === employee.id) {
           return {
@@ -294,7 +294,7 @@ function Payroll() {
         }
         return emp;
       });
-      
+
       setPayrollData(updatedPayroll);
       localStorage.setItem(`payroll_data_${localStorage.getItem('optima_current_site') || 'FXB'}`, JSON.stringify(updatedPayroll));
     }
@@ -303,11 +303,11 @@ function Payroll() {
   // Filtreleme - sadece aktif çalışanları göster
   const filteredData = payrollData.filter(emp => {
     const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.system_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.usdt_address.toLowerCase().includes(searchQuery.toLowerCase());
-    
+      emp.system_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.usdt_address.toLowerCase().includes(searchQuery.toLowerCase());
+
     const matchesPosition = filterPosition === 'all' || emp.position === filterPosition;
-    
+
     return matchesSearch && matchesPosition && emp.is_active !== false;
   });
 
@@ -323,7 +323,7 @@ function Payroll() {
         }}>
           💰 Maaş Ödeme Sistemi
         </Typography>
-        
+
         <Box display="flex" gap={2}>
           <Button
             variant="outlined"
@@ -361,13 +361,13 @@ function Payroll() {
       {/* İstatistikler */}
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} md={3}>
-          <Card sx={{ 
+          <Card sx={{
             background: 'linear-gradient(135deg, rgba(28, 97, 171, 0.1), rgba(139, 185, 74, 0.1))',
             border: '1px solid rgba(28, 97, 171, 0.2)'
           }}>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ 
+                <Avatar sx={{
                   bgcolor: '#1c61ab',
                   mr: 2,
                   width: 48,
@@ -387,15 +387,15 @@ function Payroll() {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} md={3}>
-          <Card sx={{ 
+          <Card sx={{
             background: 'linear-gradient(135deg, rgba(139, 185, 74, 0.1), rgba(28, 97, 171, 0.1))',
             border: '1px solid rgba(139, 185, 74, 0.2)'
           }}>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ 
+                <Avatar sx={{
                   bgcolor: '#8bb94a',
                   mr: 2,
                   width: 48,
@@ -415,15 +415,15 @@ function Payroll() {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} md={3}>
-          <Card sx={{ 
+          <Card sx={{
             background: 'linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 193, 7, 0.1))',
             border: '1px solid rgba(255, 152, 0, 0.2)'
           }}>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ 
+                <Avatar sx={{
                   bgcolor: '#ff9800',
                   mr: 2,
                   width: 48,
@@ -443,15 +443,15 @@ function Payroll() {
             </CardContent>
           </Card>
         </Grid>
-        
+
         <Grid item xs={12} md={3}>
-          <Card sx={{ 
+          <Card sx={{
             background: 'linear-gradient(135deg, rgba(156, 39, 176, 0.1), rgba(103, 58, 183, 0.1))',
             border: '1px solid rgba(156, 39, 176, 0.2)'
           }}>
             <CardContent>
               <Box display="flex" alignItems="center">
-                <Avatar sx={{ 
+                <Avatar sx={{
                   bgcolor: '#9c27b0',
                   mr: 2,
                   width: 48,
@@ -490,7 +490,7 @@ function Payroll() {
               )
             }}
           />
-          
+
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel>Pozisyon</InputLabel>
             <Select
@@ -508,7 +508,7 @@ function Payroll() {
       </Paper>
 
       {/* Tablo */}
-      <TableContainer component={Paper} sx={{ 
+      <TableContainer component={Paper} sx={{
         borderRadius: 2,
         boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)'
       }}>
@@ -534,38 +534,38 @@ function Payroll() {
             {filteredData.map((employee) => {
               const isEditing = editingId === employee.id;
               const data = isEditing ? editedRow : employee;
-              
+
               return (
-                <TableRow 
+                <TableRow
                   key={employee.id}
-                  sx={{ 
+                  sx={{
                     '&:hover': { bgcolor: 'rgba(28, 97, 171, 0.02)' },
-                    bgcolor: data.last_payment_date && 
-                            new Date(data.last_payment_date).getMonth() === new Date().getMonth() 
-                            ? 'rgba(139, 185, 74, 0.05)' : 'transparent'
+                    bgcolor: data.last_payment_date &&
+                      new Date(data.last_payment_date).getMonth() === new Date().getMonth()
+                      ? 'rgba(139, 185, 74, 0.05)' : 'transparent'
                   }}
                 >
                   <TableCell>{data.name || 'İsimsiz'}</TableCell>
                   <TableCell>
-                    <Chip 
-                      label={data.system_name} 
-                      size="small" 
-                      sx={{ 
+                    <Chip
+                      label={data.system_name}
+                      size="small"
+                      sx={{
                         bgcolor: 'rgba(28, 97, 171, 0.1)',
                         color: '#1c61ab',
                         fontFamily: 'monospace'
-                      }} 
+                      }}
                     />
                   </TableCell>
                   <TableCell>{positions[data.position] || data.position || 'Belirtilmemiş'}</TableCell>
                   <TableCell>
-                    {data.hire_date && data.hire_date !== 'Invalid Date' 
+                    {data.hire_date && data.hire_date !== 'Invalid Date'
                       ? new Date(data.hire_date).toLocaleDateString('tr-TR')
                       : 'Belirtilmemiş'
                     }
                   </TableCell>
                   <TableCell>
-                    <Chip 
+                    <Chip
                       label={`${data.working_months} ay`}
                       size="small"
                       color={data.working_months > 12 ? 'success' : data.working_months > 6 ? 'primary' : 'default'}
@@ -581,7 +581,7 @@ function Payroll() {
                         sx={{ width: 100 }}
                       />
                     ) : (
-                      <Typography sx={{ 
+                      <Typography sx={{
                         color: data.deposit > 0 ? '#ff9800' : 'text.primary',
                         fontWeight: data.deposit > 0 ? 'bold' : 'normal'
                       }}>
@@ -605,8 +605,8 @@ function Payroll() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Typography sx={{ 
-                      fontWeight: 'bold', 
+                    <Typography sx={{
+                      fontWeight: 'bold',
                       color: '#8bb94a',
                       fontSize: '1.1em'
                     }}>
@@ -624,7 +624,7 @@ function Payroll() {
                       />
                     ) : (
                       data.bonus > 0 && (
-                        <Chip 
+                        <Chip
                           label={`$${data.bonus}`}
                           size="small"
                           color="success"
@@ -643,7 +643,7 @@ function Payroll() {
                       />
                     ) : (
                       data.overtime > 0 && (
-                        <Chip 
+                        <Chip
                           label={`$${data.overtime}`}
                           size="small"
                           color="warning"
@@ -662,9 +662,9 @@ function Payroll() {
                       />
                     ) : (
                       <Box display="flex" alignItems="center" gap={1}>
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
+                        <Typography
+                          variant="caption"
+                          sx={{
                             maxWidth: 100,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -675,10 +675,10 @@ function Payroll() {
                           {data.usdt_address || 'Yok'}
                         </Typography>
                         {data.usdt_address && (
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             onClick={() => handleShowQR(data)}
-                            sx={{ 
+                            sx={{
                               color: '#8bb94a',
                               '&:hover': {
                                 transform: 'scale(1.1)',
@@ -725,8 +725,8 @@ function Payroll() {
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Ödendi İşaretle">
-                          <IconButton 
-                            size="small" 
+                          <IconButton
+                            size="small"
                             onClick={() => markAsPaid(employee)}
                             sx={{ color: '#8bb94a' }}
                           >
@@ -745,7 +745,7 @@ function Payroll() {
 
       {/* QR Kod Dialog */}
       <Dialog open={qrDialog} onClose={() => setQrDialog(false)}>
-        <DialogTitle sx={{ 
+        <DialogTitle sx={{
           background: 'linear-gradient(135deg, #1c61ab, #8bb94a)',
           color: 'white'
         }}>
@@ -757,34 +757,34 @@ function Payroll() {
               <Typography variant="h6" gutterBottom>
                 {selectedEmployee.name}
               </Typography>
-              
+
               {selectedEmployee.usdt_address ? (
                 <>
-                  <Box sx={{ 
-                    p: 2, 
+                  <Box sx={{
+                    p: 2,
                     bgcolor: 'white',
                     borderRadius: 2,
                     border: '2px solid #8bb94a',
                     mb: 2
                   }}>
-                    <img 
-                      src={generateQRCode(selectedEmployee.usdt_address)} 
+                    <img
+                      src={generateQRCode(selectedEmployee.usdt_address)}
                       alt="QR Code"
                       style={{ width: 200, height: 200 }}
                     />
                   </Box>
-                  
-                  <Paper sx={{ 
-                    p: 2, 
+
+                  <Paper sx={{
+                    p: 2,
                     bgcolor: 'rgba(139, 185, 74, 0.1)',
                     borderRadius: 2
                   }}>
                     <Typography variant="caption" color="text.secondary">
                       TRC-20 Adresi:
                     </Typography>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
+                    <Typography
+                      variant="body2"
+                      sx={{
                         fontFamily: 'monospace',
                         wordBreak: 'break-all',
                         fontWeight: 'bold',
@@ -795,7 +795,7 @@ function Payroll() {
                       {selectedEmployee.usdt_address}
                     </Typography>
                   </Paper>
-                  
+
                   <Alert severity="info" sx={{ mt: 2 }}>
                     <Typography variant="caption">
                       Ödenecek Tutar: <strong>${selectedEmployee.payable_salary}</strong>
@@ -806,9 +806,9 @@ function Payroll() {
                           <br />
                           <strong>
                             Toplam: $
-                            {parseFloat(selectedEmployee.payable_salary) + 
-                             parseFloat(selectedEmployee.bonus || 0) + 
-                             parseFloat(selectedEmployee.overtime || 0)}
+                            {parseFloat(selectedEmployee.payable_salary) +
+                              parseFloat(selectedEmployee.bonus || 0) +
+                              parseFloat(selectedEmployee.overtime || 0)}
                           </strong>
                         </>
                       )}

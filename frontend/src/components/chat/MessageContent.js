@@ -24,6 +24,7 @@ import {
   OpenInNew,
   Reply as ReplyIcon
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../../config/config';
 
 /**
  * Message Content Component - Displays message text, files, and reactions
@@ -59,7 +60,7 @@ const MessageContent = ({
       Promise.all(
         urls.slice(0, 3).map(async (url) => {
           try {
-            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+            const API_URL = API_BASE_URL;
             const response = await fetch(`${API_URL}/api/link-preview`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -95,15 +96,15 @@ const MessageContent = ({
   // Render file attachment
   const FileAttachment = ({ file }) => {
     const isImage = file.file_mime_type?.startsWith('image/') ||
-                    file.name?.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|tif|ico|heic|heif)$/i);
+      file.name?.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|tif|ico|heic|heif)$/i);
     const isVideo = file.file_mime_type?.startsWith('video/') ||
-                    file.name?.match(/\.(mp4|webm|mov)$/i);
+      file.name?.match(/\.(mp4|webm|mov)$/i);
     const isPDF = file.file_mime_type === 'application/pdf' ||
-                  file.name?.endsWith('.pdf');
+      file.name?.endsWith('.pdf');
     const isAudio = file.file_mime_type?.startsWith('audio/') ||
-                    file.name?.match(/\.(mp3|wav|ogg)$/i);
+      file.name?.match(/\.(mp3|wav|ogg)$/i);
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
+    const API_URL = API_BASE_URL;
     const fullUrl = file.url?.startsWith('http') ? file.url : `${API_URL}${file.url}`;
 
     // Image preview

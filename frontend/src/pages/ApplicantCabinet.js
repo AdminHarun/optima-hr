@@ -55,8 +55,7 @@ import {
   Replay as ReplayIcon
 } from '@mui/icons-material';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
-const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
+import { API_BASE_URL, WS_BASE_URL } from '../config/config';
 
 // Profili tum site-specific key'lerde ara
 const findProfileAcrossSites = (profileId) => {
@@ -64,7 +63,7 @@ const findProfileAcrossSites = (profileId) => {
     try {
       const sites = JSON.parse(localStorage.getItem('sites') || '[]');
       if (sites.length > 0) return sites.map(s => s.code);
-    } catch (e) {}
+    } catch (e) { }
     return ['FXB', 'MTD', 'ZBH'];
   })();
   for (const siteCode of siteCodes) {
@@ -83,7 +82,7 @@ const findApplicationAcrossSites = (profileId) => {
     try {
       const sites = JSON.parse(localStorage.getItem('sites') || '[]');
       if (sites.length > 0) return sites.map(s => s.code);
-    } catch (e) {}
+    } catch (e) { }
     return ['FXB', 'MTD', 'ZBH'];
   })();
   for (const siteCode of siteCodes) {
@@ -176,7 +175,7 @@ function ApplicantCabinet() {
       } else {
         // API'den alinamazsa localStorage'dan dene
         const appResult = findApplicationAcrossSites(session.profileId) ||
-                          findApplicationAcrossSites(session.email);
+          findApplicationAcrossSites(session.email);
         if (appResult) {
           setApplication(appResult.application);
         }
@@ -185,7 +184,7 @@ function ApplicantCabinet() {
       console.warn('API baglantisi basarisiz, localStorage kullaniliyor:', error);
       // Fallback: localStorage
       const appResult = findApplicationAcrossSites(session.profileId) ||
-                        findApplicationAcrossSites(session.email);
+        findApplicationAcrossSites(session.email);
       if (appResult) {
         setApplication(appResult.application);
       }
@@ -775,8 +774,10 @@ function ApplicantCabinet() {
                         <ListItem key={message.id || message.message_id}
                           sx={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start', px: 1, py: 0.5 }}>
                           <Box sx={{ display: 'flex', alignItems: 'flex-start', maxWidth: '80%', flexDirection: isOwn ? 'row-reverse' : 'row', gap: 1 }}>
-                            <Avatar sx={{ width: 28, height: 28, fontSize: '11px',
-                              background: isOwn ? 'linear-gradient(135deg, #8bb94a, #a4d65e)' : 'linear-gradient(135deg, #1c61ab, #4a9eff)' }}>
+                            <Avatar sx={{
+                              width: 28, height: 28, fontSize: '11px',
+                              background: isOwn ? 'linear-gradient(135deg, #8bb94a, #a4d65e)' : 'linear-gradient(135deg, #1c61ab, #4a9eff)'
+                            }}>
                               {isOwn ? `${applicantInfo?.firstName?.[0] || ''}${applicantInfo?.lastName?.[0] || ''}`.toUpperCase() : 'IK'}
                             </Avatar>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3 }}>
@@ -790,7 +791,7 @@ function ApplicantCabinet() {
                                 border: isOwn ? 'none' : '1px solid rgba(28,97,171,0.15)',
                                 boxShadow: isOwn ? '0 2px 8px rgba(139,185,74,0.2)' : '0 1px 4px rgba(28,97,171,0.08)'
                               }}>
-                                <MessageContent message={message} isEditing={false} onSaveEdit={() => {}} onCancelEdit={() => {}} />
+                                <MessageContent message={message} isEditing={false} onSaveEdit={() => { }} onCancelEdit={() => { }} />
                               </Box>
                               <Typography variant="caption" sx={{ opacity: 0.5, fontSize: '10px', color: '#718096', alignSelf: isOwn ? 'flex-end' : 'flex-start', px: 0.5 }}>
                                 {new Date(message.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
@@ -826,7 +827,8 @@ function ApplicantCabinet() {
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                       variant="outlined" size="small" multiline maxRows={3} disabled={!isConnected}
                       sx={{
-                        '& .MuiOutlinedInput-root': { background: '#fff', borderRadius: '14px',
+                        '& .MuiOutlinedInput-root': {
+                          background: '#fff', borderRadius: '14px',
                           '& fieldset': { borderColor: 'rgba(28,97,171,0.2)' },
                           '&:hover fieldset': { borderColor: 'rgba(28,97,171,0.4)' },
                           '&.Mui-focused fieldset': { borderColor: '#1c61ab' }

@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 
 const VideoCallContext = createContext(null);
 
-const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:9000';
+import { WS_BASE_URL } from '../config/config';
 
 /**
  * VideoCallProvider - Manages video call state and notifications across the admin application

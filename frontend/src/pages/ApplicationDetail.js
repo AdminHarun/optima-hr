@@ -51,7 +51,8 @@ import {
   Grade as GradeIcon
 } from '@mui/icons-material';
 
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:9000') + '/api';
+import { API_BASE_URL as BASE_URL } from '../config/config';
+const API_BASE_URL = BASE_URL + '/api';
 
 const STATUS_CONFIG = {
   submitted: { label: 'Form Gonderildi', color: '#1976d2', bgColor: '#e3f2fd', progress: 25 },

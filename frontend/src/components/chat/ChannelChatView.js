@@ -34,8 +34,7 @@ import {
 import ThreadPanel from './ThreadPanel';
 import MentionInput from './MentionInput';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:9000';
-const WS_BASE_URL = (process.env.REACT_APP_WS_URL || 'ws://localhost:9000').replace(/^http/, 'ws');
+import { API_BASE_URL, WS_BASE_URL } from '../../config/config';
 
 const getSiteHeaders = () => {
   const currentSite = localStorage.getItem('optima_current_site') || 'FXB';
@@ -419,328 +418,328 @@ const ChannelChatView = ({
     <Box sx={{ flex: 1, display: 'flex', height: '100%' }}>
       {/* Main Chat Area */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <Box
-        sx={{
-          p: 2,
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          bgcolor: 'white'
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {channel.type === 'private' ? (
-            <LockIcon sx={{ color: '#6b7280' }} />
-          ) : (
-            <TagIcon sx={{ color: '#6b7280' }} />
-          )}
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-              {channel.displayName}
-            </Typography>
-            {channel.topic && (
-              <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                {channel.topic}
-              </Typography>
+        {/* Header */}
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: '1px solid #e5e7eb',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            bgcolor: 'white'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {channel.type === 'private' ? (
+              <LockIcon sx={{ color: '#6b7280' }} />
+            ) : (
+              <TagIcon sx={{ color: '#6b7280' }} />
             )}
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip
-            icon={<PeopleIcon sx={{ fontSize: 16 }} />}
-            label={channel.memberCount || 0}
-            size="small"
-            variant="outlined"
-          />
-
-          <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}>
-            <MoreIcon />
-          </IconButton>
-
-          <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={() => setMenuAnchor(null)}
-          >
-            <MenuItem onClick={handleToggleStar}>
-              <ListItemIcon>
-                {channel.membership?.starred ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-              </ListItemIcon>
-              <ListItemText>
-                {channel.membership?.starred ? 'Yildizdan Kaldir' : 'Yildizla'}
-              </ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleToggleMute}>
-              <ListItemIcon>
-                {channel.membership?.muted ? <UnmuteIcon fontSize="small" /> : <MuteIcon fontSize="small" />}
-              </ListItemIcon>
-              <ListItemText>
-                {channel.membership?.muted ? 'Bildirimleri Ac' : 'Sessize Al'}
-              </ListItemText>
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLeaveChannel} sx={{ color: 'error.main' }}>
-              <ListItemIcon>
-                <LeaveIcon fontSize="small" color="error" />
-              </ListItemIcon>
-              <ListItemText>Kanaldan Ayril</ListItemText>
-            </MenuItem>
-          </Menu>
-        </Box>
-      </Box>
-
-      {/* Messages */}
-      <Box
-        ref={messagesContainerRef}
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          p: 2,
-          bgcolor: '#f9fafb'
-        }}
-      >
-        {loading && messages.length === 0 ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        ) : messages.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8 }}>
-            <TagIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 2 }} />
-            <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
-              #{channel.name} kanalina hos geldiniz!
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#9ca3af' }}>
-              Bu kanalin ilk mesajini siz gonderin.
-            </Typography>
-          </Box>
-        ) : (
-          Object.entries(groupedMessages).map(([date, dayMessages]) => (
-            <Box key={date}>
-              {/* Date Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-                <Divider sx={{ flex: 1 }} />
-                <Typography
-                  variant="caption"
-                  sx={{
-                    px: 2,
-                    color: '#6b7280',
-                    fontWeight: 500
-                  }}
-                >
-                  {formatDateHeader(date)}
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                {channel.displayName}
+              </Typography>
+              {channel.topic && (
+                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                  {channel.topic}
                 </Typography>
-                <Divider sx={{ flex: 1 }} />
-              </Box>
+              )}
+            </Box>
+          </Box>
 
-              {/* Messages */}
-              {dayMessages.map((message, index) => {
-                const isOwn = message.senderId?.toString() === currentUserId?.toString();
-                const showAvatar = index === 0 ||
-                  dayMessages[index - 1]?.senderId !== message.senderId;
-                const isHovered = hoveredMessageId === message.id;
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              icon={<PeopleIcon sx={{ fontSize: 16 }} />}
+              label={channel.memberCount || 0}
+              size="small"
+              variant="outlined"
+            />
 
-                return (
-                  <Box
-                    key={message.id}
-                    onMouseEnter={() => setHoveredMessageId(message.id)}
-                    onMouseLeave={() => setHoveredMessageId(null)}
+            <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}>
+              <MoreIcon />
+            </IconButton>
+
+            <Menu
+              anchorEl={menuAnchor}
+              open={Boolean(menuAnchor)}
+              onClose={() => setMenuAnchor(null)}
+            >
+              <MenuItem onClick={handleToggleStar}>
+                <ListItemIcon>
+                  {channel.membership?.starred ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                </ListItemIcon>
+                <ListItemText>
+                  {channel.membership?.starred ? 'Yildizdan Kaldir' : 'Yildizla'}
+                </ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleToggleMute}>
+                <ListItemIcon>
+                  {channel.membership?.muted ? <UnmuteIcon fontSize="small" /> : <MuteIcon fontSize="small" />}
+                </ListItemIcon>
+                <ListItemText>
+                  {channel.membership?.muted ? 'Bildirimleri Ac' : 'Sessize Al'}
+                </ListItemText>
+              </MenuItem>
+              <Divider />
+              <MenuItem onClick={handleLeaveChannel} sx={{ color: 'error.main' }}>
+                <ListItemIcon>
+                  <LeaveIcon fontSize="small" color="error" />
+                </ListItemIcon>
+                <ListItemText>Kanaldan Ayril</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Box>
+
+        {/* Messages */}
+        <Box
+          ref={messagesContainerRef}
+          sx={{
+            flex: 1,
+            overflowY: 'auto',
+            p: 2,
+            bgcolor: '#f9fafb'
+          }}
+        >
+          {loading && messages.length === 0 ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : messages.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 8 }}>
+              <TagIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
+                #{channel.name} kanalina hos geldiniz!
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                Bu kanalin ilk mesajini siz gonderin.
+              </Typography>
+            </Box>
+          ) : (
+            Object.entries(groupedMessages).map(([date, dayMessages]) => (
+              <Box key={date}>
+                {/* Date Header */}
+                <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+                  <Divider sx={{ flex: 1 }} />
+                  <Typography
+                    variant="caption"
                     sx={{
-                      display: 'flex',
-                      gap: 1.5,
-                      mb: showAvatar ? 2 : 0.5,
-                      pl: showAvatar ? 0 : 5.5,
-                      position: 'relative',
-                      '&:hover': {
-                        bgcolor: 'rgba(99, 102, 241, 0.04)'
-                      },
-                      borderRadius: 1,
-                      py: 0.5,
-                      px: 1,
-                      mx: -1
+                      px: 2,
+                      color: '#6b7280',
+                      fontWeight: 500
                     }}
                   >
-                    {showAvatar && (
-                      <Avatar
-                        src={message.senderAvatar}
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          bgcolor: isOwn ? '#6366f1' : '#e5e7eb',
-                          fontSize: '14px'
-                        }}
-                      >
-                        {getInitials(message.senderName)}
-                      </Avatar>
-                    )}
+                    {formatDateHeader(date)}
+                  </Typography>
+                  <Divider sx={{ flex: 1 }} />
+                </Box>
 
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                {/* Messages */}
+                {dayMessages.map((message, index) => {
+                  const isOwn = message.senderId?.toString() === currentUserId?.toString();
+                  const showAvatar = index === 0 ||
+                    dayMessages[index - 1]?.senderId !== message.senderId;
+                  const isHovered = hoveredMessageId === message.id;
+
+                  return (
+                    <Box
+                      key={message.id}
+                      onMouseEnter={() => setHoveredMessageId(message.id)}
+                      onMouseLeave={() => setHoveredMessageId(null)}
+                      sx={{
+                        display: 'flex',
+                        gap: 1.5,
+                        mb: showAvatar ? 2 : 0.5,
+                        pl: showAvatar ? 0 : 5.5,
+                        position: 'relative',
+                        '&:hover': {
+                          bgcolor: 'rgba(99, 102, 241, 0.04)'
+                        },
+                        borderRadius: 1,
+                        py: 0.5,
+                        px: 1,
+                        mx: -1
+                      }}
+                    >
                       {showAvatar && (
-                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.25 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 600, color: isOwn ? '#6366f1' : '#1f2937' }}
-                          >
-                            {message.senderName}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: '#9ca3af' }}>
-                            {formatMessageTime(message.createdAt)}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: '#374151',
-                          whiteSpace: 'pre-wrap',
-                          wordBreak: 'break-word'
-                        }}
-                      >
-                        {message.content}
-                        {message.isEdited && (
-                          <Typography
-                            component="span"
-                            variant="caption"
-                            sx={{ ml: 1, color: '#9ca3af' }}
-                          >
-                            (duzenlendi)
-                          </Typography>
-                        )}
-                      </Typography>
-
-                      {/* Thread Reply Count */}
-                      {message.replyCount > 0 && (
-                        <Box
-                          onClick={() => setSelectedThread(message)}
+                        <Avatar
+                          src={message.senderAvatar}
                           sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            mt: 0.5,
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 1,
-                            bgcolor: 'rgba(99, 102, 241, 0.08)',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              bgcolor: 'rgba(99, 102, 241, 0.15)'
-                            }
+                            width: 36,
+                            height: 36,
+                            bgcolor: isOwn ? '#6366f1' : '#e5e7eb',
+                            fontSize: '14px'
                           }}
                         >
-                          <ForumIcon sx={{ fontSize: 14, color: '#6366f1' }} />
-                          <Typography
-                            variant="caption"
-                            sx={{ color: '#6366f1', fontWeight: 600 }}
-                          >
-                            {message.replyCount} yanit
-                          </Typography>
-                          {message.lastReply && (
+                          {getInitials(message.senderName)}
+                        </Avatar>
+                      )}
+
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        {showAvatar && (
+                          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.25 }}>
                             <Typography
-                              variant="caption"
-                              sx={{ color: '#9ca3af', ml: 0.5 }}
+                              variant="body2"
+                              sx={{ fontWeight: 600, color: isOwn ? '#6366f1' : '#1f2937' }}
                             >
-                              - {message.lastReply.senderName}
+                              {message.senderName}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#9ca3af' }}>
+                              {formatMessageTime(message.createdAt)}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            color: '#374151',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {message.content}
+                          {message.isEdited && (
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              sx={{ ml: 1, color: '#9ca3af' }}
+                            >
+                              (duzenlendi)
                             </Typography>
                           )}
+                        </Typography>
+
+                        {/* Thread Reply Count */}
+                        {message.replyCount > 0 && (
+                          <Box
+                            onClick={() => setSelectedThread(message)}
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              mt: 0.5,
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 1,
+                              bgcolor: 'rgba(99, 102, 241, 0.08)',
+                              cursor: 'pointer',
+                              '&:hover': {
+                                bgcolor: 'rgba(99, 102, 241, 0.15)'
+                              }
+                            }}
+                          >
+                            <ForumIcon sx={{ fontSize: 14, color: '#6366f1' }} />
+                            <Typography
+                              variant="caption"
+                              sx={{ color: '#6366f1', fontWeight: 600 }}
+                            >
+                              {message.replyCount} yanit
+                            </Typography>
+                            {message.lastReply && (
+                              <Typography
+                                variant="caption"
+                                sx={{ color: '#9ca3af', ml: 0.5 }}
+                              >
+                                - {message.lastReply.senderName}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+
+                      {/* Hover Actions */}
+                      {isHovered && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: -8,
+                            right: 8,
+                            display: 'flex',
+                            gap: 0.5,
+                            bgcolor: 'white',
+                            borderRadius: 1,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                            border: '1px solid #e5e7eb',
+                            p: 0.25
+                          }}
+                        >
+                          <Tooltip title="Konuya yanit ver">
+                            <IconButton
+                              size="small"
+                              onClick={() => setSelectedThread(message)}
+                              sx={{ p: 0.5 }}
+                            >
+                              <ReplyIcon sx={{ fontSize: 18, color: '#6b7280' }} />
+                            </IconButton>
+                          </Tooltip>
                         </Box>
                       )}
                     </Box>
-
-                    {/* Hover Actions */}
-                    {isHovered && (
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: 8,
-                          display: 'flex',
-                          gap: 0.5,
-                          bgcolor: 'white',
-                          borderRadius: 1,
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                          border: '1px solid #e5e7eb',
-                          p: 0.25
-                        }}
-                      >
-                        <Tooltip title="Konuya yanit ver">
-                          <IconButton
-                            size="small"
-                            onClick={() => setSelectedThread(message)}
-                            sx={{ p: 0.5 }}
-                          >
-                            <ReplyIcon sx={{ fontSize: 18, color: '#6b7280' }} />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </Box>
-
-      {/* Message Input */}
-      <Box
-        sx={{
-          p: 2,
-          borderTop: '1px solid #e5e7eb',
-          bgcolor: 'white'
-        }}
-      >
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-          <IconButton size="small" disabled>
-            <AttachIcon />
-          </IconButton>
-
-          <Box sx={{ flex: 1 }}>
-            {/* Typing indicator */}
-            {typingUsers.length > 0 && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: '#6366f1',
-                  fontSize: '11px',
-                  pl: 1,
-                  display: 'block',
-                  mb: 0.5
-                }}
-              >
-                {typingUsers.length === 1
-                  ? `${typingUsers[0].userName} yaziyor...`
-                  : `${typingUsers.length} kisi yaziyor...`}
-              </Typography>
-            )}
-            <MentionInput
-              value={newMessage}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder={`#${channel.name} kanalina mesaj gonder (@mention, #kanal)`}
-              channelId={channel.id}
-              disabled={sending}
-              multiline
-              maxRows={4}
-            />
-          </Box>
-
-          <IconButton size="small" disabled>
-            <EmojiIcon />
-          </IconButton>
-
-          <IconButton
-            color="primary"
-            onClick={handleSendMessage}
-            disabled={!newMessage.trim() || sending}
-          >
-            {sending ? <CircularProgress size={20} /> : <SendIcon />}
-          </IconButton>
+                  );
+                })}
+              </Box>
+            ))
+          )}
+          <div ref={messagesEndRef} />
         </Box>
-      </Box>
+
+        {/* Message Input */}
+        <Box
+          sx={{
+            p: 2,
+            borderTop: '1px solid #e5e7eb',
+            bgcolor: 'white'
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+            <IconButton size="small" disabled>
+              <AttachIcon />
+            </IconButton>
+
+            <Box sx={{ flex: 1 }}>
+              {/* Typing indicator */}
+              {typingUsers.length > 0 && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#6366f1',
+                    fontSize: '11px',
+                    pl: 1,
+                    display: 'block',
+                    mb: 0.5
+                  }}
+                >
+                  {typingUsers.length === 1
+                    ? `${typingUsers[0].userName} yaziyor...`
+                    : `${typingUsers.length} kisi yaziyor...`}
+                </Typography>
+              )}
+              <MentionInput
+                value={newMessage}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                placeholder={`#${channel.name} kanalina mesaj gonder (@mention, #kanal)`}
+                channelId={channel.id}
+                disabled={sending}
+                multiline
+                maxRows={4}
+              />
+            </Box>
+
+            <IconButton size="small" disabled>
+              <EmojiIcon />
+            </IconButton>
+
+            <IconButton
+              color="primary"
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || sending}
+            >
+              {sending ? <CircularProgress size={20} /> : <SendIcon />}
+            </IconButton>
+          </Box>
+        </Box>
       </Box>
 
       {/* Thread Panel */}

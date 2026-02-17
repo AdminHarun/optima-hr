@@ -15,6 +15,7 @@ const ScheduledMessage = require('./ScheduledMessage');
 const MessageBookmark = require('./MessageBookmark');
 const Task = require('./Task');
 const TaskComment = require('./TaskComment');
+const CalendarEvent = require('./CalendarEvent');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -219,6 +220,16 @@ TaskComment.belongsTo(Employee, {
   as: 'author'
 });
 
+// CalendarEvent - Employee iilişkisi
+CalendarEvent.belongsTo(Employee, {
+  foreignKey: 'created_by',
+  as: 'creator'
+});
+Employee.hasMany(CalendarEvent, {
+  foreignKey: 'created_by',
+  as: 'calendar_events'
+});
+
 module.exports = {
   InvitationLink,
   ApplicantProfile,
@@ -238,5 +249,6 @@ module.exports = {
   ScheduledMessage,
   MessageBookmark,
   Task,
-  TaskComment
+  TaskComment,
+  CalendarEvent
 };

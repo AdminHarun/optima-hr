@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -131,10 +131,40 @@ function CalendarPage() {
     attendees: []
   });
 
+  // API Base URL
+  const API_BASE = (() => {
+    try {
+      const { API_BASE_URL } = require('../config/config');
+      return API_BASE_URL;
+    } catch (e) {
+      return 'http://localhost:9000';
+    }
+  })();
+  const siteCode = localStorage.getItem('optima_current_site') || 'FXB';
+
+  const loadEvents = useCallback(async () => {
+    try {
+      const month = (currentDate.getMonth() + 1).toString();
+      const year = currentDate.getFullYear().toString();
+      const res = await fetch(`${API_BASE}/api/calendar/events?month=${month}&year=${year}`, {
+        headers: { 'X-Site-Id': siteCode }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEvents(data);
+      } else {
+        // Fallback to mock data if API not available
+        setEvents(getInitialEvents());
+      }
+    } catch (error) {
+      console.error('Calendar API error, using mock data:', error);
+      setEvents(getInitialEvents());
+    }
+  }, [currentDate]);
+
   useEffect(() => {
-    const initialEvents = getInitialEvents();
-    setEvents(initialEvents);
-  }, []);
+    loadEvents();
+  }, [loadEvents]);
 
   // Takvim günlerini oluştur
   const getDaysInMonth = (date) => {
@@ -163,9 +193,9 @@ function CalendarPage() {
       const dayEvents = events.filter(event => {
         const eventDate = new Date(event.date);
         return eventDate.toDateString() === currentDay.toDateString() &&
-               selectedFilters.types.includes(event.type) &&
-               selectedFilters.priorities.includes(event.priority) &&
-               selectedFilters.statuses.includes(event.status);
+          selectedFilters.types.includes(event.type) &&
+          selectedFilters.priorities.includes(event.priority) &&
+          selectedFilters.statuses.includes(event.status);
       });
 
       days.push({
@@ -210,17 +240,38 @@ function CalendarPage() {
     setNewEventDialogOpen(true);
   };
 
-  const saveNewEvent = () => {
-    const eventId = `event_${Date.now()}`;
-    const eventToAdd = {
-      ...newEvent,
-      id: eventId,
-      status: 'scheduled',
-      createdBy: 'current-user',
-      attendees: newEvent.attendees.split(',').map(email => email.trim()).filter(email => email)
+  const saveNewEvent = async () => {
+    const eventPayload = {
+      title: newEvent.title,
+      type: newEvent.type,
+      date: newEvent.date,
+      startTime: newEvent.startTime,
+      endTime: newEvent.endTime,
+      location: newEvent.location,
+      description: newEvent.description,
+      priority: newEvent.priority,
+      attendees: typeof newEvent.attendees === 'string'
+        ? newEvent.attendees.split(',').map(e => e.trim()).filter(Boolean)
+        : newEvent.attendees
     };
 
-    setEvents([...events, eventToAdd]);
+    try {
+      const res = await fetch(`${API_BASE}/api/calendar/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Site-Id': siteCode },
+        body: JSON.stringify(eventPayload)
+      });
+      if (res.ok) {
+        const savedEvent = await res.json();
+        setEvents([...events, savedEvent]);
+      }
+    } catch (error) {
+      console.error('Save event error:', error);
+      // Fallback: add locally
+      const eventId = `event_${Date.now()}`;
+      setEvents([...events, { ...eventPayload, id: eventId, status: 'scheduled', createdBy: 'current-user' }]);
+    }
+
     setNewEventDialogOpen(false);
     setNewEvent({
       title: '',
@@ -235,7 +286,15 @@ function CalendarPage() {
     });
   };
 
-  const deleteEvent = (eventId) => {
+  const deleteEvent = async (eventId) => {
+    try {
+      await fetch(`${API_BASE}/api/calendar/events/${eventId}`, {
+        method: 'DELETE',
+        headers: { 'X-Site-Id': siteCode }
+      });
+    } catch (error) {
+      console.error('Delete event error:', error);
+    }
     setEvents(events.filter(event => event.id !== eventId));
     setEventDialogOpen(false);
   };
@@ -335,436 +394,436 @@ function CalendarPage() {
 
   return (
     <Box sx={{ p: 3, backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-        {/* Header */}
-        <Card sx={{ mb: 3, borderRadius: '16px', boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)' }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              {/* Sol taraf - Başlık ve navigasyon */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="h4" sx={{
-                  fontWeight: 'bold',
-                  background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
-                }}>
-                  📅 HR Takvimi
-                </Typography>
-
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <IconButton onClick={() => navigateMonth(-1)} color="primary">
-                    <ChevronLeft />
-                  </IconButton>
-                  <Typography variant="h6" sx={{ minWidth: 200, textAlign: 'center', fontWeight: 600 }}>
-                    {currentDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
-                  </Typography>
-                  <IconButton onClick={() => navigateMonth(1)} color="primary">
-                    <ChevronRight />
-                  </IconButton>
-                </Box>
-              </Box>
-
-              {/* Sağ taraf - Kontroller */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<Today />}
-                  onClick={goToToday}
-                  sx={{ borderRadius: '12px' }}
-                >
-                  Bugün
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startIcon={<FilterList />}
-                  onClick={() => setFilterDialogOpen(true)}
-                  sx={{ borderRadius: '12px' }}
-                >
-                  Filtrele
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startIcon={<Assessment />}
-                  sx={{ borderRadius: '12px' }}
-                >
-                  Rapor
-                </Button>
-
-                <Fab
-                  color="primary"
-                  size="medium"
-                  onClick={handleNewEvent}
-                  sx={{
-                    background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #155a9c 0%, #7aa63d 100%)',
-                    }
-                  }}
-                >
-                  <Add />
-                </Fab>
-              </Box>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Takvim */}
-        <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)' }}>
-          <CardContent sx={{ p: 0 }}>
-            {/* Hafta günleri başlığı */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: 'rgba(28, 97, 171, 0.05)' }}>
-              {weekDays.map((day) => (
-                <Typography
-                  key={day}
-                  variant="subtitle2"
-                  sx={{
-                    p: 2,
-                    textAlign: 'center',
-                    fontWeight: 'bold',
-                    color: '#1c61ab',
-                    borderBottom: '1px solid rgba(28, 97, 171, 0.1)'
-                  }}
-                >
-                  {day}
-                </Typography>
-              ))}
-            </Box>
-
-            {/* Takvim günleri */}
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0 }}>
-              {days.map((dayInfo) => renderCalendarDay(dayInfo))}
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Etkinlik Detay Dialog */}
-        <Dialog
-          open={eventDialogOpen}
-          onClose={() => setEventDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: '16px' }
-          }}
-        >
-          {selectedEvent && (
-            <>
-              <DialogTitle sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                background: EVENT_TYPES[selectedEvent.type]?.color,
-                color: 'white'
-              }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  {EVENT_TYPES[selectedEvent.type]?.icon}
-                  <Typography variant="h6">{selectedEvent.title}</Typography>
-                </Box>
-                <Box>
-                  <IconButton color="inherit" onClick={() => {}}>
-                    <Edit />
-                  </IconButton>
-                  <IconButton color="inherit" onClick={() => deleteEvent(selectedEvent.id)}>
-                    <Delete />
-                  </IconButton>
-                </Box>
-              </DialogTitle>
-              <DialogContent sx={{ mt: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary">📅 Tarih</Typography>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      {new Date(selectedEvent.date).toLocaleDateString('tr-TR')}
-                    </Typography>
-
-                    <Typography variant="subtitle2" color="text.secondary">⏰ Saat</Typography>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      {selectedEvent.startTime} - {selectedEvent.endTime}
-                    </Typography>
-
-                    <Typography variant="subtitle2" color="text.secondary">📍 Konum</Typography>
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      {selectedEvent.location || 'Belirtilmemiş'}
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="subtitle2" color="text.secondary">⚡ Öncelik</Typography>
-                    <Chip
-                      label={selectedEvent.priority === 'high' ? 'Yüksek' : selectedEvent.priority === 'medium' ? 'Orta' : 'Düşük'}
-                      color={selectedEvent.priority === 'high' ? 'error' : selectedEvent.priority === 'medium' ? 'warning' : 'success'}
-                      size="small"
-                      sx={{ mb: 2 }}
-                    />
-
-                    <Typography variant="subtitle2" color="text.secondary">📊 Durum</Typography>
-                    <Chip
-                      label={selectedEvent.status === 'confirmed' ? 'Onaylandı' : selectedEvent.status === 'cancelled' ? 'İptal' : 'Planlandı'}
-                      color={selectedEvent.status === 'confirmed' ? 'success' : selectedEvent.status === 'cancelled' ? 'error' : 'default'}
-                      size="small"
-                      sx={{ mb: 2 }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle2" color="text.secondary">👥 Katılımcılar</Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                      {selectedEvent.attendees?.map((attendee, index) => (
-                        <Chip key={index} label={attendee} size="small" />
-                      ))}
-                    </Box>
-
-                    <Typography variant="subtitle2" color="text.secondary">📝 Açıklama</Typography>
-                    <Typography variant="body2">
-                      {selectedEvent.description || 'Açıklama bulunmuyor.'}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </DialogContent>
-            </>
-          )}
-        </Dialog>
-
-        {/* Yeni Etkinlik Dialog */}
-        <Dialog
-          open={newEventDialogOpen}
-          onClose={() => setNewEventDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: '16px' }
-          }}
-        >
-          <DialogTitle sx={{
-            background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
-            color: 'white'
-          }}>
+      {/* Header */}
+      <Card sx={{ mb: 3, borderRadius: '16px', boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            {/* Sol taraf - Başlık ve navigasyon */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Add />
-              <Typography variant="h6">Yeni Etkinlik Oluştur</Typography>
-            </Box>
-          </DialogTitle>
-          <DialogContent sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Etkinlik Başlığı"
-                  value={newEvent.title}
-                  onChange={(e) => setNewEvent({...newEvent, title: e.target.value})}
-                  sx={{ mb: 2 }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Etkinlik Türü</InputLabel>
-                  <Select
-                    value={newEvent.type}
-                    onChange={(e) => setNewEvent({...newEvent, type: e.target.value})}
-                  >
-                    {Object.entries(EVENT_TYPES).map(([key, type]) => (
-                      <MenuItem key={key} value={key}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {type.icon}
-                          {type.label}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Öncelik</InputLabel>
-                  <Select
-                    value={newEvent.priority}
-                    onChange={(e) => setNewEvent({...newEvent, priority: e.target.value})}
-                  >
-                    <MenuItem value="low">Düşük</MenuItem>
-                    <MenuItem value="medium">Orta</MenuItem>
-                    <MenuItem value="high">Yüksek</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  type="date"
-                  label="Tarih"
-                  value={newEvent.date}
-                  onChange={(e) => setNewEvent({...newEvent, date: e.target.value})}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  type="time"
-                  label="Başlangıç Saati"
-                  value={newEvent.startTime}
-                  onChange={(e) => setNewEvent({...newEvent, startTime: e.target.value})}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  type="time"
-                  label="Bitiş Saati"
-                  value={newEvent.endTime}
-                  onChange={(e) => setNewEvent({...newEvent, endTime: e.target.value})}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Konum"
-                  value={newEvent.location}
-                  onChange={(e) => setNewEvent({...newEvent, location: e.target.value})}
-                  placeholder="Toplantı salonu, online link vb."
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Katılımcılar (Email adresleri, virgülle ayırın)"
-                  value={newEvent.attendees}
-                  onChange={(e) => setNewEvent({...newEvent, attendees: e.target.value})}
-                  placeholder="john@optima.com, jane@optima.com"
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Açıklama"
-                  value={newEvent.description}
-                  onChange={(e) => setNewEvent({...newEvent, description: e.target.value})}
-                  placeholder="Etkinlik hakkında detaylar..."
-                />
-              </Grid>
-            </Grid>
-          </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setNewEventDialogOpen(false)}>
-              İptal
-            </Button>
-            <Button
-              variant="contained"
-              onClick={saveNewEvent}
-              disabled={!newEvent.title}
-              sx={{
+              <Typography variant="h4" sx={{
+                fontWeight: 'bold',
                 background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #155a9c 0%, #7aa63d 100%)',
-                }
-              }}
-            >
-              Oluştur
-            </Button>
-          </DialogActions>
-        </Dialog>
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>
+                📅 HR Takvimi
+              </Typography>
 
-        {/* Filtre Dialog */}
-        <Dialog
-          open={filterDialogOpen}
-          onClose={() => setFilterDialogOpen(false)}
-          maxWidth="sm"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: '16px' }
-          }}
-        >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <FilterList />
-              <Typography variant="h6">Takvim Filtreleri</Typography>
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Etkinlik Türleri</Typography>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-              {Object.entries(EVENT_TYPES).map(([key, type]) => (
-                <Chip
-                  key={key}
-                  label={type.label}
-                  icon={type.icon}
-                  color={selectedFilters.types.includes(key) ? 'primary' : 'default'}
-                  onClick={() => {
-                    const newTypes = selectedFilters.types.includes(key)
-                      ? selectedFilters.types.filter(t => t !== key)
-                      : [...selectedFilters.types, key];
-                    setSelectedFilters({...selectedFilters, types: newTypes});
-                  }}
-                  sx={{
-                    backgroundColor: selectedFilters.types.includes(key) ? type.color : undefined,
-                    color: selectedFilters.types.includes(key) ? 'white' : undefined
-                  }}
-                />
-              ))}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <IconButton onClick={() => navigateMonth(-1)} color="primary">
+                  <ChevronLeft />
+                </IconButton>
+                <Typography variant="h6" sx={{ minWidth: 200, textAlign: 'center', fontWeight: 600 }}>
+                  {currentDate.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
+                </Typography>
+                <IconButton onClick={() => navigateMonth(1)} color="primary">
+                  <ChevronRight />
+                </IconButton>
+              </Box>
             </Box>
 
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>Öncelik Seviyeleri</Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
-              {[
-                { key: 'high', label: 'Yüksek', color: 'error' },
-                { key: 'medium', label: 'Orta', color: 'warning' },
-                { key: 'low', label: 'Düşük', color: 'success' }
-              ].map((priority) => (
-                <Chip
-                  key={priority.key}
-                  label={priority.label}
-                  color={selectedFilters.priorities.includes(priority.key) ? priority.color : 'default'}
-                  onClick={() => {
-                    const newPriorities = selectedFilters.priorities.includes(priority.key)
-                      ? selectedFilters.priorities.filter(p => p !== priority.key)
-                      : [...selectedFilters.priorities, priority.key];
-                    setSelectedFilters({...selectedFilters, priorities: newPriorities});
-                  }}
-                />
-              ))}
-            </Box>
+            {/* Sağ taraf - Kontroller */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                startIcon={<Today />}
+                onClick={goToToday}
+                sx={{ borderRadius: '12px' }}
+              >
+                Bugün
+              </Button>
 
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>Etkinlik Durumu</Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              {[
-                { key: 'scheduled', label: 'Planlandı', color: 'default' },
-                { key: 'confirmed', label: 'Onaylandı', color: 'success' },
-                { key: 'cancelled', label: 'İptal', color: 'error' }
-              ].map((status) => (
-                <Chip
-                  key={status.key}
-                  label={status.label}
-                  color={selectedFilters.statuses.includes(status.key) ? status.color : 'default'}
-                  onClick={() => {
-                    const newStatuses = selectedFilters.statuses.includes(status.key)
-                      ? selectedFilters.statuses.filter(s => s !== status.key)
-                      : [...selectedFilters.statuses, status.key];
-                    setSelectedFilters({...selectedFilters, statuses: newStatuses});
-                  }}
-                />
-              ))}
+              <Button
+                variant="outlined"
+                startIcon={<FilterList />}
+                onClick={() => setFilterDialogOpen(true)}
+                sx={{ borderRadius: '12px' }}
+              >
+                Filtrele
+              </Button>
+
+              <Button
+                variant="outlined"
+                startIcon={<Assessment />}
+                sx={{ borderRadius: '12px' }}
+              >
+                Rapor
+              </Button>
+
+              <Fab
+                color="primary"
+                size="medium"
+                onClick={handleNewEvent}
+                sx={{
+                  background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #155a9c 0%, #7aa63d 100%)',
+                  }
+                }}
+              >
+                <Add />
+              </Fab>
             </Box>
-          </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={() => setFilterDialogOpen(false)}>
-              Kapat
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Takvim */}
+      <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 20px rgba(28, 97, 171, 0.1)' }}>
+        <CardContent sx={{ p: 0 }}>
+          {/* Hafta günleri başlığı */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', backgroundColor: 'rgba(28, 97, 171, 0.05)' }}>
+            {weekDays.map((day) => (
+              <Typography
+                key={day}
+                variant="subtitle2"
+                sx={{
+                  p: 2,
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  color: '#1c61ab',
+                  borderBottom: '1px solid rgba(28, 97, 171, 0.1)'
+                }}
+              >
+                {day}
+              </Typography>
+            ))}
+          </Box>
+
+          {/* Takvim günleri */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 0 }}>
+            {days.map((dayInfo) => renderCalendarDay(dayInfo))}
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Etkinlik Detay Dialog */}
+      <Dialog
+        open={eventDialogOpen}
+        onClose={() => setEventDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '16px' }
+        }}
+      >
+        {selectedEvent && (
+          <>
+            <DialogTitle sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: EVENT_TYPES[selectedEvent.type]?.color,
+              color: 'white'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                {EVENT_TYPES[selectedEvent.type]?.icon}
+                <Typography variant="h6">{selectedEvent.title}</Typography>
+              </Box>
+              <Box>
+                <IconButton color="inherit" onClick={() => { }}>
+                  <Edit />
+                </IconButton>
+                <IconButton color="inherit" onClick={() => deleteEvent(selectedEvent.id)}>
+                  <Delete />
+                </IconButton>
+              </Box>
+            </DialogTitle>
+            <DialogContent sx={{ mt: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="text.secondary">📅 Tarih</Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    {new Date(selectedEvent.date).toLocaleDateString('tr-TR')}
+                  </Typography>
+
+                  <Typography variant="subtitle2" color="text.secondary">⏰ Saat</Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    {selectedEvent.startTime} - {selectedEvent.endTime}
+                  </Typography>
+
+                  <Typography variant="subtitle2" color="text.secondary">📍 Konum</Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    {selectedEvent.location || 'Belirtilmemiş'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle2" color="text.secondary">⚡ Öncelik</Typography>
+                  <Chip
+                    label={selectedEvent.priority === 'high' ? 'Yüksek' : selectedEvent.priority === 'medium' ? 'Orta' : 'Düşük'}
+                    color={selectedEvent.priority === 'high' ? 'error' : selectedEvent.priority === 'medium' ? 'warning' : 'success'}
+                    size="small"
+                    sx={{ mb: 2 }}
+                  />
+
+                  <Typography variant="subtitle2" color="text.secondary">📊 Durum</Typography>
+                  <Chip
+                    label={selectedEvent.status === 'confirmed' ? 'Onaylandı' : selectedEvent.status === 'cancelled' ? 'İptal' : 'Planlandı'}
+                    color={selectedEvent.status === 'confirmed' ? 'success' : selectedEvent.status === 'cancelled' ? 'error' : 'default'}
+                    size="small"
+                    sx={{ mb: 2 }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="text.secondary">👥 Katılımcılar</Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                    {selectedEvent.attendees?.map((attendee, index) => (
+                      <Chip key={index} label={attendee} size="small" />
+                    ))}
+                  </Box>
+
+                  <Typography variant="subtitle2" color="text.secondary">📝 Açıklama</Typography>
+                  <Typography variant="body2">
+                    {selectedEvent.description || 'Açıklama bulunmuyor.'}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </DialogContent>
+          </>
+        )}
+      </Dialog>
+
+      {/* Yeni Etkinlik Dialog */}
+      <Dialog
+        open={newEventDialogOpen}
+        onClose={() => setNewEventDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '16px' }
+        }}
+      >
+        <DialogTitle sx={{
+          background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
+          color: 'white'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Add />
+            <Typography variant="h6">Yeni Etkinlik Oluştur</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Etkinlik Başlığı"
+                value={newEvent.title}
+                onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                sx={{ mb: 2 }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Etkinlik Türü</InputLabel>
+                <Select
+                  value={newEvent.type}
+                  onChange={(e) => setNewEvent({ ...newEvent, type: e.target.value })}
+                >
+                  {Object.entries(EVENT_TYPES).map(([key, type]) => (
+                    <MenuItem key={key} value={key}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {type.icon}
+                        {type.label}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Öncelik</InputLabel>
+                <Select
+                  value={newEvent.priority}
+                  onChange={(e) => setNewEvent({ ...newEvent, priority: e.target.value })}
+                >
+                  <MenuItem value="low">Düşük</MenuItem>
+                  <MenuItem value="medium">Orta</MenuItem>
+                  <MenuItem value="high">Yüksek</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                type="date"
+                label="Tarih"
+                value={newEvent.date}
+                onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                type="time"
+                label="Başlangıç Saati"
+                value={newEvent.startTime}
+                onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                type="time"
+                label="Bitiş Saati"
+                value={newEvent.endTime}
+                onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Konum"
+                value={newEvent.location}
+                onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
+                placeholder="Toplantı salonu, online link vb."
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Katılımcılar (Email adresleri, virgülle ayırın)"
+                value={newEvent.attendees}
+                onChange={(e) => setNewEvent({ ...newEvent, attendees: e.target.value })}
+                placeholder="john@optima.com, jane@optima.com"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Açıklama"
+                value={newEvent.description}
+                onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                placeholder="Etkinlik hakkında detaylar..."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setNewEventDialogOpen(false)}>
+            İptal
+          </Button>
+          <Button
+            variant="contained"
+            onClick={saveNewEvent}
+            disabled={!newEvent.title}
+            sx={{
+              background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #155a9c 0%, #7aa63d 100%)',
+              }
+            }}
+          >
+            Oluştur
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Filtre Dialog */}
+      <Dialog
+        open={filterDialogOpen}
+        onClose={() => setFilterDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: '16px' }
+        }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <FilterList />
+            <Typography variant="h6">Takvim Filtreleri</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Etkinlik Türleri</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+            {Object.entries(EVENT_TYPES).map(([key, type]) => (
+              <Chip
+                key={key}
+                label={type.label}
+                icon={type.icon}
+                color={selectedFilters.types.includes(key) ? 'primary' : 'default'}
+                onClick={() => {
+                  const newTypes = selectedFilters.types.includes(key)
+                    ? selectedFilters.types.filter(t => t !== key)
+                    : [...selectedFilters.types, key];
+                  setSelectedFilters({ ...selectedFilters, types: newTypes });
+                }}
+                sx={{
+                  backgroundColor: selectedFilters.types.includes(key) ? type.color : undefined,
+                  color: selectedFilters.types.includes(key) ? 'white' : undefined
+                }}
+              />
+            ))}
+          </Box>
+
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Öncelik Seviyeleri</Typography>
+          <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
+            {[
+              { key: 'high', label: 'Yüksek', color: 'error' },
+              { key: 'medium', label: 'Orta', color: 'warning' },
+              { key: 'low', label: 'Düşük', color: 'success' }
+            ].map((priority) => (
+              <Chip
+                key={priority.key}
+                label={priority.label}
+                color={selectedFilters.priorities.includes(priority.key) ? priority.color : 'default'}
+                onClick={() => {
+                  const newPriorities = selectedFilters.priorities.includes(priority.key)
+                    ? selectedFilters.priorities.filter(p => p !== priority.key)
+                    : [...selectedFilters.priorities, priority.key];
+                  setSelectedFilters({ ...selectedFilters, priorities: newPriorities });
+                }}
+              />
+            ))}
+          </Box>
+
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>Etkinlik Durumu</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {[
+              { key: 'scheduled', label: 'Planlandı', color: 'default' },
+              { key: 'confirmed', label: 'Onaylandı', color: 'success' },
+              { key: 'cancelled', label: 'İptal', color: 'error' }
+            ].map((status) => (
+              <Chip
+                key={status.key}
+                label={status.label}
+                color={selectedFilters.statuses.includes(status.key) ? status.color : 'default'}
+                onClick={() => {
+                  const newStatuses = selectedFilters.statuses.includes(status.key)
+                    ? selectedFilters.statuses.filter(s => s !== status.key)
+                    : [...selectedFilters.statuses, status.key];
+                  setSelectedFilters({ ...selectedFilters, statuses: newStatuses });
+                }}
+              />
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setFilterDialogOpen(false)}>
+            Kapat
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }
 

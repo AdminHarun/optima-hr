@@ -32,6 +32,7 @@ const pinRoutes = require('./routes/pins');
 const readReceiptRoutes = require('./routes/read-receipts');
 const screenShareRoutes = require('./routes/screen-share');
 const taskRoutes = require('./routes/tasks');
+const calendarRoutes = require('./routes/calendar');
 
 const app = express();
 const server = http.createServer(app);
@@ -81,6 +82,7 @@ app.use('/api/pins', pinRoutes);
 app.use('/api/read-receipts', readReceiptRoutes);
 app.use('/api/screen-share', screenShareRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -237,6 +239,16 @@ const runMigrations = async () => {
       console.log('✅ Task management tables synced');
     } catch (taskErr) {
       console.log('⚠️ Task tables note:', taskErr.message);
+    }
+
+    // Initialize calendar tables
+    try {
+      const { CalendarEvent } = require('./models/associations');
+      console.log('🔄 Checking calendar tables...');
+      try { await CalendarEvent.sync({ force: false }); } catch (e) { console.log('⚠️ CalendarEvent sync:', e.message); }
+      console.log('✅ Calendar tables synced');
+    } catch (calErr) {
+      console.log('⚠️ Calendar tables note:', calErr.message);
     }
 
     // Add missing columns and fix constraints on job_applications table

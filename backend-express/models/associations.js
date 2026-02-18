@@ -19,6 +19,10 @@ const CalendarEvent = require('./CalendarEvent');
 const ManagedFile = require('./ManagedFile');
 const FileFolder = require('./FileFolder');
 const FileVersion = require('./FileVersion');
+const Role = require('./Role');
+const Permission = require('./Permission');
+const RolePermission = require('./RolePermission');
+const EmployeeRole = require('./EmployeeRole');
 
 // InvitationLink ile ApplicantProfile ilişkisi
 InvitationLink.hasMany(ApplicantProfile, {
@@ -280,6 +284,46 @@ FileVersion.belongsTo(Employee, {
   as: 'uploader'
 });
 
+// ==================== RBAC (ROL TABANLI ERİŞİM KONTROLÜ) ====================
+
+// Role - Permission (M:N through RolePermission)
+Role.belongsToMany(Permission, {
+  through: RolePermission,
+  foreignKey: 'role_id',
+  otherKey: 'permission_id',
+  as: 'permissions'
+});
+Permission.belongsToMany(Role, {
+  through: RolePermission,
+  foreignKey: 'permission_id',
+  otherKey: 'role_id',
+  as: 'roles'
+});
+
+// Employee - Role (M:N through EmployeeRole)
+Employee.belongsToMany(Role, {
+  through: EmployeeRole,
+  foreignKey: 'employee_id',
+  otherKey: 'role_id',
+  as: 'roles'
+});
+Role.belongsToMany(Employee, {
+  through: EmployeeRole,
+  foreignKey: 'role_id',
+  otherKey: 'employee_id',
+  as: 'employees'
+});
+
+// EmployeeRole - Role ilişkisi (eager loading için)
+EmployeeRole.belongsTo(Role, {
+  foreignKey: 'role_id',
+  as: 'role'
+});
+Role.hasMany(EmployeeRole, {
+  foreignKey: 'role_id',
+  as: 'employee_roles'
+});
+
 module.exports = {
   InvitationLink,
   ApplicantProfile,
@@ -303,5 +347,9 @@ module.exports = {
   CalendarEvent,
   ManagedFile,
   FileFolder,
-  FileVersion
+  FileVersion,
+  Role,
+  Permission,
+  RolePermission,
+  EmployeeRole
 };

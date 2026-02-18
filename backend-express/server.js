@@ -34,6 +34,7 @@ const screenShareRoutes = require('./routes/screen-share');
 const taskRoutes = require('./routes/tasks');
 const calendarRoutes = require('./routes/calendar');
 const fileRoutes = require('./routes/files');
+const roleRoutes = require('./routes/roles');
 
 const app = express();
 const server = http.createServer(app);
@@ -85,6 +86,7 @@ app.use('/api/screen-share', screenShareRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/roles', roleRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -433,6 +435,16 @@ const runMigrations = async () => {
 
     // Initialize recording service
     await recordingService.initialize();
+
+    // Run RBAC migration (Phase 3.1)
+    try {
+      console.log('🔐 Running RBAC migration...');
+      const syncRbacTables = require('./migrations/syncRbacTables');
+      await syncRbacTables();
+      console.log('✅ RBAC migration completed');
+    } catch (rbacErr) {
+      console.log('⚠️ RBAC migration note:', rbacErr.message);
+    }
 
     console.log('✅ All background migrations completed');
   } catch (error) {

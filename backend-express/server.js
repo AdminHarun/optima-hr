@@ -92,6 +92,55 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/sso', ssoRoutes);
 
+// Health check endpoint (Phase 4.6 - Load Balancing support)
+app.get('/health', async (req, res) => {
+  const startTime = Date.now();
+  const health = {
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    memory: {
+      rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + 'MB',
+      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+      heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + 'MB'
+    },
+    checks: {}
+  };
+
+  // Database check
+  try {
+    await sequelize.authenticate();
+    health.checks.database = { status: 'ok', responseTime: Date.now() - startTime + 'ms' };
+  } catch (e) {
+    health.checks.database = { status: 'error', error: e.message };
+    health.status = 'degraded';
+  }
+
+  // Redis check
+  try {
+    const RedisService = require('./services/RedisService');
+    const isConnected = RedisService.isReady ? RedisService.isReady() : false;
+    health.checks.redis = { status: isConnected ? 'ok' : 'fallback (in-memory)' };
+  } catch (e) {
+    health.checks.redis = { status: 'not configured' };
+  }
+
+  // Cache stats
+  try {
+    const CacheService = require('./services/CacheService');
+    health.checks.cache = CacheService.getStats();
+  } catch (e) {
+    health.checks.cache = { status: 'not loaded' };
+  }
+
+  const responseTime = Date.now() - startTime;
+  health.responseTime = responseTime + 'ms';
+
+  res.status(health.status === 'ok' ? 200 : 503).json(health);
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -464,6 +513,15 @@ const runMigrations = async () => {
       console.log('✅ RBAC migration completed');
     } catch (rbacErr) {
       console.log('⚠️ RBAC migration note:', rbacErr.message);
+    }
+
+    // Performance indexes (Phase 4.4)
+    try {
+      console.log('📊 Running DB index optimization...');
+      const runDbIndexMigration = require('./migrations/addPerformanceIndexes');
+      await runDbIndexMigration();
+    } catch (indexErr) {
+      console.log('⚠️ DB index note:', indexErr.message);
     }
 
     console.log('✅ All background migrations completed');

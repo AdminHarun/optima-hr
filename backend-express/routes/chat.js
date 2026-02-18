@@ -17,20 +17,20 @@ const fs = require('fs');
 const storage = r2Storage.isR2Enabled()
   ? multer.memoryStorage()
   : multer.diskStorage({
-      destination: function (req, file, cb) {
-        const uploadDir = path.join(__dirname, '../uploads/chat');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-      },
-      filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const ext = path.extname(file.originalname);
-        const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9]/g, '_');
-        cb(null, `${baseName}_${uniqueSuffix}${ext}`);
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(__dirname, '../uploads/chat');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
       }
-    });
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9]/g, '_');
+      cb(null, `${baseName}_${uniqueSuffix}${ext}`);
+    }
+  });
 
 const upload = multer({
   storage: storage,
@@ -108,14 +108,14 @@ router.get('/rooms/applicant_rooms/', async (req, res) => {
     // ApplicantProfile'ları tek sorguda getir
     const profiles = applicantIds.length > 0
       ? await ApplicantProfile.findAll({
-          where: { id: { [Op.in]: applicantIds } },
-          attributes: [
-            'id', 'first_name', 'last_name', 'email', 'phone',
-            'profile_created_ip', 'profile_created_location',
-            'device_info', 'is_vpn', 'vpn_score',
-            'profile_created_at', 'invitation_link_id', 'site_code'
-          ]
-        })
+        where: { id: { [Op.in]: applicantIds } },
+        attributes: [
+          'id', 'first_name', 'last_name', 'email', 'phone',
+          'profile_created_ip', 'profile_created_location',
+          'device_info', 'is_vpn', 'vpn_score',
+          'profile_created_at', 'invitation_link_id', 'site_code'
+        ]
+      })
       : [];
 
     // Profile'ları ID'ye göre map'le
@@ -355,19 +355,35 @@ router.get('/rooms/:roomId/messages/', async (req, res) => {
 
     const offset = (page - 1) * page_size;
 
+    // Cursor-based pagination support (infinite scroll)
+    const { before, after } = req.query;
+    const where = { room_id: dbRoomId };
+
+    if (before) {
+      where.id = { [Op.lt]: parseInt(before) };
+    } else if (after) {
+      where.id = { [Op.gt]: parseInt(after) };
+    }
+
     const { count, rows: messages } = await ChatMessage.findAndCountAll({
-      where: { room_id: dbRoomId },
-      order: [['created_at', 'ASC']],
+      where,
+      order: [['created_at', before ? 'DESC' : 'ASC']],
       limit: parseInt(page_size),
-      offset: offset
+      offset: (!before && !after) ? offset : 0
     });
+
+    // Reverse if fetched in DESC order (before cursor)
+    if (before) messages.reverse();
 
     res.json({
       count,
       messages,
       page: parseInt(page),
       page_size: parseInt(page_size),
-      total_pages: Math.ceil(count / page_size)
+      total_pages: Math.ceil(count / page_size),
+      has_more: messages.length === parseInt(page_size),
+      next_cursor: messages.length > 0 ? messages[messages.length - 1].id : null,
+      prev_cursor: messages.length > 0 ? messages[0].id : null
     });
   } catch (error) {
     console.error('Error fetching room messages:', error);
@@ -551,8 +567,8 @@ router.get('/messages/search/', async (req, res) => {
         const start = Math.max(0, matchIndex - 30);
         const end = Math.min(plainMsg.content.length, matchIndex + searchTerm.length + 30);
         snippet = (start > 0 ? '...' : '') +
-                  plainMsg.content.substring(start, end) +
-                  (end < plainMsg.content.length ? '...' : '');
+          plainMsg.content.substring(start, end) +
+          (end < plainMsg.content.length ? '...' : '');
       }
 
       return {

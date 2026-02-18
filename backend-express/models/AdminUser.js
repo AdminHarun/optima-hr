@@ -52,6 +52,23 @@ const AdminUser = sequelize.define('AdminUser', {
     type: DataTypes.STRING(500),
     allowNull: true,
   },
+  // 2FA Fields (Phase 3.2)
+  two_factor_secret: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    comment: 'Encrypted TOTP secret key'
+  },
+  two_factor_enabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+    comment: '2FA aktif mi?'
+  },
+  two_factor_backup_codes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'JSON encoded hashed backup codes'
+  },
 }, {
   tableName: 'management_admin_users',
   timestamps: true,
@@ -70,11 +87,11 @@ const AdminUser = sequelize.define('AdminUser', {
   },
 });
 
-AdminUser.prototype.validatePassword = async function(password) {
+AdminUser.prototype.validatePassword = async function (password) {
   return bcrypt.compare(password, this.password_hash);
 };
 
-AdminUser.prototype.toJSON = function() {
+AdminUser.prototype.toJSON = function () {
   const values = { ...this.get() };
   delete values.password_hash;
   return values;

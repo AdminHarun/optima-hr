@@ -35,6 +35,7 @@ const taskRoutes = require('./routes/tasks');
 const calendarRoutes = require('./routes/calendar');
 const fileRoutes = require('./routes/files');
 const roleRoutes = require('./routes/roles');
+const twoFactorRoutes = require('./routes/twoFactor');
 
 const app = express();
 const server = http.createServer(app);
@@ -87,6 +88,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/2fa', twoFactorRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -161,6 +163,13 @@ const runMigrations = async () => {
       await addColumnSafe('applicant_profiles', 'security_question', 'VARCHAR(500)');
       await addColumnSafe('applicant_profiles', 'security_answer_hash', 'VARCHAR(255)');
       console.log('✅ Applicant auth columns checked');
+
+      // 2FA columns (Phase 3.2)
+      console.log('🔄 Checking 2FA columns...');
+      await addColumnSafe('management_admin_users', 'two_factor_secret', 'VARCHAR(500)');
+      await addColumnSafe('management_admin_users', 'two_factor_enabled', 'BOOLEAN DEFAULT false');
+      await addColumnSafe('management_admin_users', 'two_factor_backup_codes', 'TEXT');
+      console.log('✅ 2FA columns checked');
 
       // Applicant device tracking columns
       console.log('🔄 Checking applicant device tracking columns...');

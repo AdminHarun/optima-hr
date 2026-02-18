@@ -36,6 +36,7 @@ const calendarRoutes = require('./routes/calendar');
 const fileRoutes = require('./routes/files');
 const roleRoutes = require('./routes/roles');
 const twoFactorRoutes = require('./routes/twoFactor');
+const ssoRoutes = require('./routes/sso');
 
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +90,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/2fa', twoFactorRoutes);
+app.use('/api/sso', ssoRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -465,6 +467,14 @@ const runMigrations = async () => {
     }
 
     console.log('✅ All background migrations completed');
+
+    // Start data retention scheduler (Phase 3.5)
+    try {
+      const { scheduleDataRetention } = require('./services/dataRetention');
+      scheduleDataRetention();
+    } catch (retentionErr) {
+      console.log('⚠️ Data retention scheduler note:', retentionErr.message);
+    }
   } catch (error) {
     console.error('⚠️ Background migration error:', error.message);
   }

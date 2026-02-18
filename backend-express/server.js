@@ -171,6 +171,15 @@ const runMigrations = async () => {
       await addColumnSafe('management_admin_users', 'two_factor_backup_codes', 'TEXT');
       console.log('✅ 2FA columns checked');
 
+      // Audit log enhancement columns (Phase 3.3)
+      console.log('🔄 Checking audit log enhancement columns...');
+      await addColumnSafe('audit_logs', 'user_agent', 'TEXT');
+      await addColumnSafe('audit_logs', 'request_method', 'VARCHAR(10)');
+      await addColumnSafe('audit_logs', 'request_url', 'TEXT');
+      await addColumnSafe('audit_logs', 'response_status', 'INTEGER');
+      await addColumnSafe('audit_logs', 'duration_ms', 'INTEGER');
+      console.log('✅ Audit log columns checked');
+
       // Applicant device tracking columns
       console.log('🔄 Checking applicant device tracking columns...');
       await addColumnSafe('applicant_profiles', 'device_info', 'JSONB');

@@ -64,6 +64,26 @@ const AuditLog = sequelize.define('AuditLog', {
     type: DataTypes.STRING(50),
     allowNull: true,
   },
+  user_agent: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  request_method: {
+    type: DataTypes.STRING(10),
+    allowNull: true,
+  },
+  request_url: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  response_status: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  duration_ms: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
 }, {
   tableName: 'audit_logs',
   timestamps: true,

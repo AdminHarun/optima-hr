@@ -11,6 +11,7 @@ const { authenticateWebSocket } = require('../middleware/chatAuth');
 // Task 2.5: Enhanced services
 const readReceiptService = require('./ReadReceiptService');
 const typingIndicatorService = require('./TypingIndicatorService');
+const SlashCommandService = require('./SlashCommandService');
 
 class ChatWebSocketService {
   constructor() {
@@ -130,9 +131,9 @@ class ChatWebSocketService {
 
     // Get client IP address
     const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
-                     req.headers['x-real-ip'] ||
-                     req.socket.remoteAddress ||
-                     'Unknown';
+      req.headers['x-real-ip'] ||
+      req.socket.remoteAddress ||
+      'Unknown';
 
     // Store client info
     this.clients.set(clientId, {
@@ -299,6 +300,64 @@ class ChatWebSocketService {
     try {
       // Get or create chat room
       const roomData = await this.getOrCreateRoom(client.roomId);
+
+      // SLASH COMMAND CHECK
+      if (message.content && message.content.startsWith('/')) {
+        const context = {
+          userId: client.userId,
+          userName: client.userType === 'admin' ? 'Admin' : 'Applicant',
+          userType: client.userType,
+          roomId: roomData.id,
+          channelId: roomData.id,
+          siteCode: null
+        };
+
+        const result = await SlashCommandService.execute(message.content, context);
+
+        if (result) {
+          if (result.type === 'ephemeral') {
+            this.sendToClient(clientId, {
+              type: 'chat_message',
+              message: {
+                id: `ephemeral_${Date.now()}`,
+                sender_type: 'system',
+                sender_name: 'System',
+                content: result.message,
+                created_at: new Date().toISOString(),
+                is_ephemeral: true
+              }
+            });
+            return;
+          } else if (result.type === 'action') {
+            if (result.message) {
+              this.sendToClient(clientId, {
+                type: 'chat_message',
+                message: {
+                  id: `action_${Date.now()}`,
+                  sender_type: 'system',
+                  sender_name: 'System',
+                  content: result.message,
+                  created_at: new Date().toISOString(),
+                  is_ephemeral: true
+                }
+              });
+            }
+            return;
+          } else if (result.type === 'rich_message') {
+            this.sendToClient(clientId, {
+              type: 'chat_message',
+              message: {
+                id: `rich_${Date.now()}`,
+                sender_type: 'bot',
+                sender_name: 'Bot',
+                content: result.message,
+                created_at: new Date().toISOString()
+              }
+            });
+            return;
+          }
+        }
+      }
 
       // Save message to database
       const savedMessage = await ChatMessage.create({
@@ -1209,7 +1268,7 @@ class ChatWebSocketService {
     return stats;
   }
 
-// ==================== YENİ PRESENCE & STATUS HANDLERS ====================
+  // ==================== YENİ PRESENCE & STATUS HANDLERS ====================
 
   /**
    * Kullanici kimlik dogrulama

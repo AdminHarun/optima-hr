@@ -5,6 +5,7 @@ const ChatMessage = require('../models/ChatMessage');
 const ChatRoomMember = require('../models/ChatRoomMember');
 const ApplicantProfile = require('../models/ApplicantProfile');
 const { Op } = require('sequelize');
+const SlashCommandService = require('../services/SlashCommandService');
 const multer = require('multer');
 const r2Storage = require('../services/r2StorageService');
 
@@ -471,6 +472,29 @@ router.post('/messages/', async (req, res) => {
 
     if (!room || !sender_type || !content) {
       return res.status(400).json({ error: 'room, sender_type, and content are required' });
+    }
+
+    // SLASH COMMAND CHECK (REST API Fallback)
+    if (content.startsWith('/')) {
+      const context = {
+        userId: sender_id, // sender_id from body
+        userName: sender_name,
+        userType: sender_type,
+        roomId: room,
+        channelId: room,
+        siteCode: null
+      };
+
+      const result = await SlashCommandService.execute(content, context);
+
+      if (result) {
+        // Slash komutu çalıştı, normal mesaj olarak kaydetme
+        return res.json({
+          success: true,
+          type: 'slash_command_result',
+          data: result
+        });
+      }
     }
 
     const message = await ChatMessage.create({

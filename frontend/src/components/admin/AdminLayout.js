@@ -3,6 +3,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useElectron } from '../../hooks/useElectron';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import { Box, CircularProgress } from '@mui/material';
@@ -11,6 +12,7 @@ import { NotificationProvider } from '../../contexts/NotificationContext';
 function AdminLayout() {
   const { isLoading, isAuthenticated } = useEmployeeAuth();
   const { themeConfig } = useTheme();
+  const { isElectron, platform } = useElectron();
 
   if (isLoading) {
     return (
@@ -54,7 +56,11 @@ function AdminLayout() {
         }}
       />
 
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Box sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        paddingTop: isElectron && platform === 'darwin' ? '32px' : 0
+      }}>
         {/* Sidebar */}
         <AdminSidebar />
 

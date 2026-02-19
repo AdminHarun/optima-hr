@@ -483,3 +483,23 @@ code {
 .MuiChip-colorInfo .MuiChip-label {
   color: inherit !important;
 }
+
+/* Native App Feel */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  /* Disable rubber banding on Mac */
+  overscroll-behavior-y: none;
+}
+
+/* Allow selection in inputs and designated areas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Message content selection allowed */
+.message-content, .selectable-text {
+  -webkit-user-select: text;
+  user-select: text;
+}

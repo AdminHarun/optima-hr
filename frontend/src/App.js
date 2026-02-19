@@ -18,6 +18,9 @@ import { SiteProvider } from './contexts/SiteContext';
 // Dynamic Theme System
 import { ThemeProvider as OptimaThemeProvider } from './contexts/ThemeContext';
 
+// Electron Integration
+import ElectronTitleBar from './components/layout/ElectronTitleBar';
+
 // Public Pages (Applicant System)
 import CreateProfile from './pages/CreateProfile';
 import ApplicationFormSimple from './pages/ApplicationFormSimple';
@@ -216,6 +219,7 @@ function App() {
         <OptimaThemeProvider>
             <MuiThemeProvider theme={theme}>
                 <CssBaseline />
+                <ElectronTitleBar />
                 <Router>
                     <Routes>
                         {/* PUBLIC ROUTES */}

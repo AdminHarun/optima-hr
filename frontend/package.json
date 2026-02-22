@@ -30,7 +30,19 @@
     "react-virtuoso": "^4.12.3",
     "electron-updater": "^6.1.7",
     "electron-log": "^5.0.3",
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "lexical": "^0.12.5",
+    "@lexical/react": "^0.12.5",
+    "@lexical/rich-text": "^0.12.5",
+    "@lexical/history": "^0.12.5",
+    "@lexical/utils": "^0.12.5",
+    "@lexical/markdown": "^0.12.5",
+    "@lexical/code": "^0.12.5",
+    "@lexical/link": "^0.12.5",
+    "@lexical/list": "^0.12.5",
+    "@lexical/selection": "^0.12.5",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.17",
@@ -42,7 +54,7 @@
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-is-dev": "^3.0.1",
-    "vite": "^6.0.7",
+    "vite": "^5.2.0",
     "wait-on": "^8.0.1"
   },
   "scripts": {

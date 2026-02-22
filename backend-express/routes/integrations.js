@@ -287,4 +287,298 @@ router.delete('/bots/:id', authenticateToken, adminOnly, async (req, res) => {
     }
 });
 
+// ============================================================
+// CONNECTED INTEGRATION MODEL (Third-party OAuth Integrations)
+// ============================================================
+const ConnectedIntegration = sequelize.define('ConnectedIntegration', {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    site_code: { type: DataTypes.STRING(50), allowNull: true },
+    employee_id: { type: DataTypes.INTEGER, allowNull: false },
+    type: {
+        type: DataTypes.ENUM('google_drive', 'github', 'trello'),
+        allowNull: false
+    },
+    status: {
+        type: DataTypes.ENUM('connected', 'disconnected'),
+        allowNull: false,
+        defaultValue: 'connected'
+    },
+    config: { type: DataTypes.JSONB, allowNull: true, defaultValue: {} },
+    access_token: { type: DataTypes.TEXT, allowNull: true },
+    refresh_token: { type: DataTypes.TEXT, allowNull: true },
+    token_expires_at: { type: DataTypes.DATE, allowNull: true }
+}, {
+    tableName: 'connected_integrations',
+    timestamps: true,
+    underscored: true
+});
+
+// ============================================================
+// AVAILABLE INTEGRATIONS METADATA
+// ============================================================
+const AVAILABLE_INTEGRATIONS = [
+    {
+        type: 'google_drive',
+        name: 'Google Drive',
+        icon: 'google',
+        description: 'Dosyaları Google Drive ile senkronize edin',
+        status: 'available',
+        oauthUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        scopes: ['https://www.googleapis.com/auth/drive.file']
+    },
+    {
+        type: 'github',
+        name: 'GitHub',
+        icon: 'github',
+        description: 'GitHub repository bildirimlerini alın',
+        status: 'available',
+        oauthUrl: 'https://github.com/login/oauth/authorize',
+        scopes: ['repo', 'notifications']
+    },
+    {
+        type: 'trello',
+        name: 'Trello',
+        icon: 'trello',
+        description: 'Trello kartlarını görevlerle senkronize edin',
+        status: 'available',
+        oauthUrl: 'https://trello.com/1/authorize',
+        scopes: ['read', 'write']
+    }
+];
+
+// ============================================================
+// THIRD-PARTY INTEGRATION ROUTES
+// ============================================================
+
+/**
+ * GET /api/integrations/available - Mevcut entegrasyonları listele
+ */
+router.get('/available', authenticateToken, async (req, res) => {
+    try {
+        res.json({
+            success: true,
+            integrations: AVAILABLE_INTEGRATIONS
+        });
+    } catch (error) {
+        console.error('[Integrations] Available list error:', error);
+        res.status(500).json({ success: false, error: 'Entegrasyon listesi alınamadı' });
+    }
+});
+
+/**
+ * GET /api/integrations/connected - Kullanıcının bağlı entegrasyonlarını listele
+ */
+router.get('/connected', authenticateToken, async (req, res) => {
+    try {
+        await ConnectedIntegration.sync();
+        const employeeId = req.user?.id;
+
+        if (!employeeId) {
+            return res.status(401).json({ success: false, error: 'Kullanıcı kimliği bulunamadı' });
+        }
+
+        const connections = await ConnectedIntegration.findAll({
+            where: {
+                employee_id: employeeId,
+                status: 'connected'
+            },
+            order: [['created_at', 'DESC']]
+        });
+
+        // Merge with available integrations metadata
+        const enriched = AVAILABLE_INTEGRATIONS.map(integration => {
+            const connection = connections.find(c => c.type === integration.type);
+            return {
+                ...integration,
+                connected: !!connection,
+                connection_id: connection?.id || null,
+                connected_at: connection?.created_at || null,
+                config: connection?.config || null
+            };
+        });
+
+        res.json({ success: true, integrations: enriched });
+    } catch (error) {
+        console.error('[Integrations] Connected list error:', error);
+        res.status(500).json({ success: false, error: 'Bağlı entegrasyonlar alınamadı' });
+    }
+});
+
+/**
+ * POST /api/integrations/:type/connect - OAuth akışını başlat
+ * Gerçek OAuth yapılandırılana kadar placeholder auth URL döner
+ */
+router.post('/:type/connect', authenticateToken, async (req, res) => {
+    try {
+        const { type } = req.params;
+        const employeeId = req.user?.id;
+        const { site_code } = req.body;
+
+        // Validate integration type
+        const integration = AVAILABLE_INTEGRATIONS.find(i => i.type === type);
+        if (!integration) {
+            return res.status(400).json({ success: false, error: 'Geçersiz entegrasyon tipi' });
+        }
+
+        // Check if already connected
+        await ConnectedIntegration.sync();
+        const existing = await ConnectedIntegration.findOne({
+            where: { employee_id: employeeId, type, status: 'connected' }
+        });
+
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                error: 'Bu entegrasyon zaten bağlı',
+                connection_id: existing.id
+            });
+        }
+
+        // Generate state token for OAuth security
+        const state = crypto.randomBytes(32).toString('hex');
+
+        // Build OAuth authorization URL (placeholder - needs real client_id in production)
+        const redirectUri = `${process.env.API_URL || 'https://api.optimahr.com'}/api/integrations/${type}/callback`;
+        const clientId = process.env[`${type.toUpperCase()}_CLIENT_ID`] || 'PLACEHOLDER_CLIENT_ID';
+
+        let authUrl;
+        switch (type) {
+            case 'google_drive':
+                authUrl = `${integration.oauthUrl}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(integration.scopes.join(' '))}&state=${state}&access_type=offline&prompt=consent`;
+                break;
+            case 'github':
+                authUrl = `${integration.oauthUrl}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(integration.scopes.join(' '))}&state=${state}`;
+                break;
+            case 'trello':
+                authUrl = `${integration.oauthUrl}?expiration=never&name=OptimaHR&scope=${integration.scopes.join(',')}&response_type=token&key=${clientId}&return_url=${encodeURIComponent(redirectUri)}&state=${state}`;
+                break;
+            default:
+                authUrl = null;
+        }
+
+        res.json({
+            success: true,
+            auth_url: authUrl,
+            state,
+            type,
+            message: 'OAuth yapılandırması tamamlandığında yönlendirme URL aktif olacaktır'
+        });
+    } catch (error) {
+        console.error('[Integrations] Connect error:', error);
+        res.status(500).json({ success: false, error: 'Entegrasyon bağlantısı başlatılamadı' });
+    }
+});
+
+/**
+ * POST /api/integrations/:type/callback - OAuth callback handler
+ * OAuth sağlayıcıları bu endpoint'e code gönderir
+ */
+router.post('/:type/callback', async (req, res) => {
+    try {
+        const { type } = req.params;
+        const { code, state, employee_id, site_code } = req.body;
+
+        // Validate integration type
+        const integration = AVAILABLE_INTEGRATIONS.find(i => i.type === type);
+        if (!integration) {
+            return res.status(400).json({ success: false, error: 'Geçersiz entegrasyon tipi' });
+        }
+
+        if (!code) {
+            return res.status(400).json({ success: false, error: 'Yetkilendirme kodu gerekli' });
+        }
+
+        if (!employee_id) {
+            return res.status(400).json({ success: false, error: 'Çalışan kimliği gerekli' });
+        }
+
+        // In production, exchange code for access_token via the provider's token endpoint.
+        // For now, create a placeholder connected integration record.
+        await ConnectedIntegration.sync();
+
+        // Upsert: if disconnected record exists, reconnect it
+        const [connection, created] = await ConnectedIntegration.findOrCreate({
+            where: { employee_id, type },
+            defaults: {
+                site_code: site_code || null,
+                status: 'connected',
+                config: { state, connected_via: 'oauth' },
+                access_token: `placeholder_${crypto.randomBytes(16).toString('hex')}`,
+                refresh_token: `placeholder_${crypto.randomBytes(16).toString('hex')}`,
+                token_expires_at: new Date(Date.now() + 3600 * 1000) // 1 hour placeholder
+            }
+        });
+
+        if (!created) {
+            await connection.update({
+                status: 'connected',
+                config: { state, connected_via: 'oauth', reconnected_at: new Date() },
+                access_token: `placeholder_${crypto.randomBytes(16).toString('hex')}`,
+                refresh_token: `placeholder_${crypto.randomBytes(16).toString('hex')}`,
+                token_expires_at: new Date(Date.now() + 3600 * 1000)
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `${integration.name} entegrasyonu başarıyla bağlandı`,
+            connection: {
+                id: connection.id,
+                type: connection.type,
+                status: connection.status,
+                connected_at: connection.created_at
+            }
+        });
+    } catch (error) {
+        console.error('[Integrations] Callback error:', error);
+        res.status(500).json({ success: false, error: 'OAuth callback işlenemedi' });
+    }
+});
+
+/**
+ * POST /api/integrations/:type/disconnect - Entegrasyonu kes
+ */
+router.post('/:type/disconnect', authenticateToken, async (req, res) => {
+    try {
+        const { type } = req.params;
+        const employeeId = req.user?.id;
+
+        // Validate integration type
+        const integration = AVAILABLE_INTEGRATIONS.find(i => i.type === type);
+        if (!integration) {
+            return res.status(400).json({ success: false, error: 'Geçersiz entegrasyon tipi' });
+        }
+
+        await ConnectedIntegration.sync();
+        const connection = await ConnectedIntegration.findOne({
+            where: { employee_id: employeeId, type, status: 'connected' }
+        });
+
+        if (!connection) {
+            return res.status(404).json({ success: false, error: 'Aktif entegrasyon bağlantısı bulunamadı' });
+        }
+
+        // Revoke tokens (in production, call provider's revoke endpoint)
+        await connection.update({
+            status: 'disconnected',
+            access_token: null,
+            refresh_token: null,
+            token_expires_at: null,
+            config: {
+                ...connection.config,
+                disconnected_at: new Date(),
+                disconnected_by: employeeId
+            }
+        });
+
+        res.json({
+            success: true,
+            message: `${integration.name} entegrasyonu başarıyla kesildi`
+        });
+    } catch (error) {
+        console.error('[Integrations] Disconnect error:', error);
+        res.status(500).json({ success: false, error: 'Entegrasyon bağlantısı kesilemedi' });
+    }
+});
+
 module.exports = router;

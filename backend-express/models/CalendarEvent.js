@@ -61,6 +61,31 @@ const CalendarEvent = sequelize.define('CalendarEvent', {
         defaultValue: [],
         comment: 'Katılımcılar (email array)'
     },
+    all_day: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Tüm gün etkinliği'
+    },
+    video_call_url: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: 'Video görüşme linki'
+    },
+    recurrence_rule: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        comment: 'Tekrarlama kuralı (none, daily, weekly, monthly, yearly)'
+    },
+    recurrence_end_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+        comment: 'Tekrarlama bitiş tarihi'
+    },
+    reminder_minutes: {
+        type: DataTypes.INTEGER,
+        defaultValue: 15,
+        comment: 'Hatırlatma süresi (dakika)'
+    },
     created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,

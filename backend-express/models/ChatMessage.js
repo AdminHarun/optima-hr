@@ -96,6 +96,12 @@ const ChatMessage = sequelize.define('ChatMessage', {
     defaultValue: [],
     comment: 'Array of reactions (emoji, user, timestamp)'
   },
+  mentions: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
+    comment: 'Parsed mentions: {users: [], channels: [], special: []}'
+  },
   metadata: {
     type: DataTypes.JSON,
     allowNull: true,

@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 frontend/build/
 dist/
+frontend/release/
 
 # Environment files (sensitive)
 .env

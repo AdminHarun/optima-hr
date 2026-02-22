@@ -89,6 +89,13 @@ const AuditLog = sequelize.define('AuditLog', {
   timestamps: true,
   underscored: true,
   updatedAt: false,
+  indexes: [
+    { fields: ['user_id'], name: 'idx_audit_logs_user' },
+    { fields: ['action'], name: 'idx_audit_logs_action' },
+    { fields: ['created_at'], name: 'idx_audit_logs_created' },
+    { fields: ['module'], name: 'idx_audit_logs_module' },
+    { fields: ['site_id'], name: 'idx_audit_logs_site' }
+  ]
 });
 
 module.exports = AuditLog;

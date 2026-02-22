@@ -53,14 +53,18 @@ export default defineConfig({
   build: {
     outDir: 'build',
     sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-mui': ['@mui/material', '@mui/icons-material', '@mui/lab'],
           'vendor-emotion': ['@emotion/react', '@emotion/styled'],
+          'vendor-lexical': ['lexical', '@lexical/react', '@lexical/rich-text', '@lexical/history', '@lexical/utils', '@lexical/markdown', '@lexical/code', '@lexical/link', '@lexical/list', '@lexical/selection'],
+          'vendor-markdown': ['react-markdown', 'react-syntax-highlighter'],
         }
-      }
+      },
+      maxParallelFileOps: 2
     }
   },
   optimizeDeps: {

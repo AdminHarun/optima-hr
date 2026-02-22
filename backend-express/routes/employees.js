@@ -4,6 +4,7 @@ const { Employee, EmployeeDocument } = require('../models');
 const ChatRoom = require('../models/ChatRoom');
 const ChatRoomMember = require('../models/ChatRoomMember');
 const presenceService = require('../services/PresenceService');
+const cacheService = require('../services/CacheService');
 const router = express.Router();
 
 // Site code helper
@@ -13,38 +14,41 @@ const addSiteFilter = (where, siteCode) => {
   return where;
 };
 
-// GET /api/employees/ - Tüm çalışanları listele
+// GET /api/employees/ - Tüm çalışanları listele (cached)
 router.get('/', async (req, res) => {
   try {
     const siteCode = getSiteCode(req);
-    const where = {};
-    addSiteFilter(where, siteCode);
+    const cacheKey = `employees:list:${siteCode || 'all'}`;
 
-    let employees = [];
+    const employees = await cacheService.getOrSet(cacheKey, async () => {
+      const where = {};
+      addSiteFilter(where, siteCode);
 
-    // Önce association ile dene, başarısız olursa basit sorgu yap
-    try {
-      employees = await Employee.findAll({
-        where,
-        include: [{
-          model: EmployeeDocument,
-          as: 'documents',
-          required: false,
-        }],
-        order: [['created_at', 'DESC']],
-      });
-    } catch (includeError) {
-      console.warn('⚠️ Employee association query failed, trying simple query:', includeError.message);
-      employees = await Employee.findAll({
-        where,
-        order: [['created_at', 'DESC']],
-      });
-    }
+      let result = [];
+      try {
+        result = await Employee.findAll({
+          where,
+          include: [{
+            model: EmployeeDocument,
+            as: 'documents',
+            required: false,
+          }],
+          order: [['created_at', 'DESC']],
+        });
+      } catch (includeError) {
+        console.warn('Employee association query failed, trying simple query:', includeError.message);
+        result = await Employee.findAll({
+          where,
+          order: [['created_at', 'DESC']],
+        });
+      }
+      return result;
+    }, 300); // 5 dakika cache
 
     res.json(employees);
   } catch (error) {
     console.error('Employee list error:', error);
-    res.status(500).json({ error: 'Çalışan listesi yüklenirken hata oluştu', details: error.message });
+    res.status(500).json({ error: 'Calisan listesi yuklenirken hata olustu', details: error.message });
   }
 });
 

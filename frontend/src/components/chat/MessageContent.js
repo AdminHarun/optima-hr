@@ -24,6 +24,9 @@ import {
   OpenInNew,
   Reply as ReplyIcon
 } from '@mui/icons-material';
+import Markdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { API_BASE_URL } from '../../config/config';
 
 /**
@@ -528,26 +531,73 @@ const MessageContent = ({
             </Box>
           )}
 
-          {/* Message Text */}
-          <Typography
-            id={`${message.id}-content`}
-            variant="body2"
+            {/* Message Text rendered with Markdown */}
+            <Box
+              id={`${message.id}-content`}
             sx={{
               color: message.is_deleted ? '#a0aec0' : 'text.primary',
               fontStyle: message.is_deleted ? 'italic' : 'normal',
               wordBreak: 'break-word',
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.5,
-              '& a': {
-                color: 'primary.main',
-                textDecoration: 'underline',
-                '&:hover': {
-                  color: 'primary.dark'
-                }
+              // Custom styling for markdown elements
+              '& p': { m: 0, lineHeight: 1.5 },
+              '& a': { color: '#5a9fd4', textDecoration: 'underline' },
+              '& pre': { m: 0, p: 0, bgcolor: 'transparent !important' },
+              '& ul, & ol': { m: 0.5, pl: 2 },
+              '& blockquote': {
+                borderLeft: '4px solid #cbd5e0',
+                m: 0,
+                pl: 2,
+                py: 0.5,
+                color: '#4a5568',
+                bgcolor: 'rgba(0,0,0,0.02)'
               }
-            }}
-          >
-            {message.content}
+              }}
+            >
+              {message.is_deleted ? (
+                <Typography variant="body2" sx={{ fontStyle: 'italic', color: '#a0aec0' }}>
+                  {message.content}
+                </Typography>
+              ) : (
+                <Markdown
+                  components={{
+                    code({ node, inline, className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || '')
+                      return !inline && match ? (
+                        <SyntaxHighlighter
+                          style={vscDarkPlus}
+                          language={match[1]}
+                          PreTag="div"
+                          customStyle={{
+                            margin: '8px 0',
+                            borderRadius: '8px',
+                            fontSize: '13px'
+                          }}
+                          {...props}
+                        >
+                          {String(children).replace(/\n$/, '')}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code
+                          className={className}
+                          style={{
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            padding: '2px 4px',
+                            borderRadius: '4px',
+                            fontSize: '0.9em',
+                            fontFamily: 'monospace'
+                          }}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      )
+                      }
+                    }}
+                  >
+                    {message.content}
+                </Markdown>
+              )}
+
             {message.is_edited && !message.is_deleted && (
               <Typography
                 component="span"
@@ -556,13 +606,14 @@ const MessageContent = ({
                   ml: 1,
                   color: '#a0aec0',
                   fontSize: '11px',
-                  fontStyle: 'italic'
+                  fontStyle: 'italic',
+                  display: 'inline-block'
                 }}
               >
                 (düzenlendi)
               </Typography>
             )}
-          </Typography>
+            </Box>
 
           {/* File Attachments */}
           {message.file_url && (

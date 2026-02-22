@@ -1,7 +1,7 @@
 // Adapted from Rocket.Chat MessageList.tsx
 // Converted to Material-UI for Optima with date separators and sequential grouping
-import React, { memo, useRef, useEffect, useCallback } from 'react';
-import { Box, Divider, Typography } from '@mui/material';
+import React, { memo, useRef, useEffect, useCallback, useState } from 'react';
+import { Box, Divider, Typography, CircularProgress } from '@mui/material';
 import RoomMessage from './RoomMessage';
 import CallStatusMessage from './CallStatusMessage';
 import webSocketService from '../../services/webSocketService';
@@ -21,7 +21,10 @@ const MessageList = ({
   onForwardMessage,
   onPinMessage,
   onCopyMessage,
-  onNameClick
+  onNameClick,
+  onLoadMore,
+  hasMore = false,
+  isLoadingMore = false
 }) => {
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
@@ -29,6 +32,7 @@ const MessageList = ({
   const isUserNearBottomRef = useRef(true);
   const observedMessagesRef = useRef(new Set());
   const intersectionObserverRef = useRef(null);
+  const loadMoreTriggeredRef = useRef(false);
 
   // Check if user is near bottom (within 100px)
   const checkIfNearBottom = useCallback(() => {
@@ -42,10 +46,29 @@ const MessageList = ({
     return position >= height - threshold;
   }, []);
 
-  // Handle scroll event to track user position
+  // Handle scroll event to track user position and trigger load more
   const handleScroll = useCallback(() => {
     isUserNearBottomRef.current = checkIfNearBottom();
-  }, [checkIfNearBottom]);
+
+    // Infinite scroll: load more when scrolled near top
+    const list = messageListRef.current;
+    if (list && list.scrollTop < 80 && hasMore && !isLoadingMore && !loadMoreTriggeredRef.current && onLoadMore) {
+      loadMoreTriggeredRef.current = true;
+      const prevScrollHeight = list.scrollHeight;
+      onLoadMore().then(() => {
+        // Maintain scroll position after prepending older messages
+        requestAnimationFrame(() => {
+          if (messageListRef.current) {
+            const newScrollHeight = messageListRef.current.scrollHeight;
+            messageListRef.current.scrollTop = newScrollHeight - prevScrollHeight;
+          }
+          loadMoreTriggeredRef.current = false;
+        });
+      }).catch(() => {
+        loadMoreTriggeredRef.current = false;
+      });
+    }
+  }, [checkIfNearBottom, hasMore, isLoadingMore, onLoadMore]);
 
   // Auto-scroll to bottom when new messages arrive (only if user is at bottom)
   const scrollToBottom = useCallback((force = false) => {
@@ -345,6 +368,13 @@ const MessageList = ({
         </Box>
       ) : (
         <>
+          {/* Load more indicator */}
+          {isLoadingMore && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#1c61ab' }} />
+            </Box>
+          )}
+
           {/* Messages */}
           <Box sx={{ pt: 2 }}>
             {renderMessages()}

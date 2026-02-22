@@ -45,6 +45,21 @@ const EmployeePresence = sequelize.define('EmployeePresence', {
         type: DataTypes.STRING(10),
         allowNull: true,
         comment: 'Durum emojisi'
+    },
+    status_expires_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Durum suresi dolum zamani'
+    },
+    last_activity_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Son aktivite zamani (auto-away icin)'
+    },
+    auto_away: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'Otomatik uzakta durumu mu?'
     }
 }, {
     tableName: 'employee_presence',

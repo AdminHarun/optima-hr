@@ -59,6 +59,33 @@ const Task = sequelize.define('Task', {
         allowNull: true,
         defaultValue: [],
         comment: 'Görev etiketleri'
+    },
+    project_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'Proje ID (opsiyonel)'
+    },
+    channel_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'Bagli kanal ID (opsiyonel)'
+    },
+    parent_task_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        comment: 'Ust gorev ID (subtask icin)'
+    },
+    watchers: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+        comment: 'Izleyici calisanlarin ID listesi'
+    },
+    attachments: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: [],
+        comment: 'Gorev ekleri [{name, url, size, type}]'
     }
 }, {
     tableName: 'tasks',

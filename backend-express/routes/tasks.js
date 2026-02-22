@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
     try {
         const siteCode = getSiteCode(req);
         const employeeId = getEmployeeId(req);
-        const { title, description, status, priority, assigned_to, due_date, tags } = req.body;
+        const { title, description, status, priority, assigned_to, due_date, tags, project_id, channel_id, parent_task_id, watchers, attachments } = req.body;
 
         if (!title || !title.trim()) {
             return res.status(400).json({ error: 'Görev başlığı zorunludur' });
@@ -36,6 +36,11 @@ router.post('/', async (req, res) => {
             assigned_to: assigned_to || null,
             due_date: due_date || null,
             tags: tags || [],
+            project_id: project_id || null,
+            channel_id: channel_id || null,
+            parent_task_id: parent_task_id || null,
+            watchers: watchers || [],
+            attachments: attachments || [],
             site_code: siteCode
         });
 
@@ -331,6 +336,106 @@ router.get('/:id/comments', async (req, res) => {
     } catch (error) {
         console.error('Error fetching comments:', error);
         res.status(500).json({ error: 'Yorumlar getirilemedi' });
+    }
+});
+
+/**
+ * POST /api/tasks/:id/watch
+ * Gorevi izlemeye al
+ */
+router.post('/:id/watch', async (req, res) => {
+    try {
+        const task = await Task.findByPk(req.params.id);
+        if (!task) return res.status(404).json({ error: 'Gorev bulunamadi' });
+
+        const employeeId = getEmployeeId(req);
+        let watchers = task.watchers || [];
+        if (!watchers.includes(parseInt(employeeId))) {
+            watchers.push(parseInt(employeeId));
+            await task.update({ watchers });
+        }
+        res.json({ message: 'Izlemeye alindi', watchers });
+    } catch (error) {
+        console.error('Error watching task:', error);
+        res.status(500).json({ error: 'Izleme eklenemedi' });
+    }
+});
+
+/**
+ * DELETE /api/tasks/:id/watch
+ * Gorev izlemesini kaldir
+ */
+router.delete('/:id/watch', async (req, res) => {
+    try {
+        const task = await Task.findByPk(req.params.id);
+        if (!task) return res.status(404).json({ error: 'Gorev bulunamadi' });
+
+        const employeeId = getEmployeeId(req);
+        let watchers = (task.watchers || []).filter(id => id !== parseInt(employeeId));
+        await task.update({ watchers });
+        res.json({ message: 'Izleme kaldirildi', watchers });
+    } catch (error) {
+        console.error('Error unwatching task:', error);
+        res.status(500).json({ error: 'Izleme kaldirilamadi' });
+    }
+});
+
+/**
+ * GET /api/tasks/:id/subtasks
+ * Alt gorevleri getir
+ */
+router.get('/:id/subtasks', async (req, res) => {
+    try {
+        const subtasks = await Task.findAll({
+            where: { parent_task_id: req.params.id },
+            include: [{
+                model: Employee,
+                as: 'assignee',
+                attributes: ['id', 'employee_id', 'first_name', 'last_name', 'profile_picture'],
+                required: false
+            }],
+            order: [['created_at', 'ASC']]
+        });
+        res.json(subtasks);
+    } catch (error) {
+        console.error('Error fetching subtasks:', error);
+        res.status(500).json({ error: 'Alt gorevler getirilemedi' });
+    }
+});
+
+/**
+ * POST /api/tasks/:id/subtasks
+ * Alt gorev olustur
+ */
+router.post('/:id/subtasks', async (req, res) => {
+    try {
+        const parentTask = await Task.findByPk(req.params.id);
+        if (!parentTask) return res.status(404).json({ error: 'Ust gorev bulunamadi' });
+
+        const siteCode = getSiteCode(req);
+        const employeeId = getEmployeeId(req);
+        const { title, description, priority, assigned_to, due_date } = req.body;
+
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: 'Alt gorev basligi zorunludur' });
+        }
+
+        const subtask = await Task.create({
+            title: title.trim(),
+            description: description || null,
+            status: 'todo',
+            priority: priority || 'medium',
+            created_by: employeeId,
+            assigned_to: assigned_to || null,
+            due_date: due_date || null,
+            parent_task_id: parseInt(req.params.id),
+            site_code: siteCode
+        });
+
+        res.status(201).json(subtask);
+    } catch (error) {
+        console.error('Error creating subtask:', error);
+        res.status(500).json({ error: 'Alt gorev olusturulamadi' });
     }
 });
 

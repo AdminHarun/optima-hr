@@ -27,6 +27,9 @@ import {
 import Picker from '@emoji-mart/react';
 import data from '@emoji-mart/data';
 import fileUploadService from '../../services/fileUploadService';
+import RichTextComposer from './RichTextComposer';
+import EmojiGifPicker from './EmojiGifPicker';
+import SlashCommandAutocomplete from './SlashCommandAutocomplete';
 
 /**
  * Chat Composer Component - Message input area with voice recording
@@ -67,16 +70,19 @@ const ChatComposer = ({
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
+  const [showSlashCommands, setShowSlashCommands] = useState(false);
+  const editorRef = useRef(null); // Ref for Lexical Editor
   const inputRef = useRef(null);
+  const composerWrapperRef = useRef(null);
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordingIntervalRef = useRef(null);
   const audioPreviewRef = useRef(null);
 
-  // Auto-focus on mount
+  // Auto-focus on mount - Handled by Lexical AutoFocusPlugin if added, or we do it here
   useEffect(() => {
-    inputRef.current?.focus();
+    // editorRef.current?.focus(); // Lexical focus
   }, []);
 
   // Handle dropped file from parent (drag-drop)
@@ -134,14 +140,45 @@ const ChatComposer = ({
     }
   };
 
-  // Handle input change
+  // Handle input change from Lexical
   const handleChange = (e) => {
-    setMessage(e.target.value);
+    const newValue = typeof e === 'string' ? e : e.target.value;
+    setMessage(newValue);
+
+    // Show slash command autocomplete when input starts with "/"
+    const isSlashInput = newValue.startsWith('/') && !newValue.includes(' ');
+    setShowSlashCommands(isSlashInput);
+
     handleTyping();
+  };
+
+  // Handle slash command selection
+  const handleSlashCommandSelect = (command) => {
+    const commandText = `/${command.name} `;
+    setMessage(commandText);
+    setShowSlashCommands(false);
+    // Focus back on input and place cursor at end
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.setSelectionRange(commandText.length, commandText.length);
+      }
+    }, 0);
+  };
+
+  // Close slash command menu
+  const handleSlashCommandClose = () => {
+    setShowSlashCommands(false);
   };
 
   // Handle key down
   const handleKeyDown = (e) => {
+    // Delegate to slash command handler first
+    if (showSlashCommands && inputRef.current?.__slashKeyHandler) {
+      const handled = inputRef.current.__slashKeyHandler(e);
+      if (handled) return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (audioBlob) {
@@ -185,38 +222,22 @@ const ChatComposer = ({
     }
   };
 
-  // Handle emoji selection
-  const handleEmojiSelect = (emoji) => {
-    const input = inputRef.current;
-    if (!input) return;
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const newMessage = message.substring(0, start) + emoji.native + message.substring(end);
-    setMessage(newMessage);
-    setEmojiAnchorEl(null);
-    setTimeout(() => {
-      input.focus();
-      input.setSelectionRange(start + emoji.native.length, start + emoji.native.length);
-    }, 0);
+  // Handle emoji/gif selection
+  const handleEmojiGifSelect = (selection) => {
+    if (selection.type === 'emoji') {
+      editorRef.current?.insertText(selection.content);
+      setEmojiAnchorEl(null);
+    } else if (selection.type === 'gif') {
+      // Send GIF immediately as an attachment (or embedded link)
+      onSendMessage?.('', { url: selection.content, name: 'animated.gif', type: 'image/gif' });
+      setEmojiAnchorEl(null);
+    }
   };
 
   // Handle canned response selection
   const handleCannedResponseSelect = (response) => {
-    const input = inputRef.current;
-    if (!input) return;
-
-    // Insert at cursor or append to existing message
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const newMessage = message.substring(0, start) + response.text + message.substring(end);
-    setMessage(newMessage);
+    editorRef.current?.insertText(response.text);
     setCannedResponsesAnchorEl(null);
-
-    setTimeout(() => {
-      input.focus();
-      const newCursorPos = start + response.text.length;
-      input.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
   };
 
   // Handle file selection
@@ -625,7 +646,7 @@ const ChatComposer = ({
         {!isRecording && !audioBlob && (
           <>
             {/* Emoji Button */}
-            <Tooltip title="Emoji Ekle">
+            <Tooltip title="Emoji & GIF">
               <IconButton
                 size="small"
                 onClick={(e) => setEmojiAnchorEl(e.currentTarget)}
@@ -699,52 +720,62 @@ const ChatComposer = ({
               accept="image/*,video/*,application/pdf,.doc,.docx"
             />
 
-            {/* Message Input */}
-            <TextField
-              inputRef={inputRef}
-              fullWidth
-              multiline
-              maxRows={6}
-              value={message}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              disabled={disabled}
-              inputProps={{ maxLength }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'rgba(100, 150, 200, 0.04)',
-                  borderRadius: '14px',
-                  border: '1.5px solid transparent',
-                  '& fieldset': {
-                    borderColor: 'transparent'
-                  },
-                  '&:hover': {
-                    backgroundColor: 'rgba(100, 150, 200, 0.06)',
-                    borderColor: 'rgba(100, 150, 200, 0.15)',
+            {/* Message Input with Slash Command Autocomplete */}
+            <Box ref={composerWrapperRef} sx={{ position: 'relative', flex: 1 }}>
+              {/* Slash Command Dropdown - positioned above input */}
+              <SlashCommandAutocomplete
+                inputValue={message}
+                onSelect={handleSlashCommandSelect}
+                onClose={handleSlashCommandClose}
+                anchorRef={inputRef}
+              />
+
+              <TextField
+                inputRef={inputRef}
+                fullWidth
+                multiline
+                maxRows={6}
+                value={message}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={disabled}
+                inputProps={{ maxLength }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(100, 150, 200, 0.04)',
+                    borderRadius: '14px',
+                    border: '1.5px solid transparent',
                     '& fieldset': {
                       borderColor: 'transparent'
-                    }
+                    },
+                    '&:hover': {
+                      backgroundColor: 'rgba(100, 150, 200, 0.06)',
+                      borderColor: 'rgba(100, 150, 200, 0.15)',
+                      '& fieldset': {
+                        borderColor: 'transparent'
+                      }
+                    },
+                    '&.Mui-focused': {
+                      backgroundColor: '#ffffff',
+                      borderColor: 'rgba(90, 159, 212, 0.3)',
+                      boxShadow: '0 0 0 3px rgba(90, 159, 212, 0.08)',
+                      '& fieldset': {
+                        borderColor: 'transparent'
+                      }
+                    },
+                    transition: 'all 0.2s ease'
                   },
-                  '&.Mui-focused': {
-                    backgroundColor: '#ffffff',
-                    borderColor: 'rgba(90, 159, 212, 0.3)',
-                    boxShadow: '0 0 0 3px rgba(90, 159, 212, 0.08)',
-                    '& fieldset': {
-                      borderColor: 'transparent'
-                    }
-                  },
-                  transition: 'all 0.2s ease'
-                },
-                '& .MuiOutlinedInput-input': {
-                  py: 1,
-                  px: 1.75,
-                  fontSize: '14px',
-                  lineHeight: 1.5,
-                  color: '#2d3748'
-                }
-              }}
-            />
+                  '& .MuiOutlinedInput-input': {
+                    py: 1,
+                    px: 1.75,
+                    fontSize: '14px',
+                    lineHeight: 1.5,
+                    color: '#2d3748'
+                  }
+                }}
+              />
+            </Box>
           </>
         )}
 
@@ -829,7 +860,6 @@ const ChatComposer = ({
         </Box>
       )}
 
-      {/* Emoji Picker Popover */}
       <Popover
         open={Boolean(emojiAnchorEl)}
         anchorEl={emojiAnchorEl}
@@ -843,13 +873,7 @@ const ChatComposer = ({
           horizontal: 'left',
         }}
       >
-        <Picker
-          data={data}
-          onEmojiSelect={handleEmojiSelect}
-          theme="light"
-          previewPosition="none"
-          skinTonePosition="search"
-        />
+        <EmojiGifPicker onSelect={handleEmojiGifSelect} />
       </Popover>
 
       {/* Canned Responses Popover */}

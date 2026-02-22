@@ -54,9 +54,21 @@ app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files for uploads
-app.use('/media', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // ✅ /uploads path'i de eklendi
+// Static files for uploads with cache headers
+const staticOptions = {
+  maxAge: '7d',
+  setHeaders: (res, filePath) => {
+    if (filePath.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    } else if (filePath.match(/\.(mp4|webm|mp3|wav|ogg)$/i)) {
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+  }
+};
+app.use('/media', express.static(path.join(__dirname, 'uploads'), staticOptions));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
 
 // Health check
 app.get('/health', (req, res) => {

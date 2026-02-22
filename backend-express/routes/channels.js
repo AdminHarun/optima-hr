@@ -4,6 +4,7 @@ const { Channel, ChannelMember, Employee, ChatMessage } = require('../models/ass
 const { Op } = require('sequelize');
 const chatWebSocketService = require('../services/ChatWebSocketService');
 const offlineMessagingService = require('../services/OfflineMessagingService');
+const cacheService = require('../services/CacheService');
 const { parseMentions, resolveUserMentions, getSpecialMentionTargets, extractMentionNotificationText } = require('../utils/mentionParser');
 
 // Site code helper
@@ -23,6 +24,13 @@ router.get('/', async (req, res) => {
   try {
     const siteCode = getSiteCode(req);
     const employeeId = getEmployeeId(req);
+
+    // Cache key: employee-specific because private channels differ per user
+    const cacheKey = `channels:list:${siteCode}:${employeeId}`;
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
 
     // Public kanallar + üye olunan private kanallar
     const channels = await Channel.findAll({
@@ -95,6 +103,9 @@ router.get('/', async (req, res) => {
       } : null,
       isMember: !!channel.members?.[0]
     }));
+
+    // Cache for 2 minutes (channels change less frequently)
+    await cacheService.set(cacheKey, formattedChannels, 120);
 
     res.json(formattedChannels);
   } catch (error) {
@@ -221,6 +232,9 @@ router.post('/', async (req, res) => {
       employee_id: employeeId,
       role: 'owner'
     });
+
+    // Invalidate channels cache for this site
+    await cacheService.deletePattern(`channels:list:${siteCode}:*`);
 
     console.log(`✅ Channel created: ${channel.name} (${channel.type}) by employee ${employeeId}`);
 

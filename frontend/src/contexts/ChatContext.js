@@ -42,6 +42,9 @@ const initialState = {
   // Baglanti
   connectionStatus: 'disconnected', // connecting, connected, disconnected, error
 
+  // Pagination
+  pagination: {}, // { roomId: { hasMore, oldestMessageDate, isLoadingMore } }
+
   // UI State
   isLoading: false,
   error: null,
@@ -84,6 +87,10 @@ const ActionTypes = {
 
   // Baglanti
   SET_CONNECTION_STATUS: 'SET_CONNECTION_STATUS',
+
+  // Pagination
+  SET_PAGINATION: 'SET_PAGINATION',
+  PREPEND_MESSAGES: 'PREPEND_MESSAGES',
 
   // UI
   SET_LOADING: 'SET_LOADING',
@@ -226,6 +233,30 @@ function chatReducer(state, action) {
 
     case ActionTypes.SET_CONNECTION_STATUS:
       return { ...state, connectionStatus: action.payload };
+
+    case ActionTypes.SET_PAGINATION:
+      return {
+        ...state,
+        pagination: {
+          ...state.pagination,
+          [action.payload.roomId]: {
+            ...(state.pagination[action.payload.roomId] || {}),
+            ...action.payload.data,
+          },
+        },
+      };
+
+    case ActionTypes.PREPEND_MESSAGES:
+      const existing = state.messages[action.payload.roomId] || [];
+      const existingIds = new Set(existing.map(m => m.message_id));
+      const newMsgs = action.payload.messages.filter(m => !existingIds.has(m.message_id));
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [action.payload.roomId]: [...newMsgs, ...existing],
+        },
+      };
 
     case ActionTypes.SET_LOADING:
       return { ...state, isLoading: action.payload };
@@ -480,6 +511,19 @@ export function ChatProvider({ children, user }) {
           type: ActionTypes.SET_MESSAGES,
           payload: { roomId: room.id, messages },
         });
+        // Set initial pagination state
+        const msgArray = messages.messages || messages;
+        dispatch({
+          type: ActionTypes.SET_PAGINATION,
+          payload: {
+            roomId: room.id,
+            data: {
+              hasMore: (Array.isArray(msgArray) ? msgArray.length : 0) >= 50,
+              currentPage: 1,
+              isLoadingMore: false,
+            },
+          },
+        });
       } catch (error) {
         console.error('[ChatContext] Mesajlar yuklenemedi:', error);
       }
@@ -559,6 +603,55 @@ export function ChatProvider({ children, user }) {
   }, [state.activeRoom, user]);
 
   /**
+   * Daha eski mesajlari yukle (infinite scroll)
+   */
+  const loadMoreMessages = useCallback(async () => {
+    if (!state.activeRoom) return;
+
+    const roomId = state.activeRoom.id;
+    const paginationState = state.pagination[roomId];
+    if (!paginationState?.hasMore || paginationState?.isLoadingMore) return;
+
+    const nextPage = (paginationState.currentPage || 1) + 1;
+
+    dispatch({
+      type: ActionTypes.SET_PAGINATION,
+      payload: { roomId, data: { isLoadingMore: true } },
+    });
+
+    try {
+      const response = await chatApiService.getMessages(roomId, nextPage, 50);
+      const olderMessages = response.messages || response;
+      const msgArray = Array.isArray(olderMessages) ? olderMessages : [];
+
+      if (msgArray.length > 0) {
+        dispatch({
+          type: ActionTypes.PREPEND_MESSAGES,
+          payload: { roomId, messages: msgArray },
+        });
+      }
+
+      dispatch({
+        type: ActionTypes.SET_PAGINATION,
+        payload: {
+          roomId,
+          data: {
+            hasMore: msgArray.length >= 50,
+            currentPage: nextPage,
+            isLoadingMore: false,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('[ChatContext] Eski mesajlar yuklenemedi:', error);
+      dispatch({
+        type: ActionTypes.SET_PAGINATION,
+        payload: { roomId, data: { isLoadingMore: false } },
+      });
+    }
+  }, [state.activeRoom, state.pagination]);
+
+  /**
    * Yaziyor gostergesi gonder
    */
   const sendTypingIndicator = useCallback((isTyping) => {
@@ -633,10 +726,12 @@ export function ChatProvider({ children, user }) {
     deleteMessage,
     toggleEmployeeDirectory,
     toggleSidebar,
+    loadMoreMessages,
 
     // Computed
     currentRoomMessages: state.messages[state.activeRoomId] || [],
     currentRoomTyping: state.typingUsers[state.activeRoomId] || [],
+    currentRoomPagination: state.pagination[state.activeRoomId] || { hasMore: false, isLoadingMore: false },
     totalUnread: Object.values(state.unreadCounts).reduce((sum, count) => sum + count, 0),
     isConnected: state.connectionStatus === 'connected',
   };

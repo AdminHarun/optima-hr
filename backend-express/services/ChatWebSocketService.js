@@ -53,7 +53,21 @@ class ChatWebSocketService {
     readReceiptService.setWebSocketService(this);
     typingIndicatorService.setWebSocketService(this);
 
-    console.log('✅ WebSocket server initialized on /ws');
+    // Server-side heartbeat: terminate dead connections every 30s
+    this.heartbeatInterval = setInterval(() => {
+      this.clients.forEach((client, clientId) => {
+        if (client.ws.isAlive === false) {
+          console.log(`[Heartbeat] Terminating dead connection: ${clientId}`);
+          client.ws.terminate();
+          this._cleanupClient(clientId);
+          return;
+        }
+        client.ws.isAlive = false;
+        try { client.ws.ping(); } catch (e) { /* ignore */ }
+      });
+    }, 30000);
+
+    console.log('WebSocket server initialized on /ws');
   }
 
   /**
@@ -92,6 +106,10 @@ class ChatWebSocketService {
   handleConnection(ws, req) {
     const pathname = url.parse(req.url).pathname;
     console.log('🔌 New WebSocket connection:', pathname);
+
+    // Set isAlive flag for heartbeat
+    ws.isAlive = true;
+    ws.on('pong', () => { ws.isAlive = true; });
 
     // Parse connection type and room from URL
     // Expected formats:

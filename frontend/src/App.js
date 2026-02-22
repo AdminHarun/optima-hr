@@ -21,6 +21,10 @@ import { ThemeProvider as OptimaThemeProvider } from './contexts/ThemeContext';
 // Electron Integration
 import ElectronTitleBar from './components/layout/ElectronTitleBar';
 
+// Keyboard Shortcuts
+import useKeyboardShortcuts from './hooks/useKeyboardShortcuts';
+import KeyboardShortcutsModal from './components/common/KeyboardShortcutsModal';
+
 // Public Pages (Applicant System)
 import CreateProfile from './pages/CreateProfile';
 import ApplicationFormSimple from './pages/ApplicationFormSimple';
@@ -214,12 +218,22 @@ const theme = createTheme({
     }
 });
 
+
+
 function App() {
+    const [showShortcuts, setShowShortcuts] = React.useState(false);
+
+    useKeyboardShortcuts({
+        showShortcuts: () => setShowShortcuts(true),
+        closeModal: () => setShowShortcuts(false)
+    });
+
     return (
         <OptimaThemeProvider>
             <MuiThemeProvider theme={theme}>
                 <CssBaseline />
                 <ElectronTitleBar />
+                <KeyboardShortcutsModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
                 <Router>
                     <Routes>
                         {/* PUBLIC ROUTES */}

@@ -38,6 +38,7 @@ const roleRoutes = require('./routes/roles');
 const twoFactorRoutes = require('./routes/twoFactor');
 const ssoRoutes = require('./routes/sso');
 const integrationRoutes = require('./routes/integrations');
+const workflowRoutes = require('./routes/workflows');
 
 const app = express();
 const server = http.createServer(app);
@@ -105,6 +106,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/2fa', twoFactorRoutes);
 app.use('/api/sso', ssoRoutes);
 app.use('/api/integrations', integrationRoutes);
+app.use('/api/workflows', workflowRoutes);
 
 // Health check endpoint (Phase 4.6 - Load Balancing support)
 app.get('/health', async (req, res) => {

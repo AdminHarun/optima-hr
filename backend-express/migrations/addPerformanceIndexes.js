@@ -36,9 +36,9 @@ async function runDbIndexMigration() {
     if (await addIndexSafe('chat_rooms', 'site_code', 'idx_chat_rooms_site')) created++;
 
     // Employees
-    if (await addIndexSafe('employees', 'email', 'idx_employees_email')) created++;
-    if (await addIndexSafe('employees', 'site_code', 'idx_employees_site')) created++;
-    if (await addIndexSafe('employees', 'department', 'idx_employees_department')) created++;
+    if (await addIndexSafe('employees_employee', 'email', 'idx_employees_email')) created++;
+    if (await addIndexSafe('employees_employee', 'site_code', 'idx_employees_site')) created++;
+    if (await addIndexSafe('employees_employee', 'department', 'idx_employees_department')) created++;
 
     // Audit Logs
     if (await addIndexSafe('audit_logs', 'user_id', 'idx_audit_logs_user')) created++;
@@ -53,7 +53,7 @@ async function runDbIndexMigration() {
     if (await addIndexSafe('tasks', 'due_date', 'idx_tasks_due_date')) created++;
 
     // Calendar Events
-    if (await addIndexSafe('calendar_events', 'start_date, end_date', 'idx_calendar_events_dates')) created++;
+    if (await addIndexSafe('calendar_events', 'date, start_time, end_time', 'idx_calendar_events_dates')) created++;
     if (await addIndexSafe('calendar_events', 'created_by', 'idx_calendar_events_creator')) created++;
 
     // Job Applications

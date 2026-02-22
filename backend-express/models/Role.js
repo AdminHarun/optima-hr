@@ -10,7 +10,6 @@ const Role = sequelize.define('Role', {
     name: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        unique: true,
         comment: 'Sistem adı (ör: super_admin, admin, manager)'
     },
     display_name: {
@@ -43,7 +42,13 @@ const Role = sequelize.define('Role', {
     tableName: 'roles',
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    updatedAt: 'updated_at',
+    indexes: [
+        {
+            unique: true,
+            fields: ['name']
+        }
+    ]
 });
 
 module.exports = Role;

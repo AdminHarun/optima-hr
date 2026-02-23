@@ -1,6 +1,7 @@
 // src/pages/admin/ChatPageNew.js - Slack-Style Chat UI
 import React, { useState, useEffect } from 'react';
-import { Box, Avatar, Badge, Typography, TextField, InputAdornment, IconButton, Collapse, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Avatar, Badge, Typography, TextField, InputAdornment, IconButton, Collapse, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip } from '@mui/material';
 import { Search as SearchIcon, Close as CloseIcon, Settings as SettingsIcon, Edit as EditIcon, Add as AddIcon, Group as GroupIcon, GroupAdd as GroupAddIcon, Tag as TagIcon, Lock as LockIcon } from '@mui/icons-material';
 import { ChatContainer, ChannelChatView } from '../../components/chat';
 import CreateGroupModal from '../../components/chat/CreateGroupModal';
@@ -19,6 +20,7 @@ const getSiteHeaders = () => {
 };
 
 function ChatPageNew() {
+  const navigate = useNavigate();
   const { currentUser } = useEmployeeAuth();
   const { currentTheme } = useTheme();
   const isDark = currentTheme !== 'basic-light';
@@ -351,13 +353,241 @@ function ChatPageNew() {
     </Box>
   );
 
+  // Far-left sidebar nav items
+  const farNavItems = [
+    { icon: '🏠', label: 'Home', path: '/admin/dashboard' },
+    { icon: '💬', label: 'DMs', path: null, active: true, badge: rooms.filter(r => r.unreadCount > 0).length || null },
+    { icon: '🔔', label: 'Activity', path: '/admin/dashboard', badgeGreen: true },
+    { icon: '📁', label: 'Files', path: '/admin/documents' },
+  ];
+
+  const farNavBottom = [
+    { icon: '⋯', label: 'More', path: null },
+    { icon: '⚙', label: 'Admin', path: '/admin/settings' },
+  ];
+
+  // Get current user initials for far-left sidebar
+  const userInitials = currentUser
+    ? `${currentUser.firstName?.[0] || ''}${currentUser.lastName?.[0] || ''}`.toUpperCase()
+    : 'HR';
+
   return (
     <Box sx={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 1200,
       display: 'flex',
-      height: 'calc(100vh - 64px - 48px)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      bgcolor: isDark ? '#1A1D21' : '#ffffff'
     }}>
-      {/* Sidebar - Slack Style */}
+      {/* ═══ Far-Left Sidebar - demo: .far-sidebar 70px ═══ */}
+      <Box
+        sx={{
+          width: 70,
+          bgcolor: isDark ? '#1A1D21' : '#f8f9fa',
+          borderRight: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          py: 1.5,
+          flexShrink: 0
+        }}
+      >
+        {/* Workspace Logo */}
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            background: 'linear-gradient(135deg, #E01E5A, #ECB22E)',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '14px',
+            color: 'white',
+            mb: 2,
+            cursor: 'pointer',
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              left: '-14px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '3px',
+              height: '20px',
+              background: 'white',
+              borderRadius: '0 2px 2px 0'
+            }
+          }}
+          onClick={() => navigate('/admin/dashboard')}
+        >
+          OH
+        </Box>
+
+        {/* Nav Items */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', alignItems: 'center' }}>
+          {farNavItems.map((item) => (
+            <Tooltip key={item.label} title={item.label} placement="right">
+              <Box
+                onClick={() => item.path && navigate(item.path)}
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  cursor: 'pointer',
+                  color: item.active ? (isDark ? '#E0E0E0' : '#111827') : (isDark ? '#ABABAD' : '#6b7280'),
+                  bgcolor: item.active ? (isDark ? '#27242C' : '#e5e7eb') : 'transparent',
+                  position: 'relative',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: isDark ? '#27242C' : '#e5e7eb',
+                    color: isDark ? '#E0E0E0' : '#111827'
+                  },
+                  ...(item.active && {
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      left: '-13px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '3px',
+                      height: '20px',
+                      background: '#36C5F0',
+                      borderRadius: '0 2px 2px 0'
+                    }
+                  })
+                }}
+              >
+                <Typography sx={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</Typography>
+                <Typography sx={{ fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>{item.label}</Typography>
+                {/* Badge */}
+                {item.badge && (
+                  <Box sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    bgcolor: '#E01E5A',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    px: '5px',
+                    py: '2px',
+                    borderRadius: '10px',
+                    minWidth: 18,
+                    textAlign: 'center',
+                    lineHeight: 1
+                  }}>
+                    {item.badge}
+                  </Box>
+                )}
+              </Box>
+            </Tooltip>
+          ))}
+        </Box>
+
+        {/* Divider */}
+        <Box sx={{ width: 24, height: '1px', bgcolor: isDark ? '#35373B' : '#e5e7eb', my: 1.5 }} />
+
+        {/* Bottom Nav */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%', alignItems: 'center' }}>
+          {farNavBottom.map((item) => (
+            <Tooltip key={item.label} title={item.label} placement="right">
+              <Box
+                onClick={() => item.path && navigate(item.path)}
+                sx={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  cursor: 'pointer',
+                  color: isDark ? '#ABABAD' : '#6b7280',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: isDark ? '#27242C' : '#e5e7eb',
+                    color: isDark ? '#E0E0E0' : '#111827'
+                  }
+                }}
+              >
+                <Typography sx={{ fontSize: '20px', lineHeight: 1 }}>{item.icon}</Typography>
+                <Typography sx={{ fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>{item.label}</Typography>
+              </Box>
+            </Tooltip>
+          ))}
+        </Box>
+
+        {/* Spacer */}
+        <Box sx={{ flex: 1 }} />
+
+        {/* Add Workspace Button */}
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            border: `2px dashed ${isDark ? '#35373B' : '#d1d5db'}`,
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: isDark ? '#ABABAD' : '#6b7280',
+            fontSize: '20px',
+            mb: 1.5,
+            '&:hover': {
+              borderColor: isDark ? '#ABABAD' : '#9ca3af',
+              color: isDark ? '#E0E0E0' : '#374151'
+            }
+          }}
+        >
+          +
+        </Box>
+
+        {/* User Avatar */}
+        <Box
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #36C5F0, #2EB67D)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 700,
+            fontSize: '14px',
+            color: 'white',
+            cursor: 'pointer',
+            position: 'relative'
+          }}
+        >
+          {userInitials}
+          {/* Online indicator */}
+          <Box sx={{
+            position: 'absolute',
+            bottom: -2,
+            right: -2,
+            width: 12,
+            height: 12,
+            bgcolor: '#2EB67D',
+            border: `2px solid ${isDark ? '#1A1D21' : '#f8f9fa'}`,
+            borderRadius: '50%'
+          }} />
+        </Box>
+      </Box>
+
+      {/* ═══ Main Sidebar - Slack Style 260px ═══ */}
       <Box
         sx={{
           width: 260,

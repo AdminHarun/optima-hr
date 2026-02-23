@@ -582,6 +582,7 @@ const ChatComposer = ({
             <IconButton size="small" sx={toolBtnSx}><FormatListBulleted sx={{ fontSize: 16 }} /></IconButton>
             <IconButton size="small" sx={toolBtnSx}><FormatListNumbered sx={{ fontSize: 16 }} /></IconButton>
             <IconButton size="small" sx={toolBtnSx}><Code sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><EmojiEmotions sx={{ fontSize: 16 }} /></IconButton>
           </Box>
 
           {/* ── Layer 2: Message Input ── */}
@@ -628,18 +629,18 @@ const ChatComposer = ({
             />
           </Box>
 
-          {/* ── Layer 3: Action Footer ── */}
+          {/* ── Layer 3: Action Footer - demo: .input-footer padding: 8px 12px ── */}
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               px: 1.5,
-              py: 0.75
+              py: 1
             }}
           >
-            {/* Left: Action tools */}
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+            {/* Left: Action tools - demo: .input-tools gap: 8px */}
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
               <Tooltip title="Dosya Ekle">
                 <IconButton
                   size="small"
@@ -648,6 +649,11 @@ const ChatComposer = ({
                   sx={actionBtnSx}
                 >
                   <AddIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Metin Biçimi">
+                <IconButton size="small" disabled={disabled} sx={actionBtnSx}>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: 'inherit' }}>Aa</Typography>
                 </IconButton>
               </Tooltip>
               <Tooltip title="Emoji & GIF">

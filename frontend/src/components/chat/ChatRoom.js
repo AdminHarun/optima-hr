@@ -350,8 +350,8 @@ const ChatRoom = ({
           </Box>
         </Box>
 
-        {/* Right: Actions */}
-        <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+        {/* Right: Actions - demo: .chat-actions gap: 12px */}
+        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
           {/* Connection indicator (compact) */}
           {!isConnected && (
             <Box

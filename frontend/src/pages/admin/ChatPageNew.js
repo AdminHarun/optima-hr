@@ -1,7 +1,7 @@
 // src/pages/admin/ChatPageNew.js - Slack-Style Chat UI
 import React, { useState, useEffect } from 'react';
 import { Box, Avatar, Badge, Typography, TextField, InputAdornment, IconButton, Collapse, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon, Group as GroupIcon, GroupAdd as GroupAddIcon, Tag as TagIcon, Lock as LockIcon, ExpandMore as ExpandMoreIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
+import { Search as SearchIcon, Close as CloseIcon, Settings as SettingsIcon, Edit as EditIcon, Add as AddIcon, Group as GroupIcon, GroupAdd as GroupAddIcon, Tag as TagIcon, Lock as LockIcon } from '@mui/icons-material';
 import { ChatContainer, ChannelChatView } from '../../components/chat';
 import CreateGroupModal from '../../components/chat/CreateGroupModal';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
@@ -355,10 +355,7 @@ function ChatPageNew() {
     <Box sx={{
       display: 'flex',
       height: 'calc(100vh - 64px - 48px)',
-      bgcolor: isDark ? '#222529' : '#f8f9fa',
-      overflow: 'hidden',
-      borderRadius: '12px',
-      boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.05)'
+      overflow: 'hidden'
     }}>
       {/* Sidebar - Slack Style */}
       <Box
@@ -370,10 +367,9 @@ function ChatPageNew() {
           flexDirection: 'column'
         }}
       >
-        {/* Header */}
+        {/* Header - demo: .sidebar-header padding: 16px */}
         <Box sx={{
-          px: 2,
-          py: 1.5,
+          p: 2,
           borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
           display: 'flex',
           alignItems: 'center',
@@ -395,13 +391,31 @@ function ChatPageNew() {
               ▼
             </Typography>
           </Typography>
-          <Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <IconButton
               size="small"
-              sx={{ color: isDark ? '#ABABAD' : '#6b7280' }}
-              onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+              sx={{
+                color: isDark ? '#ABABAD' : '#6b7280',
+                width: 28,
+                height: 28,
+                borderRadius: '4px',
+                '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0', color: isDark ? '#E0E0E0' : '#374151' }
+              }}
             >
-              <AddIcon fontSize="small" />
+              <SettingsIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+              sx={{
+                color: isDark ? '#ABABAD' : '#6b7280',
+                width: 28,
+                height: 28,
+                borderRadius: '4px',
+                '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0', color: isDark ? '#E0E0E0' : '#374151' }
+              }}
+            >
+              <EditIcon sx={{ fontSize: 16 }} />
             </IconButton>
             <Menu
               anchorEl={addMenuAnchor}
@@ -431,9 +445,6 @@ function ChatPageNew() {
                 <ListItemText>Yeni Grup Oluştur</ListItemText>
               </MenuItem>
             </Menu>
-            <IconButton size="small" sx={{ color: isDark ? '#ABABAD' : '#6b7280', ml: 0.5 }}>
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
           </Box>
         </Box>
 
@@ -486,6 +497,30 @@ function ChatPageNew() {
           />
         </Box>
 
+        {/* Upgrade Banner - demo: .upgrade-banner */}
+        <Box
+          sx={{
+            mx: 1.5,
+            my: 1.5,
+            p: 1.5,
+            bgcolor: isDark ? '#27242C' : '#f3f4f6',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            '&:hover': { bgcolor: isDark ? '#35373B' : '#e5e7eb' }
+          }}
+        >
+          <Typography sx={{
+            fontSize: '14px',
+            fontWeight: 600,
+            color: isDark ? '#E0E0E0' : '#111827',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            🚀 Upgrade Plan
+          </Typography>
+        </Box>
+
         {/* Nav Items - Slack Style */}
         <Box sx={{ py: 1 }}>
           {[
@@ -517,7 +552,18 @@ function ChatPageNew() {
         </Box>
 
         {/* Scrollable Sections */}
-        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 0.5 }}>
+        <Box sx={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          py: 0.5,
+          '&::-webkit-scrollbar': { width: '8px' },
+          '&::-webkit-scrollbar-track': { background: 'transparent' },
+          '&::-webkit-scrollbar-thumb': {
+            background: isDark ? '#35373B' : '#d1d5db',
+            borderRadius: '4px'
+          }
+        }}>
 
           {/* ─── Direct Messages ─── */}
           <SectionHeader
@@ -550,7 +596,7 @@ function ChatPageNew() {
                       alignItems: 'center',
                       gap: 1.5,
                       px: 2,
-                      py: 0.5,
+                      py: '6px',
                       pl: 4,
                       cursor: 'pointer',
                       bgcolor: isSelected ? (isDark ? '#3E103F' : '#e8e8e8') : 'transparent',
@@ -661,7 +707,7 @@ function ChatPageNew() {
                       alignItems: 'center',
                       gap: 1.5,
                       px: 2,
-                      py: 0.5,
+                      py: '6px',
                       pl: 4,
                       cursor: 'pointer',
                       bgcolor: isSelected ? (isDark ? '#3E103F' : '#e8e8e8') : 'transparent',
@@ -727,7 +773,7 @@ function ChatPageNew() {
                       alignItems: 'center',
                       gap: 1.5,
                       px: 2,
-                      py: 0.5,
+                      py: '6px',
                       pl: 4,
                       cursor: 'pointer',
                       bgcolor: isSelected ? (isDark ? '#3E103F' : '#e8e8e8') : 'transparent',
@@ -759,6 +805,41 @@ function ChatPageNew() {
               })
             )}
           </Collapse>
+
+          {/* ─── Apps ─── */}
+          <SectionHeader
+            label="Apps"
+            isOpen={true}
+            onToggle={() => {}}
+          />
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              px: 2,
+              py: '6px',
+              pl: 4,
+              cursor: 'pointer',
+              '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0' }
+            }}
+          >
+            <Avatar
+              sx={{
+                width: 20,
+                height: 20,
+                borderRadius: '4px',
+                fontSize: '9px',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #E01E5A 25%, #36C5F0 25%, #36C5F0 50%, #2EB67D 50%, #2EB67D 75%, #ECB22E 75%)'
+              }}
+            >
+              {' '}
+            </Avatar>
+            <Typography sx={{ fontSize: '14px', color: isDark ? '#E0E0E0' : '#111827' }}>
+              Slackbot
+            </Typography>
+          </Box>
 
         </Box>
       </Box>

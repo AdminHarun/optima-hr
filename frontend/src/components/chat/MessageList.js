@@ -329,16 +329,16 @@ const MessageList = ({
         scrollBehavior: 'smooth',
         // Custom scrollbar styling
         '&::-webkit-scrollbar': {
-          width: '6px',
+          width: '8px',
         },
         '&::-webkit-scrollbar-track': {
           backgroundColor: 'transparent',
         },
         '&::-webkit-scrollbar-thumb': {
-          backgroundColor: isDark ? '#35373B' : 'rgba(100, 150, 200, 0.2)',
-          borderRadius: '3px',
+          backgroundColor: isDark ? '#35373B' : '#d1d5db',
+          borderRadius: '4px',
           '&:hover': {
-            backgroundColor: isDark ? '#4A4D52' : 'rgba(100, 150, 200, 0.3)',
+            backgroundColor: isDark ? '#4A4D52' : '#9ca3af',
           },
         },
       }}
@@ -367,8 +367,8 @@ const MessageList = ({
             </Box>
           )}
 
-          {/* Messages */}
-          <Box sx={{ pt: 2 }}>
+          {/* Messages - demo: .messages-container padding: 24px */}
+          <Box sx={{ p: 3 }}>
             {renderMessages()}
           </Box>
 

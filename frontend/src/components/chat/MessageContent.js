@@ -542,10 +542,12 @@ const MessageContent = ({
                 ? (isDark ? '#ABABAD' : '#a0aec0')
                 : (isDark ? '#E0E0E0' : 'text.primary'),
               fontStyle: message.is_deleted ? 'italic' : 'normal',
+              fontSize: '14px',
+              lineHeight: 1.6,
               wordBreak: 'break-word',
               // Custom styling for markdown elements
-              '& p': { m: 0, lineHeight: 1.5 },
-              '& a': { color: isDark ? '#5CC5F8' : '#5a9fd4', textDecoration: 'underline' },
+              '& p': { m: 0, lineHeight: 1.6 },
+              '& a': { color: isDark ? '#5CC5F8' : '#5a9fd4', textDecoration: 'none' },
               '& pre': { m: 0, p: 0, bgcolor: 'transparent !important' },
               '& ul, & ol': { m: 0.5, pl: 2 },
               '& blockquote': {

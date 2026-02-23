@@ -34,16 +34,12 @@ const MessageHeader = ({ message, isOwnMessage, onNameClick, isDark = false }) =
         onClick={() => onNameClick?.()}
         sx={{
           fontWeight: 700,
-          color: isOwnMessage
-            ? (isDark ? '#5CC5F8' : '#1c61ab')
-            : (isDark ? '#2EB67D' : '#8bb94a'),
-          fontSize: '0.9rem',
+          color: isDark ? '#E0E0E0' : '#1e293b',
+          fontSize: '15px',
           cursor: 'pointer',
           '&:hover': {
             textDecoration: 'underline',
-            color: isOwnMessage
-              ? (isDark ? '#7DD3FC' : '#144887')
-              : (isDark ? '#4ADE80' : '#6b9337')
+            color: isDark ? '#5CC5F8' : '#1c61ab'
           },
           transition: 'color 0.2s'
         }}

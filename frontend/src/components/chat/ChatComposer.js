@@ -368,7 +368,7 @@ const ChatComposer = ({
   };
 
   return (
-    <Box sx={{ px: 3, pb: 3, pt: 1, flexShrink: 0 }}>
+    <Box sx={{ px: 3, pb: 3, pt: 2, flexShrink: 0 }}>
       {/* Reply Preview */}
       {replyingTo && (
         <Box
@@ -568,8 +568,8 @@ const ChatComposer = ({
               display: 'flex',
               alignItems: 'center',
               px: 1.5,
-              py: 0.75,
-              gap: 0.25,
+              py: 1,
+              gap: 0.5,
               borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`
             }}
           >
@@ -617,6 +617,7 @@ const ChatComposer = ({
                   px: 1.5,
                   fontSize: '14px',
                   lineHeight: 1.6,
+                  minHeight: '80px',
                   color: isDark ? '#E0E0E0' : '#1e293b',
                   '&::placeholder': {
                     color: isDark ? '#ABABAD' : '#9ca3af',
@@ -709,7 +710,7 @@ const ChatComposer = ({
                     '&:hover': {
                       bgcolor: canSend
                         ? (isDark ? '#249963' : '#4f46e5')
-                        : (isDark ? '#35373B' : '#e5e7eb')
+                        : (isDark ? '#27242C' : '#d1d5db')
                     },
                     '&.Mui-disabled': {
                       bgcolor: isDark ? '#35373B' : '#e5e7eb',

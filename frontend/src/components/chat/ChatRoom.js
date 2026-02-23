@@ -256,7 +256,7 @@ const ChatRoom = ({
         sx={{
           borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
           px: 3,
-          py: 1.5,
+          py: 2,
           bgcolor: isDark ? '#1A1D21' : '#ffffff',
           zIndex: 10,
           flexShrink: 0,

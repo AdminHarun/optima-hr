@@ -43,9 +43,10 @@ const RoomMessage = ({
       sx={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 1.5,
+        gap: 2,
         px: 3,
-        py: sequential ? 0.25 : 1,
+        py: sequential ? 0.25 : 0,
+        mb: sequential ? 0 : '20px',
         position: 'relative',
         '&:hover': {
           bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
@@ -64,14 +65,14 @@ const RoomMessage = ({
       data-qa-type="message"
     >
       {/* Avatar or spacer */}
-      <Box sx={{ flexShrink: 0, width: 36, pt: 0.25 }}>
+      <Box sx={{ flexShrink: 0, width: 40, pt: 0.25 }}>
         {showAvatar ? (
           <Avatar
             src={message.avatar_url}
             alt={message.sender_name}
             sx={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               borderRadius: '8px',
               background: isOwnMessage
                 ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #0d4f82 100%)' : 'linear-gradient(135deg, #6a9fd4 0%, #5a8fc4 100%)')
@@ -84,7 +85,7 @@ const RoomMessage = ({
             {message.sender_name?.[0]?.toUpperCase()}
           </Avatar>
         ) : (
-          <Box sx={{ width: 36 }} />
+          <Box sx={{ width: 40 }} />
         )}
       </Box>
 

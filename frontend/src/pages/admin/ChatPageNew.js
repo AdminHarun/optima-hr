@@ -302,41 +302,42 @@ function ChatPageNew() {
     ch.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Section header component
-  const SectionHeader = ({ label, isOpen, onToggle, count, onAdd }) => (
+  // Avatar color palette (rotating colors like Slack)
+  const avatarColors = ['#E01E5A', '#36C5F0', '#2EB67D', '#ECB22E', '#6366f1', '#f59e0b'];
+  const getAvatarColor = (index) => avatarColors[index % avatarColors.length];
+
+  // Section header component - matches demo: padding 8px 16px 4px
+  const SectionHeader = ({ label, isOpen, onToggle, onAdd }) => (
     <Box
       sx={{
         px: 2,
-        py: 0.75,
+        pt: 1,
+        pb: 0.5,
         display: 'flex',
         alignItems: 'center',
+        gap: 1,
         cursor: 'pointer',
         color: isDark ? '#ABABAD' : '#6b7280',
+        fontSize: '13px',
+        fontWeight: 700,
         '&:hover': { color: isDark ? '#E0E0E0' : '#374151' },
         userSelect: 'none'
       }}
       onClick={onToggle}
     >
-      {isOpen
-        ? <ExpandMoreIcon sx={{ fontSize: 16, mr: 0.5 }} />
-        : <ChevronRightIcon sx={{ fontSize: 16, mr: 0.5 }} />
-      }
+      <Typography component="span" sx={{ fontSize: '12px', color: 'inherit' }}>
+        {isOpen ? '▼' : '▶'}
+      </Typography>
       <Typography
-        variant="caption"
+        component="span"
         sx={{
           fontWeight: 700,
           fontSize: '13px',
-          textTransform: 'none',
           flex: 1,
           color: 'inherit'
         }}
       >
         {label}
-        {count > 0 && (
-          <Typography component="span" sx={{ ml: 0.5, fontSize: '11px', fontWeight: 400, color: isDark ? '#ABABAD' : '#9ca3af' }}>
-            ({count})
-          </Typography>
-        )}
       </Typography>
       {onAdd && (
         <IconButton
@@ -485,6 +486,36 @@ function ChatPageNew() {
           />
         </Box>
 
+        {/* Nav Items - Slack Style */}
+        <Box sx={{ py: 1 }}>
+          {[
+            { icon: '💬', label: 'Threads' },
+            { icon: '🎧', label: 'Huddles' },
+            { icon: '📁', label: 'Directories' }
+          ].map((nav) => (
+            <Box
+              key={nav.label}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                px: 2,
+                py: 1,
+                cursor: 'pointer',
+                color: isDark ? '#ABABAD' : '#6b7280',
+                fontSize: '14px',
+                '&:hover': {
+                  bgcolor: isDark ? '#27242C' : '#f0f0f0',
+                  color: isDark ? '#E0E0E0' : '#374151'
+                }
+              }}
+            >
+              <Typography sx={{ fontSize: '16px', lineHeight: '20px' }}>{nav.icon}</Typography>
+              <Typography sx={{ fontSize: '14px', color: 'inherit' }}>{nav.label}</Typography>
+            </Box>
+          ))}
+        </Box>
+
         {/* Scrollable Sections */}
         <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 0.5 }}>
 
@@ -522,7 +553,7 @@ function ChatPageNew() {
                       py: 0.5,
                       pl: 4,
                       cursor: 'pointer',
-                      bgcolor: isSelected ? (isDark ? '#1264A3' : '#e8e8e8') : 'transparent',
+                      bgcolor: isSelected ? (isDark ? '#3E103F' : '#e8e8e8') : 'transparent',
                       '&:hover': { bgcolor: isSelected ? undefined : (isDark ? '#27242C' : '#f0f0f0') },
                       transition: 'background 0.15s ease'
                     }}
@@ -538,21 +569,22 @@ function ChatPageNew() {
                           borderRadius: '4px',
                           background: isSelected
                             ? 'rgba(255,255,255,0.3)'
-                            : (isDark ? '#35373B' : '#a0aec0')
+                            : getAvatarColor(filteredRooms.indexOf(room))
                         }}
                       >
                         {getInitials(room.firstName, room.lastName)}
                       </Avatar>
+                      {/* DM indicator - always visible */}
                       <Box
                         sx={{
                           position: 'absolute',
-                          bottom: -2,
-                          right: -2,
+                          bottom: 2,
+                          right: 2,
                           width: 8,
                           height: 8,
                           borderRadius: '50%',
-                          bgcolor: room.participantOnline ? '#2EB67D' : 'transparent',
-                          border: room.participantOnline ? `2px solid ${isDark ? '#19181D' : '#fff'}` : 'none'
+                          bgcolor: room.participantOnline ? '#2EB67D' : '#ECB22E',
+                          border: `2px solid ${isDark ? '#19181D' : '#fff'}`
                         }}
                       />
                     </Box>
@@ -562,7 +594,7 @@ function ChatPageNew() {
                       sx={{
                         fontSize: '14px',
                         color: isSelected ? '#fff' : (isDark ? '#E0E0E0' : '#111827'),
-                        fontWeight: hasUnread ? 700 : 400,
+                        fontWeight: isSelected ? 600 : (hasUnread ? 700 : 400),
                         flex: 1,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -632,7 +664,7 @@ function ChatPageNew() {
                       py: 0.5,
                       pl: 4,
                       cursor: 'pointer',
-                      bgcolor: isSelected ? (isDark ? '#1264A3' : '#e8e8e8') : 'transparent',
+                      bgcolor: isSelected ? (isDark ? '#3E103F' : '#e8e8e8') : 'transparent',
                       '&:hover': { bgcolor: isSelected ? undefined : (isDark ? '#27242C' : '#f0f0f0') },
                       transition: 'background 0.15s ease'
                     }}
@@ -642,7 +674,7 @@ function ChatPageNew() {
                       sx={{
                         fontSize: '14px',
                         color: isSelected ? '#fff' : (isDark ? '#E0E0E0' : '#111827'),
-                        fontWeight: 400,
+                        fontWeight: isSelected ? 600 : 400,
                         flex: 1,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -698,7 +730,7 @@ function ChatPageNew() {
                       py: 0.5,
                       pl: 4,
                       cursor: 'pointer',
-                      bgcolor: isSelected ? (isDark ? '#1264A3' : '#e8e8e8') : 'transparent',
+                      bgcolor: isSelected ? (isDark ? '#3E103F' : '#e8e8e8') : 'transparent',
                       '&:hover': { bgcolor: isSelected ? undefined : (isDark ? '#27242C' : '#f0f0f0') },
                       transition: 'background 0.15s ease'
                     }}
@@ -712,7 +744,7 @@ function ChatPageNew() {
                       sx={{
                         fontSize: '14px',
                         color: isSelected ? '#fff' : (isDark ? '#E0E0E0' : '#111827'),
-                        fontWeight: 400,
+                        fontWeight: isSelected ? 600 : 400,
                         flex: 1,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',

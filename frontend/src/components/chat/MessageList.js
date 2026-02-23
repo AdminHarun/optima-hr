@@ -202,33 +202,31 @@ const MessageList = ({
     }
   };
 
-  // Date Separator Component - Modern & Soft
+  // Date Separator Component - Slack Style (line + date + line)
   const DateSeparator = ({ date }) => (
     <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
         my: 3,
-        px: 2
+        px: 3
       }}
     >
+      <Box sx={{ flex: 1, height: '1px', bgcolor: isDark ? '#35373B' : '#e5e7eb' }} />
       <Typography
         variant="caption"
         sx={{
-          fontSize: '11px',
+          fontSize: '12px',
           fontWeight: 600,
-          color: isDark ? '#ABABAD' : '#718096',
-          background: isDark ? 'rgba(53, 55, 59, 0.8)' : 'rgba(100, 150, 200, 0.08)',
+          color: isDark ? '#ABABAD' : '#6b7280',
           px: 2,
-          py: 0.75,
-          borderRadius: '12px',
-          textTransform: 'none',
-          letterSpacing: '0.2px'
+          bgcolor: isDark ? '#1A1D21' : '#ffffff',
+          whiteSpace: 'nowrap'
         }}
       >
         {formatDateSeparator(date)}
       </Typography>
+      <Box sx={{ flex: 1, height: '1px', bgcolor: isDark ? '#35373B' : '#e5e7eb' }} />
     </Box>
   );
 
@@ -325,19 +323,8 @@ const MessageList = ({
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        // Background
-        ...(isDark ? {
-          bgcolor: '#222529'
-        } : {
-          background: `
-            linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.20)),
-            url(/assets/images/42904319_SL-120722-54440-06.jpg)
-          `,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          backgroundAttachment: 'fixed',
-        }),
+        // Solid background (no wallpaper)
+        bgcolor: isDark ? '#1A1D21' : '#ffffff',
         // Smooth scrolling
         scrollBehavior: 'smooth',
         // Custom scrollbar styling

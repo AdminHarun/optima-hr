@@ -18,7 +18,9 @@ import {
   VideoCall as VideoCallIcon,
   SignalWifiOff as DisconnectedIcon,
   SignalWifi4Bar as ConnectedIcon,
-  CloudUpload as DropIcon
+  CloudUpload as DropIcon,
+  Search as SearchIcon,
+  StarBorder as StarBorderIcon
 } from '@mui/icons-material';
 import MessageList from './MessageList';
 import ChatComposer from './ChatComposer';
@@ -249,26 +251,22 @@ const ChatRoom = ({
           </Typography>
         </Box>
       )}
-      {/* Chat Header - Modern & Soft */}
-      <Paper
-        elevation={0}
+      {/* Chat Header - Slack Style */}
+      <Box
         sx={{
-          borderRadius: 0,
-          borderBottom: `1px solid ${isDark ? '#35373B' : 'rgba(100, 150, 200, 0.08)'}`,
-          px: 2,
-          py: 0.5,
-          background: isDark ? '#222529' : 'linear-gradient(180deg, #ffffff 0%, rgba(250, 251, 252, 0.95) 100%)',
+          borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
+          px: 3,
+          py: 1.5,
+          bgcolor: isDark ? '#1A1D21' : '#ffffff',
           zIndex: 10,
-          flexShrink: 0
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}
-        >
+        {/* Left: Star + Title */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
           {/* Back Button (mobile) */}
           {onBack && (
             <IconButton
@@ -276,124 +274,60 @@ const ChatRoom = ({
               onClick={onBack}
               sx={{
                 display: { xs: 'flex', md: 'none' },
-                color: '#718096',
-                '&:hover': {
-                  backgroundColor: 'rgba(100, 150, 200, 0.08)'
-                }
+                color: isDark ? '#ABABAD' : '#718096'
               }}
             >
-              <ArrowBack />
+              <ArrowBack sx={{ fontSize: 20 }} />
             </IconButton>
           )}
 
-          {/* Avatar - Different for group vs individual */}
-          {isGroup ? (
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                fontSize: '14px',
-                fontWeight: 600,
-                boxShadow: '0 1px 4px rgba(99, 102, 241, 0.2)'
-              }}
-            >
-              <Box component="span" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                👥
-              </Box>
-            </Avatar>
-          ) : (
-            <Badge
-              overlap="circular"
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              variant="dot"
-              sx={{
-                '& .MuiBadge-badge': {
-                  backgroundColor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#35373B' : '#cbd5e0'),
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  border: `1.5px solid ${isDark ? '#222529' : 'white'}`,
-                  boxShadow: participantOnline ? '0 0 0 2px rgba(72, 187, 120, 0.2)' : 'none'
-                }
-              }}
-            >
-              <Avatar
-                src={participantAvatar}
-                alt={participantName}
-                sx={{
-                  width: 32,
-                  height: 32,
-                  background: isDark
-                    ? 'linear-gradient(135deg, #1264a3 0%, #1d9bd1 100%)'
-                    : 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  boxShadow: '0 1px 4px rgba(100, 150, 200, 0.12)',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    transform: 'scale(1.03)',
-                    boxShadow: '0 2px 8px rgba(100, 150, 200, 0.18)'
-                  },
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {getInitials(participantFirstName, participantLastName)}
-              </Avatar>
-            </Badge>
-          )}
+          {/* Star */}
+          <IconButton
+            size="small"
+            sx={{
+              color: isDark ? '#ABABAD' : '#9ca3af',
+              p: 0.5,
+              '&:hover': { color: isDark ? '#E0E0E0' : '#374151' }
+            }}
+          >
+            <StarBorderIcon sx={{ fontSize: 20 }} />
+          </IconButton>
 
-          {/* Room Info */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
+          {/* Name + Status */}
+          <Box sx={{ minWidth: 0 }}>
             <Typography
-              variant="subtitle1"
               onClick={() => !isGroup && participantId && setShowProfileModal(true)}
               sx={{
-                fontWeight: 600,
-                fontSize: '15px',
+                fontWeight: 700,
+                fontSize: '18px',
+                color: isDark ? '#E0E0E0' : '#111827',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: isDark ? '#E0E0E0' : '#2d3748',
-                letterSpacing: '-0.2px',
                 cursor: !isGroup && participantId ? 'pointer' : 'default',
-                transition: 'color 0.2s ease',
-                '&:hover': !isGroup && participantId ? {
-                  color: '#5a9fd4',
-                  textDecoration: 'underline',
-                  textUnderlineOffset: '3px'
-                } : {}
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                '&:hover': !isGroup && participantId ? { color: isDark ? '#5CC5F8' : '#6366f1' } : {}
               }}
             >
               {participantName || roomName}
             </Typography>
             <Typography
-              variant="caption"
               sx={{
-                color: isGroup ? (isDark ? '#ABABAD' : '#6b7280') : (participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#ABABAD' : '#a0aec0')),
-                fontSize: '12px',
-                fontWeight: 500,
+                fontSize: '13px',
+                color: isDark ? '#ABABAD' : '#6b7280',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.5
+                gap: 0.75
               }}
             >
               {isGroup ? (
                 <>
                   {memberCount} üye
+                  {groupDescription && <Box component="span" sx={{ mx: 0.25 }}>·</Box>}
                   {groupDescription && (
-                    <Box component="span" sx={{ mx: 0.5 }}>•</Box>
-                  )}
-                  {groupDescription && (
-                    <Box
-                      component="span"
-                      sx={{
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        maxWidth: 200
-                      }}
-                    >
+                    <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
                       {groupDescription}
                     </Box>
                   )}
@@ -403,11 +337,10 @@ const ChatRoom = ({
                   <Box
                     component="span"
                     sx={{
-                      width: 5,
-                      height: 5,
+                      width: 8,
+                      height: 8,
                       borderRadius: '50%',
-                      bgcolor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#35373B' : '#cbd5e0'),
-                      display: 'inline-block'
+                      bgcolor: participantOnline ? '#2EB67D' : (isDark ? '#35373B' : '#cbd5e0')
                     }}
                   />
                   {participantOnline ? 'Çevrimiçi' : 'Çevrimdışı'}
@@ -415,84 +348,71 @@ const ChatRoom = ({
               )}
             </Typography>
           </Box>
+        </Box>
 
-          {/* Connection Status & Action Buttons */}
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {/* Connection Status Indicator */}
+        {/* Right: Actions */}
+        <Box sx={{ display: 'flex', gap: 0.75, alignItems: 'center' }}>
+          {/* Connection indicator (compact) */}
+          {!isConnected && (
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                px: 1.5,
-                py: 0.5,
-                borderRadius: '8px',
-                backgroundColor: isConnected
-                  ? (isDark ? 'rgba(46, 184, 134, 0.15)' : 'rgba(72, 187, 120, 0.1)')
-                  : (isDark ? 'rgba(245, 101, 101, 0.15)' : 'rgba(245, 101, 101, 0.1)'),
-                transition: 'all 0.3s ease'
+                px: 1,
+                py: 0.25,
+                borderRadius: '4px',
+                bgcolor: isDark ? 'rgba(245,101,101,0.15)' : 'rgba(245,101,101,0.1)'
               }}
             >
-              {isConnected ? (
-                <ConnectedIcon sx={{ fontSize: 14, color: '#48bb78' }} />
-              ) : (
-                <DisconnectedIcon sx={{ fontSize: 14, color: '#f56565' }} />
-              )}
-              <Typography
-                variant="caption"
-                sx={{
-                  color: isConnected ? '#48bb78' : '#f56565',
-                  fontWeight: 500,
-                  fontSize: '11px'
-                }}
-              >
-                {isConnected ? 'Bağlı' : 'Bağlantı Yok'}
+              <DisconnectedIcon sx={{ fontSize: 14, color: '#f56565' }} />
+              <Typography variant="caption" sx={{ color: '#f56565', fontWeight: 500, fontSize: '11px' }}>
+                Bağlantı Yok
               </Typography>
             </Box>
+          )}
 
-            {/* Video Call Button - Hidden for groups */}
-            {!isGroup && onVideoCall && (
-              <IconButton
-                onClick={handleVideoCallClick}
-                disabled={!isConnected}
-                sx={{
-                  color: isConnected ? (isDark ? '#5CC5F8' : '#5a9fd4') : (isDark ? '#ABABAD' : '#a0aec0'),
-                  backgroundColor: isConnected
-                    ? (isDark ? 'rgba(29, 155, 209, 0.15)' : 'rgba(90, 159, 212, 0.1)')
-                    : (isDark ? 'rgba(139, 154, 171, 0.1)' : 'rgba(160, 174, 192, 0.1)'),
-                  borderRadius: '12px',
-                  width: 40,
-                  height: 40,
-                  '&:hover': {
-                    backgroundColor: isConnected ? 'rgba(90, 159, 212, 0.15)' : 'rgba(160, 174, 192, 0.1)',
-                    transform: isConnected ? 'scale(1.05)' : 'none'
-                  },
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <VideoCallIcon sx={{ fontSize: 22 }} />
-              </IconButton>
-            )}
-
-            {/* More Options */}
+          {/* Video Call */}
+          {!isGroup && onVideoCall && (
             <IconButton
+              onClick={handleVideoCallClick}
+              disabled={!isConnected}
               size="small"
               sx={{
-                color: isDark ? '#ABABAD' : '#a0aec0',
-                borderRadius: '12px',
-                width: 40,
-                height: 40,
-                '&:hover': {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(100, 150, 200, 0.08)',
-                  color: isDark ? '#E0E0E0' : '#718096'
-                }
+                color: isDark ? '#ABABAD' : '#6b7280',
+                borderRadius: '4px',
+                '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0', color: isDark ? '#E0E0E0' : '#374151' }
               }}
             >
-              <MoreVert sx={{ fontSize: 20 }} />
+              <VideoCallIcon sx={{ fontSize: 20 }} />
             </IconButton>
-          </Box>
+          )}
+
+          {/* Search */}
+          <IconButton
+            size="small"
+            sx={{
+              color: isDark ? '#ABABAD' : '#6b7280',
+              borderRadius: '4px',
+              '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0', color: isDark ? '#E0E0E0' : '#374151' }
+            }}
+          >
+            <SearchIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+
+          {/* More Options */}
+          <IconButton
+            size="small"
+            sx={{
+              color: isDark ? '#ABABAD' : '#6b7280',
+              borderRadius: '4px',
+              '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0', color: isDark ? '#E0E0E0' : '#374151' }
+            }}
+          >
+            <MoreVert sx={{ fontSize: 20 }} />
+          </IconButton>
         </Box>
-      </Paper>
+      </Box>
 
       {/* Error Display */}
       {error && (

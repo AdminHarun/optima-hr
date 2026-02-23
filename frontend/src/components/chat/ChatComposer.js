@@ -1,5 +1,4 @@
-// Adapted from Rocket.Chat MessageComposer
-// Converted to Material-UI for Optima with Voice Recording
+// src/components/chat/ChatComposer.js - Slack-Style 3-Layer Input
 import React, { memo, useState, useRef, useEffect } from 'react';
 import {
   Box,
@@ -7,7 +6,6 @@ import {
   IconButton,
   Popover,
   Tooltip,
-  Paper,
   CircularProgress,
   Typography
 } from '@mui/material';
@@ -22,24 +20,26 @@ import {
   PlayArrow,
   Pause,
   Reply as ReplyIcon,
-  FlashOn as QuickReplyIcon
+  FlashOn as QuickReplyIcon,
+  FormatBold,
+  FormatItalic,
+  FormatUnderlined,
+  StrikethroughS,
+  InsertLink,
+  FormatListBulleted,
+  FormatListNumbered,
+  Code,
+  Add as AddIcon
 } from '@mui/icons-material';
-import Picker from '@emoji-mart/react';
-import data from '@emoji-mart/data';
 import fileUploadService from '../../services/fileUploadService';
-import RichTextComposer from './RichTextComposer';
 import EmojiGifPicker from './EmojiGifPicker';
 import SlashCommandAutocomplete from './SlashCommandAutocomplete';
 
-/**
- * Chat Composer Component - Message input area with voice recording
- * WhatsApp/Telegram pattern adapted for Optima
- */
 const ChatComposer = ({
   onSendMessage,
   onFileUpload,
   onTyping,
-  placeholder = 'Type a message...',
+  placeholder = 'Mesaj yazın...',
   disabled = false,
   maxLength = 5000,
   replyingTo = null,
@@ -53,7 +53,6 @@ const ChatComposer = ({
   const [cannedResponsesAnchorEl, setCannedResponsesAnchorEl] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // Canned responses list - can be moved to config/API later
   const cannedResponses = [
     { id: 1, title: 'Selamlama', text: 'Merhaba! Optima HR platformuna hoş geldiniz. Size nasıl yardımcı olabilirim?' },
     { id: 2, title: 'Teşekkür', text: 'İlginiz için teşekkür ederiz. Başvurunuz değerlendirilmektedir.' },
@@ -72,7 +71,7 @@ const ChatComposer = ({
   const [audioBlob, setAudioBlob] = useState(null);
   const [isPlayingPreview, setIsPlayingPreview] = useState(false);
   const [showSlashCommands, setShowSlashCommands] = useState(false);
-  const editorRef = useRef(null); // Ref for Lexical Editor
+  const editorRef = useRef(null);
   const inputRef = useRef(null);
   const composerWrapperRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -81,12 +80,8 @@ const ChatComposer = ({
   const recordingIntervalRef = useRef(null);
   const audioPreviewRef = useRef(null);
 
-  // Auto-focus on mount - Handled by Lexical AutoFocusPlugin if added, or we do it here
-  useEffect(() => {
-    // editorRef.current?.focus(); // Lexical focus
-  }, []);
+  useEffect(() => {}, []);
 
-  // Handle dropped file from parent (drag-drop)
   useEffect(() => {
     if (droppedFile) {
       setSelectedFile(droppedFile);
@@ -97,7 +92,6 @@ const ChatComposer = ({
     }
   }, [droppedFile, onDroppedFileHandled]);
 
-  // Handle paste events for images
   useEffect(() => {
     const handlePaste = async (e) => {
       const items = e.clipboardData?.items;
@@ -109,12 +103,10 @@ const ChatComposer = ({
           e.preventDefault();
           const file = item.getAsFile();
           if (file) {
-            // Create a named file from the clipboard
             const extension = file.type.split('/')[1] || 'png';
             const fileName = `clipboard-${Date.now()}.${extension}`;
             const namedFile = new File([file], fileName, { type: file.type });
             setSelectedFile(namedFile);
-            console.log('📋 Image pasted from clipboard:', fileName);
           }
           break;
         }
@@ -128,7 +120,6 @@ const ChatComposer = ({
     }
   }, []);
 
-  // Typing indicator
   const handleTyping = () => {
     if (onTyping) {
       onTyping(true);
@@ -141,24 +132,18 @@ const ChatComposer = ({
     }
   };
 
-  // Handle input change from Lexical
   const handleChange = (e) => {
     const newValue = typeof e === 'string' ? e : e.target.value;
     setMessage(newValue);
-
-    // Show slash command autocomplete when input starts with "/"
     const isSlashInput = newValue.startsWith('/') && !newValue.includes(' ');
     setShowSlashCommands(isSlashInput);
-
     handleTyping();
   };
 
-  // Handle slash command selection
   const handleSlashCommandSelect = (command) => {
     const commandText = `/${command.name} `;
     setMessage(commandText);
     setShowSlashCommands(false);
-    // Focus back on input and place cursor at end
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
@@ -167,14 +152,11 @@ const ChatComposer = ({
     }, 0);
   };
 
-  // Close slash command menu
   const handleSlashCommandClose = () => {
     setShowSlashCommands(false);
   };
 
-  // Handle key down
   const handleKeyDown = (e) => {
-    // Delegate to slash command handler first
     if (showSlashCommands && inputRef.current?.__slashKeyHandler) {
       const handled = inputRef.current.__slashKeyHandler(e);
       if (handled) return;
@@ -190,7 +172,6 @@ const ChatComposer = ({
     }
   };
 
-  // Send text message
   const handleSend = async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage && !selectedFile) return;
@@ -223,25 +204,21 @@ const ChatComposer = ({
     }
   };
 
-  // Handle emoji/gif selection
   const handleEmojiGifSelect = (selection) => {
     if (selection.type === 'emoji') {
       editorRef.current?.insertText(selection.content);
       setEmojiAnchorEl(null);
     } else if (selection.type === 'gif') {
-      // Send GIF immediately as an attachment (or embedded link)
       onSendMessage?.('', { url: selection.content, name: 'animated.gif', type: 'image/gif' });
       setEmojiAnchorEl(null);
     }
   };
 
-  // Handle canned response selection
   const handleCannedResponseSelect = (response) => {
     editorRef.current?.insertText(response.text);
     setCannedResponsesAnchorEl(null);
   };
 
-  // Handle file selection
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -256,7 +233,6 @@ const ChatComposer = ({
     }
   };
 
-  // Voice Recording Functions
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -368,18 +344,32 @@ const ChatComposer = ({
 
   const canSend = (message.trim() || selectedFile || audioBlob) && !disabled && !isSending;
 
+  // Toolbar button style
+  const toolBtnSx = {
+    width: 28,
+    height: 24,
+    borderRadius: '4px',
+    color: isDark ? '#ABABAD' : '#6b7280',
+    '&:hover': {
+      bgcolor: isDark ? '#27242C' : '#e5e7eb',
+      color: isDark ? '#E0E0E0' : '#374151'
+    }
+  };
+
+  const actionBtnSx = {
+    width: 28,
+    height: 28,
+    borderRadius: '4px',
+    color: isDark ? '#ABABAD' : '#6b7280',
+    '&:hover': {
+      bgcolor: isDark ? '#27242C' : '#e5e7eb',
+      color: isDark ? '#E0E0E0' : '#374151'
+    }
+  };
+
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderTop: `1px solid ${isDark ? '#3d4147' : 'rgba(100, 150, 200, 0.12)'}`,
-        background: isDark ? '#1d2126' : '#ffffff',
-        p: 0.75,
-        boxShadow: 'none',
-        flexShrink: 0
-      }}
-    >
-      {/* Reply Box - Telegram/WhatsApp Style */}
+    <Box sx={{ px: 3, pb: 3, pt: 1, flexShrink: 0 }}>
+      {/* Reply Preview */}
       {replyingTo && (
         <Box
           sx={{
@@ -414,105 +404,68 @@ const ChatComposer = ({
           <IconButton
             size="small"
             onClick={onCancelReply}
-            sx={{
-              color: isDark ? '#ABABAD' : '#a0aec0',
-              '&:hover': {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(160, 174, 192, 0.15)',
-                color: isDark ? '#E0E0E0' : '#718096'
-              }
-            }}
+            sx={{ color: isDark ? '#ABABAD' : '#a0aec0', '&:hover': { color: isDark ? '#E0E0E0' : '#718096' } }}
           >
             <Close fontSize="small" />
           </IconButton>
         </Box>
       )}
 
-      {/* File Preview - with image thumbnail for images */}
+      {/* File Preview */}
       {selectedFile && !audioBlob && (
         <Box
           sx={{
             mb: 1,
             p: 1.25,
             backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(99, 102, 241, 0.05)',
-            borderRadius: '12px',
+            borderRadius: '8px',
             border: `1px solid ${isDark ? '#35373B' : 'rgba(99, 102, 241, 0.15)'}`,
             display: 'flex',
             alignItems: 'center',
             gap: 1.5
           }}
         >
-          {/* Show image thumbnail if it's an image */}
           {selectedFile.type?.startsWith('image/') ? (
             <Box
               sx={{
-                width: 60,
-                height: 60,
-                borderRadius: '8px',
+                width: 48,
+                height: 48,
+                borderRadius: '6px',
                 overflow: 'hidden',
-                flexShrink: 0,
-                border: '1px solid rgba(99, 102, 241, 0.2)'
+                flexShrink: 0
               }}
             >
               <img
                 src={URL.createObjectURL(selectedFile)}
                 alt="Preview"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover'
-                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </Box>
           ) : (
             <Box
               sx={{
-                width: 44,
-                height: 44,
-                borderRadius: '10px',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                width: 40,
+                height: 40,
+                borderRadius: '8px',
+                backgroundColor: isDark ? '#27242C' : 'rgba(99, 102, 241, 0.1)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0
               }}
             >
-              <AttachFile sx={{ color: '#6366f1' }} />
+              <AttachFile sx={{ fontSize: 18, color: isDark ? '#ABABAD' : '#6366f1' }} />
             </Box>
           )}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                color: isDark ? '#E0E0E0' : '#1e293b',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                mb: 0.25
-              }}
-            >
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '13px' }}>
               {selectedFile.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#64748b' }}>
+            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#64748b', fontSize: '11px' }}>
               {(selectedFile.size / 1024).toFixed(1)} KB
-              {selectedFile.name?.startsWith('clipboard-') && (
-                <Box component="span" sx={{ ml: 1, color: '#6366f1' }}>
-                  📋 Panodan yapıştırıldı
-                </Box>
-              )}
             </Typography>
           </Box>
-          <IconButton
-            size="small"
-            onClick={handleRemoveFile}
-            sx={{
-              color: '#94a3b8',
-              '&:hover': {
-                color: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)'
-              }
-            }}
-          >
+          <IconButton size="small" onClick={handleRemoveFile} sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
             <Close fontSize="small" />
           </IconButton>
         </Box>
@@ -523,48 +476,31 @@ const ChatComposer = ({
         <Box
           sx={{
             mb: 1,
-            p: 1.5,
-            backgroundColor: 'rgba(139, 185, 74, 0.08)',
-            borderRadius: 2,
+            p: 1.25,
+            backgroundColor: isDark ? 'rgba(46, 182, 125, 0.1)' : 'rgba(139, 185, 74, 0.08)',
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             gap: 1.5,
-            border: '1px solid rgba(139, 185, 74, 0.2)'
+            border: `1px solid ${isDark ? 'rgba(46, 182, 125, 0.3)' : 'rgba(139, 185, 74, 0.2)'}`
           }}
         >
           <IconButton
             size="small"
             onClick={togglePlayPreview}
-            sx={{
-              backgroundColor: '#8bb94a',
-              color: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#7aa439'
-              }
-            }}
+            sx={{ backgroundColor: '#2EB67D', color: '#ffffff', '&:hover': { backgroundColor: '#249963' } }}
           >
             {isPlayingPreview ? <Pause fontSize="small" /> : <PlayArrow fontSize="small" />}
           </IconButton>
-
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#2d3748' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#2d3748', fontSize: '13px' }}>
               Sesli Mesaj
             </Typography>
             <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#718096' }}>
               {formatTime(recordingTime)}
             </Typography>
           </Box>
-
-          <IconButton
-            size="small"
-            onClick={deleteAudioBlob}
-            sx={{
-              color: '#fc8181',
-              '&:hover': {
-                backgroundColor: 'rgba(252, 129, 129, 0.1)'
-              }
-            }}
-          >
+          <IconButton size="small" onClick={deleteAudioBlob} sx={{ color: '#fc8181', '&:hover': { backgroundColor: 'rgba(252, 129, 129, 0.1)' } }}>
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -575,9 +511,9 @@ const ChatComposer = ({
         <Box
           sx={{
             mb: 1,
-            p: 1.5,
+            p: 1.25,
             backgroundColor: 'rgba(252, 129, 129, 0.08)',
-            borderRadius: 2,
+            borderRadius: '8px',
             display: 'flex',
             alignItems: 'center',
             gap: 1.5,
@@ -586,270 +522,242 @@ const ChatComposer = ({
         >
           <Box
             sx={{
-              width: 12,
-              height: 12,
+              width: 10,
+              height: 10,
               borderRadius: '50%',
               backgroundColor: '#fc8181',
               animation: 'pulse 1.5s ease-in-out infinite',
-              '@keyframes pulse': {
-                '0%, 100%': { opacity: 1 },
-                '50%': { opacity: 0.5 }
-              }
+              '@keyframes pulse': { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.5 } }
             }}
           />
-
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#e53e3e' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#e53e3e', fontSize: '13px' }}>
               Kaydediliyor...
             </Typography>
-            <Typography variant="caption" sx={{ color: '#718096' }}>
+            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#718096' }}>
               {formatTime(recordingTime)}
             </Typography>
           </Box>
-
-          <IconButton
-            size="small"
-            onClick={cancelRecording}
-            sx={{
-              color: '#fc8181',
-              '&:hover': {
-                backgroundColor: 'rgba(252, 129, 129, 0.1)'
-              }
-            }}
-          >
+          <IconButton size="small" onClick={cancelRecording} sx={{ color: '#fc8181' }}>
             <DeleteIcon fontSize="small" />
           </IconButton>
-
-          <IconButton
-            size="small"
-            onClick={stopRecording}
-            sx={{
-              backgroundColor: '#fc8181',
-              color: '#ffffff',
-              '&:hover': {
-                backgroundColor: '#e53e3e'
-              }
-            }}
-          >
+          <IconButton size="small" onClick={stopRecording} sx={{ backgroundColor: '#fc8181', color: '#ffffff', '&:hover': { backgroundColor: '#e53e3e' } }}>
             <Stop fontSize="small" />
           </IconButton>
         </Box>
       )}
 
-      {/* Composer Input Area */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 1
-        }}
-      >
-        {!isRecording && !audioBlob && (
-          <>
-            {/* Emoji Button */}
-            <Tooltip title="Emoji & GIF">
-              <IconButton
-                size="small"
-                onClick={(e) => setEmojiAnchorEl(e.currentTarget)}
-                disabled={disabled}
-                sx={{
-                  color: isDark ? '#ABABAD' : '#a0aec0',
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100, 150, 200, 0.08)',
-                  borderRadius: '10px',
-                  '&:hover': {
-                    color: isDark ? '#E0E0E0' : '#5a9fd4',
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(100, 150, 200, 0.15)',
-                    transform: 'scale(1.03)'
-                  },
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <EmojiEmotions fontSize="small" />
-              </IconButton>
-            </Tooltip>
+      {/* ═══ Slack-Style 3-Layer Input Wrapper ═══ */}
+      {!isRecording && !audioBlob && (
+        <Box
+          sx={{
+            bgcolor: isDark ? '#222529' : '#ffffff',
+            border: `1px solid ${isDark ? '#35373B' : '#d1d5db'}`,
+            borderRadius: '8px',
+            overflow: 'hidden',
+            '&:focus-within': {
+              borderColor: isDark ? '#1264A3' : '#6366f1',
+              boxShadow: isDark ? '0 0 0 2px rgba(18, 100, 163, 0.2)' : '0 0 0 2px rgba(99, 102, 241, 0.1)'
+            },
+            transition: 'border-color 0.2s, box-shadow 0.2s'
+          }}
+        >
+          {/* ── Layer 1: Formatting Toolbar ── */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 1.5,
+              py: 0.75,
+              gap: 0.25,
+              borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`
+            }}
+          >
+            <IconButton size="small" sx={toolBtnSx}><FormatBold sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><FormatItalic sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><FormatUnderlined sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><StrikethroughS sx={{ fontSize: 16 }} /></IconButton>
+            <Box sx={{ width: '1px', height: 16, bgcolor: isDark ? '#35373B' : '#d1d5db', mx: 0.5 }} />
+            <IconButton size="small" sx={toolBtnSx}><InsertLink sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><FormatListBulleted sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><FormatListNumbered sx={{ fontSize: 16 }} /></IconButton>
+            <IconButton size="small" sx={toolBtnSx}><Code sx={{ fontSize: 16 }} /></IconButton>
+          </Box>
 
-            {/* File Upload Button */}
-            <Tooltip title="Dosya Ekle">
-              <IconButton
-                size="small"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled}
-                sx={{
-                  color: isDark ? '#ABABAD' : '#a0aec0',
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100, 150, 200, 0.08)',
-                  borderRadius: '10px',
-                  '&:hover': {
-                    color: isDark ? '#E0E0E0' : '#5a9fd4',
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(100, 150, 200, 0.15)',
-                    transform: 'scale(1.03)'
-                  },
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <AttachFile fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            {/* Canned Responses Button */}
-            <Tooltip title="Hazır Yanıtlar">
-              <IconButton
-                size="small"
-                onClick={(e) => setCannedResponsesAnchorEl(e.currentTarget)}
-                disabled={disabled}
-                sx={{
-                  color: isDark ? '#ABABAD' : '#a0aec0',
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100, 150, 200, 0.08)',
-                  borderRadius: '10px',
-                  '&:hover': {
-                    color: '#f59e0b',
-                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
-                    transform: 'scale(1.03)'
-                  },
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <QuickReplyIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              hidden
-              onChange={handleFileSelect}
-              accept="image/*,video/*,application/pdf,.doc,.docx"
+          {/* ── Layer 2: Message Input ── */}
+          <Box ref={composerWrapperRef} sx={{ position: 'relative' }}>
+            <SlashCommandAutocomplete
+              inputValue={message}
+              onSelect={handleSlashCommandSelect}
+              onClose={handleSlashCommandClose}
+              anchorRef={inputRef}
             />
-
-            {/* Message Input with Slash Command Autocomplete */}
-            <Box ref={composerWrapperRef} sx={{ position: 'relative', flex: 1 }}>
-              {/* Slash Command Dropdown - positioned above input */}
-              <SlashCommandAutocomplete
-                inputValue={message}
-                onSelect={handleSlashCommandSelect}
-                onClose={handleSlashCommandClose}
-                anchorRef={inputRef}
-              />
-
-              <TextField
-                inputRef={inputRef}
-                fullWidth
-                multiline
-                maxRows={6}
-                value={message}
-                onChange={handleChange}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                disabled={disabled}
-                inputProps={{ maxLength }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: isDark ? '#222529' : 'rgba(100, 150, 200, 0.04)',
-                    borderRadius: '14px',
-                    border: `1.5px solid ${isDark ? '#35373B' : 'transparent'}`,
-                    '& fieldset': {
-                      borderColor: 'transparent'
-                    },
-                    '&:hover': {
-                      backgroundColor: isDark ? '#27242C' : 'rgba(100, 150, 200, 0.06)',
-                      borderColor: isDark ? '#ABABAD' : 'rgba(100, 150, 200, 0.15)',
-                      '& fieldset': {
-                        borderColor: 'transparent'
-                      }
-                    },
-                    '&.Mui-focused': {
-                      backgroundColor: isDark ? '#1A1D21' : '#ffffff',
-                      borderColor: isDark ? '#1264A3' : 'rgba(90, 159, 212, 0.3)',
-                      boxShadow: isDark ? '0 0 0 3px rgba(18, 100, 163, 0.15)' : '0 0 0 3px rgba(90, 159, 212, 0.08)',
-                      '& fieldset': {
-                        borderColor: 'transparent'
-                      }
-                    },
-                    transition: 'all 0.2s ease'
-                  },
-                  '& .MuiOutlinedInput-input': {
-                    py: 1,
-                    px: 1.75,
-                    fontSize: '14px',
-                    lineHeight: 1.5,
-                    color: isDark ? '#E0E0E0' : '#2d3748',
-                    '&::placeholder': {
-                      color: isDark ? '#ABABAD' : undefined,
-                      opacity: 1
-                    }
-                  }
-                }}
-              />
-            </Box>
-          </>
-        )}
-
-        {/* Voice Record Button (when no text) */}
-        {!message.trim() && !selectedFile && !audioBlob && !isRecording && (
-          <Tooltip title="Sesli Mesaj Kaydet">
-            <IconButton
-              onClick={startRecording}
+            <TextField
+              inputRef={inputRef}
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={8}
+              value={message}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
               disabled={disabled}
+              inputProps={{ maxLength }}
               sx={{
-                background: 'linear-gradient(135deg, #8bb94a 0%, #7aa439 100%)',
-                color: '#ffffff',
-                width: 42,
-                height: 42,
-                borderRadius: '12px',
-                boxShadow: '0 2px 8px rgba(139, 185, 74, 0.25)',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #7aa439 0%, #6b9137 100%)',
-                  transform: 'scale(1.03)',
-                  boxShadow: '0 4px 12px rgba(139, 185, 74, 0.3)'
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  '& fieldset': { border: 'none' },
+                  '&:hover fieldset': { border: 'none' },
+                  '&.Mui-focused fieldset': { border: 'none' }
                 },
-                transition: 'all 0.2s ease'
+                '& .MuiOutlinedInput-input': {
+                  py: 1.5,
+                  px: 1.5,
+                  fontSize: '14px',
+                  lineHeight: 1.6,
+                  color: isDark ? '#E0E0E0' : '#1e293b',
+                  '&::placeholder': {
+                    color: isDark ? '#ABABAD' : '#9ca3af',
+                    opacity: 1
+                  }
+                }
+              }}
+            />
+          </Box>
+
+          {/* ── Layer 3: Action Footer ── */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 1.5,
+              py: 0.75
+            }}
+          >
+            {/* Left: Action tools */}
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+              <Tooltip title="Dosya Ekle">
+                <IconButton
+                  size="small"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={disabled}
+                  sx={actionBtnSx}
+                >
+                  <AddIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Emoji & GIF">
+                <IconButton
+                  size="small"
+                  onClick={(e) => setEmojiAnchorEl(e.currentTarget)}
+                  disabled={disabled}
+                  sx={actionBtnSx}
+                >
+                  <EmojiEmotions sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Hazır Yanıtlar">
+                <IconButton
+                  size="small"
+                  onClick={(e) => setCannedResponsesAnchorEl(e.currentTarget)}
+                  disabled={disabled}
+                  sx={actionBtnSx}
+                >
+                  <QuickReplyIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Dosya Ekle">
+                <IconButton
+                  size="small"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={disabled}
+                  sx={actionBtnSx}
+                >
+                  <AttachFile sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Sesli Mesaj">
+                <IconButton
+                  size="small"
+                  onClick={startRecording}
+                  disabled={disabled}
+                  sx={actionBtnSx}
+                >
+                  <Mic sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            {/* Right: Send button */}
+            <Tooltip title="Gönder">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={handleSend}
+                  disabled={!canSend}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '4px',
+                    bgcolor: canSend
+                      ? (isDark ? '#2EB67D' : '#6366f1')
+                      : (isDark ? '#35373B' : '#e5e7eb'),
+                    color: canSend ? '#ffffff' : (isDark ? '#ABABAD' : '#9ca3af'),
+                    '&:hover': {
+                      bgcolor: canSend
+                        ? (isDark ? '#249963' : '#4f46e5')
+                        : (isDark ? '#35373B' : '#e5e7eb')
+                    },
+                    '&.Mui-disabled': {
+                      bgcolor: isDark ? '#35373B' : '#e5e7eb',
+                      color: isDark ? '#ABABAD' : '#9ca3af'
+                    }
+                  }}
+                >
+                  {isSending ? (
+                    <CircularProgress size={16} sx={{ color: '#ffffff' }} />
+                  ) : (
+                    <Send sx={{ fontSize: 16 }} />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
+        </Box>
+      )}
+
+      {/* Voice recording: Send button */}
+      {(audioBlob && !isRecording) && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+          <Tooltip title="Sesli Mesaj Gönder">
+            <IconButton
+              onClick={sendVoiceMessage}
+              sx={{
+                bgcolor: isDark ? '#2EB67D' : '#6366f1',
+                color: '#ffffff',
+                width: 40,
+                height: 40,
+                borderRadius: '8px',
+                '&:hover': { bgcolor: isDark ? '#249963' : '#4f46e5' }
               }}
             >
-              <Mic fontSize="small" />
+              {isSending ? <CircularProgress size={18} sx={{ color: '#ffffff' }} /> : <Send sx={{ fontSize: 18 }} />}
             </IconButton>
           </Tooltip>
-        )}
+        </Box>
+      )}
 
-        {/* Send Button */}
-        {(canSend || isRecording || audioBlob) && (
-          <Tooltip title={audioBlob ? 'Sesli Mesaj Gönder' : 'Gönder'}>
-            <span>
-              <IconButton
-                onClick={audioBlob ? sendVoiceMessage : handleSend}
-                disabled={!canSend && !audioBlob}
-                sx={{
-                  background: (canSend || audioBlob)
-                    ? (isDark ? '#2EB67D' : 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)')
-                    : (isDark ? '#35373B' : 'rgba(160, 174, 192, 0.15)'),
-                  color: (canSend || audioBlob) ? '#ffffff' : (isDark ? '#ABABAD' : '#cbd5e0'),
-                  width: 42,
-                  height: 42,
-                  borderRadius: '12px',
-                  boxShadow: (canSend || audioBlob) ? (isDark ? '0 2px 8px rgba(46, 182, 125, 0.3)' : '0 2px 8px rgba(106, 159, 212, 0.25)') : 'none',
-                  '&:hover': {
-                    background: (canSend || audioBlob)
-                      ? (isDark ? '#249963' : 'linear-gradient(135deg, #5a8fc4 0%, #90b87c 100%)')
-                      : (isDark ? '#27242C' : 'rgba(160, 174, 192, 0.15)'),
-                    transform: (canSend || audioBlob) ? 'scale(1.03)' : 'none',
-                    boxShadow: (canSend || audioBlob) ? (isDark ? '0 4px 12px rgba(46, 182, 125, 0.4)' : '0 4px 12px rgba(106, 159, 212, 0.3)') : 'none'
-                  },
-                  '&.Mui-disabled': {
-                    background: isDark ? '#35373B' : 'rgba(160, 174, 192, 0.15)',
-                    color: isDark ? '#ABABAD' : '#cbd5e0'
-                  },
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {isSending ? (
-                  <CircularProgress size={20} sx={{ color: '#ffffff' }} />
-                ) : (
-                  <Send fontSize="small" />
-                )}
-              </IconButton>
-            </span>
-          </Tooltip>
-        )}
-      </Box>
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        hidden
+        onChange={handleFileSelect}
+        accept="image/*,video/*,application/pdf,.doc,.docx"
+      />
 
       {/* Character Counter */}
       {message.length > maxLength * 0.9 && (
@@ -857,26 +765,21 @@ const ChatComposer = ({
           sx={{
             mt: 0.5,
             textAlign: 'right',
-            fontSize: '0.75rem',
-            color: message.length >= maxLength ? 'error.main' : 'text.secondary'
+            fontSize: '11px',
+            color: message.length >= maxLength ? '#ef4444' : (isDark ? '#ABABAD' : '#9ca3af')
           }}
         >
           {message.length}/{maxLength}
         </Box>
       )}
 
+      {/* Emoji Picker Popover */}
       <Popover
         open={Boolean(emojiAnchorEl)}
         anchorEl={emojiAnchorEl}
         onClose={() => setEmojiAnchorEl(null)}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
       >
         <EmojiGifPicker onSelect={handleEmojiGifSelect} />
       </Popover>
@@ -886,17 +789,11 @@ const ChatComposer = ({
         open={Boolean(cannedResponsesAnchorEl)}
         anchorEl={cannedResponsesAnchorEl}
         onClose={() => setCannedResponsesAnchorEl(null)}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'left',
-        }}
-        transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
-        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         PaperProps={{
           sx: {
-            borderRadius: '16px',
+            borderRadius: '8px',
             boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 8px 32px rgba(0, 0, 0, 0.12)',
             maxHeight: 400,
             width: 320,
@@ -921,27 +818,18 @@ const ChatComposer = ({
                 onClick={() => handleCannedResponseSelect(response)}
                 sx={{
                   p: 1.5,
-                  borderRadius: '10px',
+                  borderRadius: '8px',
                   cursor: 'pointer',
                   border: `1px solid ${isDark ? '#35373B' : '#e2e8f0'}`,
                   backgroundColor: isDark ? '#1A1D21' : '#fff',
                   transition: 'all 0.2s ease',
                   '&:hover': {
                     backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)',
-                    borderColor: '#f59e0b',
-                    transform: 'translateX(4px)'
+                    borderColor: '#f59e0b'
                   }
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    color: '#f59e0b',
-                    fontSize: '13px',
-                    mb: 0.5
-                  }}
-                >
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#f59e0b', fontSize: '13px', mb: 0.5 }}>
                   {response.title}
                 </Typography>
                 <Typography
@@ -962,7 +850,7 @@ const ChatComposer = ({
           </Box>
         </Box>
       </Popover>
-    </Paper>
+    </Box>
   );
 };
 

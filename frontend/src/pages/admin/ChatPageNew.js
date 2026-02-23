@@ -1,8 +1,8 @@
-// src/pages/admin/ChatPageNew.js - Professional Chat UI (inspired by reference design)
+// src/pages/admin/ChatPageNew.js - Slack-Style Chat UI
 import React, { useState, useEffect } from 'react';
-import { Box, Avatar, Badge, Typography, TextField, InputAdornment, Fade, IconButton, Divider, Tabs, Tab, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon, Group as GroupIcon, Person as PersonIcon, GroupAdd as GroupAddIcon, Tag as TagIcon } from '@mui/icons-material';
-import { ChatContainer, ChannelSidebar, ChannelChatView } from '../../components/chat';
+import { Box, Avatar, Badge, Typography, TextField, InputAdornment, IconButton, Collapse, Menu, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
+import { Search as SearchIcon, Close as CloseIcon, MoreVert as MoreVertIcon, Add as AddIcon, Group as GroupIcon, GroupAdd as GroupAddIcon, Tag as TagIcon, Lock as LockIcon, ExpandMore as ExpandMoreIcon, ChevronRight as ChevronRightIcon } from '@mui/icons-material';
+import { ChatContainer, ChannelChatView } from '../../components/chat';
 import CreateGroupModal from '../../components/chat/CreateGroupModal';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -10,8 +10,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { API_BASE_URL } from '../../config/config';
 
 /**
- * Professional Chat Interface
- * Modern sidebar with Recent Chats + All Chats sections
+ * Slack-Style Chat Interface
+ * Collapsible sidebar sections: DM, Groups, Channels
  */
 const getSiteHeaders = () => {
   const currentSite = localStorage.getItem('optima_current_site') || 'FXB';
@@ -22,7 +22,6 @@ function ChatPageNew() {
   const { currentUser } = useEmployeeAuth();
   const { currentTheme } = useTheme();
   const isDark = currentTheme !== 'basic-light';
-  console.log('🎨 Chat Theme Debug:', { currentTheme, isDark });
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -30,9 +29,13 @@ function ChatPageNew() {
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [hoveredRoom, setHoveredRoom] = useState(null);
-  const [activeTab, setActiveTab] = useState(0); // 0: Kişiler, 1: Gruplar, 2: Kanallar
   const [createGroupOpen, setCreateGroupOpen] = useState(false);
   const [addMenuAnchor, setAddMenuAnchor] = useState(null);
+
+  // Collapsible section states
+  const [dmOpen, setDmOpen] = useState(true);
+  const [groupsOpen, setGroupsOpen] = useState(true);
+  const [channelsOpen, setChannelsOpen] = useState(true);
 
   // Load chat rooms from backend
   useEffect(() => {
@@ -61,9 +64,6 @@ function ChatPageNew() {
           onlineStatus = await onlineStatusResponse.json();
         }
 
-        console.log('📥 Chat rooms loaded:', data);
-        console.log('👤 Online status:', onlineStatus);
-
         // Transform backend data to UI format
         const transformedRooms = data.map(room => {
           const firstName = room.applicant_name?.split(' ')[0] || '';
@@ -71,10 +71,9 @@ function ChatPageNew() {
 
           const lastMsgTime = room.last_message?.created_at ? new Date(room.last_message.created_at) : new Date(room.created_at);
           const lastSeenTime = room.last_seen || room.last_message?.created_at || room.created_at;
-          // Online durumu: backend status + son mesaj 2 dakikadan yeni mi kontrolu
           const rawOnline = onlineStatus[room.room_id] || false;
           const lastActivityAge = Date.now() - new Date(lastSeenTime).getTime();
-          const isRecentlyActive = lastActivityAge < 2 * 60 * 1000; // 2 dakika
+          const isRecentlyActive = lastActivityAge < 2 * 60 * 1000;
           const isOnline = rawOnline && isRecentlyActive;
 
           return {
@@ -97,14 +96,12 @@ function ChatPageNew() {
 
         setRooms(transformedRooms);
 
-        // Auto-select first room ONLY on initial load (not on refresh)
+        // Auto-select first room ONLY on initial load
         setSelectedRoom(prev => {
           if (prev) {
-            // Keep current selection, just update room data
             const updatedRoom = transformedRooms.find(r => r.roomId === prev.roomId);
             return updatedRoom || prev;
           }
-          // Initial load: select first unread or first room
           const firstUnread = transformedRooms.find(r => r.unreadCount > 0);
           return firstUnread || transformedRooms[0] || null;
         });
@@ -115,8 +112,6 @@ function ChatPageNew() {
     };
 
     loadChatRooms();
-
-    // Refresh rooms every 10 seconds
     const interval = setInterval(loadChatRooms, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -132,7 +127,6 @@ function ChatPageNew() {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('📥 Groups loaded:', data);
 
           const transformedGroups = data.map(group => ({
             id: `group_${group.id}`,
@@ -158,9 +152,30 @@ function ChatPageNew() {
     return () => clearInterval(interval);
   }, []);
 
+  // Load channels
+  useEffect(() => {
+    const loadChannels = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/channels`, {
+          credentials: 'include',
+          headers: getSiteHeaders()
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setChannels(data);
+        }
+      } catch (error) {
+        console.error('❌ Error loading channels:', error);
+      }
+    };
+
+    loadChannels();
+    const interval = setInterval(loadChannels, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleGroupCreated = (group) => {
-    console.log('✅ New group created:', group);
-    // Add new group to list
     setGroups(prev => [{
       id: `group_${group.id}`,
       roomId: group.room_id || `group_${group.id}`,
@@ -172,13 +187,11 @@ function ChatPageNew() {
       lastMessageTime: new Date(),
       unreadCount: 0
     }, ...prev]);
-
-    // Switch to groups tab and select the new group
-    setActiveTab(1);
   };
 
   const handleRoomSelect = (room) => {
     setSelectedRoom(room);
+    setSelectedChannel(null);
     setRooms(prevRooms =>
       prevRooms.map(r =>
         r.id === room.id ? { ...r, unreadCount: 0 } : r
@@ -186,11 +199,13 @@ function ChatPageNew() {
     );
   };
 
+  const handleChannelSelect = (channel) => {
+    setSelectedChannel(channel);
+    setSelectedRoom(null);
+  };
+
   // Callback for when messages are marked as read in ChatContainer
   const handleMessagesRead = async (roomId) => {
-    console.log('📬 Messages marked as read for room:', roomId);
-
-    // Refresh rooms to get updated unread counts from backend
     try {
       const response = await fetch(`${API_BASE_URL}/chat/api/rooms/applicant_rooms/`, {
         credentials: 'include'
@@ -202,7 +217,6 @@ function ChatPageNew() {
 
       const data = await response.json();
 
-      // Load online status
       const onlineStatusResponse = await fetch(`${API_BASE_URL}/chat/api/rooms/online_status`, {
         credentials: 'include'
       });
@@ -212,7 +226,6 @@ function ChatPageNew() {
         onlineStatus = await onlineStatusResponse.json();
       }
 
-      // Transform backend data to UI format
       const transformedRooms = data.map(room => {
         const firstName = room.applicant_name?.split(' ')[0] || '';
         const lastName = room.applicant_name?.split(' ').slice(1).join(' ') || '';
@@ -242,7 +255,6 @@ function ChatPageNew() {
       });
 
       setRooms(transformedRooms);
-      console.log('Rooms refreshed, unread counts updated');
     } catch (error) {
       console.error('❌ Error refreshing rooms:', error);
     }
@@ -264,60 +276,79 @@ function ChatPageNew() {
     return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
   };
 
-  // Format last seen as full date/time (not relative)
-  const formatLastSeen = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    const now = new Date();
-
-    // Today - show only time
-    if (d.toDateString() === now.toDateString()) {
-      return `Bugün ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    // Yesterday
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (d.toDateString() === yesterday.toDateString()) {
-      return `Dün ${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    // Full date and time
-    return d.toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'short',
-      year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Get avatar initials (first + last name)
+  // Get avatar initials
   const getInitials = (firstName, lastName) => {
     const first = firstName?.[0] || '';
     const last = lastName?.[0] || '';
     return (first + last).toUpperCase() || '?';
   };
 
-  // Enhanced search: name, email, and applicant ID
+  // Filtered lists
   const filteredRooms = rooms.filter(room => {
     if (!searchTerm.trim()) return true;
-
     const searchLower = searchTerm.toLowerCase();
-    const nameMatch = room.name?.toLowerCase().includes(searchLower);
-    const emailMatch = room.participantEmail?.toLowerCase().includes(searchLower);
-    const idMatch = room.participantId?.toLowerCase().includes(searchLower);
-
-    return nameMatch || emailMatch || idMatch;
+    return room.name?.toLowerCase().includes(searchLower) ||
+      room.participantEmail?.toLowerCase().includes(searchLower) ||
+      room.participantId?.toLowerCase().includes(searchLower);
   });
 
-  // Separate recent chats (with messages in last 24 hours or unread)
-  const recentChats = filteredRooms.filter(room => {
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    return room.unreadCount > 0 || room.lastMessageTime > dayAgo;
-  }).slice(0, 4); // Top 4 recent
+  const filteredGroups = groups.filter(g =>
+    !searchTerm.trim() || g.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const allChats = filteredRooms;
+  const filteredChannels = channels.filter(ch =>
+    !searchTerm.trim() ||
+    ch.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    ch.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Section header component
+  const SectionHeader = ({ label, isOpen, onToggle, count, onAdd }) => (
+    <Box
+      sx={{
+        px: 2,
+        py: 0.75,
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+        color: isDark ? '#ABABAD' : '#6b7280',
+        '&:hover': { color: isDark ? '#E0E0E0' : '#374151' },
+        userSelect: 'none'
+      }}
+      onClick={onToggle}
+    >
+      {isOpen
+        ? <ExpandMoreIcon sx={{ fontSize: 16, mr: 0.5 }} />
+        : <ChevronRightIcon sx={{ fontSize: 16, mr: 0.5 }} />
+      }
+      <Typography
+        variant="caption"
+        sx={{
+          fontWeight: 700,
+          fontSize: '13px',
+          textTransform: 'none',
+          flex: 1,
+          color: 'inherit'
+        }}
+      >
+        {label}
+        {count > 0 && (
+          <Typography component="span" sx={{ ml: 0.5, fontSize: '11px', fontWeight: 400, color: isDark ? '#ABABAD' : '#9ca3af' }}>
+            ({count})
+          </Typography>
+        )}
+      </Typography>
+      {onAdd && (
+        <IconButton
+          size="small"
+          onClick={(e) => { e.stopPropagation(); onAdd(e); }}
+          sx={{ p: 0.25, color: isDark ? '#ABABAD' : '#9ca3af', '&:hover': { color: isDark ? '#E0E0E0' : '#374151' } }}
+        >
+          <AddIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+      )}
+    </Box>
+  );
 
   return (
     <Box sx={{
@@ -328,144 +359,95 @@ function ChatPageNew() {
       borderRadius: '12px',
       boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.05)'
     }}>
-      {/* Sidebar - Modern Design */}
+      {/* Sidebar - Slack Style */}
       <Box
         sx={{
-          width: 340,
-          bgcolor: isDark ? '#1a1d21' : '#ffffff',
+          width: 260,
+          bgcolor: isDark ? '#19181D' : '#ffffff',
           borderRight: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
           display: 'flex',
-          flexDirection: 'column',
-          boxShadow: isDark ? '1px 0 3px rgba(0, 0, 0, 0.2)' : '1px 0 3px rgba(0, 0, 0, 0.05)'
+          flexDirection: 'column'
         }}
       >
         {/* Header */}
-        <Box sx={{ px: 2.5, pt: 2.5, pb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                color: isDark ? '#E0E0E0' : '#111827',
-                fontSize: '20px',
-                letterSpacing: '-0.3px'
-              }}
-            >
-              Sohbetler
-            </Typography>
-            <Box>
-              <IconButton
-                size="small"
-                sx={{ color: isDark ? '#ABABAD' : '#6b7280' }}
-                onClick={(e) => setAddMenuAnchor(e.currentTarget)}
-              >
-                <AddIcon fontSize="small" />
-              </IconButton>
-              <Menu
-                anchorEl={addMenuAnchor}
-                open={Boolean(addMenuAnchor)}
-                onClose={() => setAddMenuAnchor(null)}
-                PaperProps={{
-                  sx: {
-                    minWidth: 180,
-                    borderRadius: '8px',
-                    mt: 1,
-                    ...(isDark && {
-                      bgcolor: '#27242C',
-                      color: '#E0E0E0',
-                      '& .MuiMenuItem-root': {
-                        color: '#E0E0E0',
-                        '&:hover': { bgcolor: '#35373B' }
-                      },
-                      '& .MuiListItemIcon-root': { color: '#ABABAD' }
-                    })
-                  }
-                }}
-              >
-                <MenuItem onClick={() => { setAddMenuAnchor(null); setCreateGroupOpen(true); }}>
-                  <ListItemIcon>
-                    <GroupAddIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Yeni Grup Oluştur</ListItemText>
-                </MenuItem>
-              </Menu>
-              <IconButton size="small" sx={{ color: isDark ? '#ABABAD' : '#6b7280', ml: 0.5 }}>
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </Box>
-
-          {/* Tabs: Kişiler / Gruplar */}
-          <Tabs
-            value={activeTab}
-            onChange={(e, v) => setActiveTab(v)}
+        <Box sx={{
+          px: 2,
+          py: 1.5,
+          borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <Typography
             sx={{
-              minHeight: 36,
-              mb: 2,
-              '& .MuiTabs-indicator': {
-                background: isDark
-                  ? '#1264a3'
-                  : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                height: 3,
-                borderRadius: '3px 3px 0 0'
-              }
+              fontWeight: 700,
+              color: isDark ? '#E0E0E0' : '#111827',
+              fontSize: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer'
             }}
           >
-            <Tab
-              icon={<PersonIcon sx={{ fontSize: 18 }} />}
-              iconPosition="start"
-              label="Kişiler"
-              sx={{
-                minHeight: 36,
-                fontSize: '13px',
-                fontWeight: 600,
-                textTransform: 'none',
-                flex: 1,
-                color: isDark ? '#ABABAD' : undefined,
-                '&.Mui-selected': { color: isDark ? '#5CC5F8' : '#6366f1' }
+            OPTIMA HR
+            <Typography component="span" sx={{ fontSize: '10px', color: isDark ? '#ABABAD' : '#6b7280', ml: 0.5 }}>
+              ▼
+            </Typography>
+          </Typography>
+          <Box>
+            <IconButton
+              size="small"
+              sx={{ color: isDark ? '#ABABAD' : '#6b7280' }}
+              onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+            <Menu
+              anchorEl={addMenuAnchor}
+              open={Boolean(addMenuAnchor)}
+              onClose={() => setAddMenuAnchor(null)}
+              PaperProps={{
+                sx: {
+                  minWidth: 180,
+                  borderRadius: '8px',
+                  mt: 1,
+                  ...(isDark && {
+                    bgcolor: '#27242C',
+                    color: '#E0E0E0',
+                    '& .MuiMenuItem-root': {
+                      color: '#E0E0E0',
+                      '&:hover': { bgcolor: '#35373B' }
+                    },
+                    '& .MuiListItemIcon-root': { color: '#ABABAD' }
+                  })
+                }
               }}
-            />
-            <Tab
-              icon={<GroupIcon sx={{ fontSize: 18 }} />}
-              iconPosition="start"
-              label={`Gruplar${groups.length > 0 ? ` (${groups.length})` : ''}`}
-              sx={{
-                minHeight: 36,
-                fontSize: '13px',
-                fontWeight: 600,
-                textTransform: 'none',
-                flex: 1,
-                color: isDark ? '#ABABAD' : undefined,
-                '&.Mui-selected': { color: isDark ? '#5CC5F8' : '#6366f1' }
-              }}
-            />
-            <Tab
-              icon={<TagIcon sx={{ fontSize: 18 }} />}
-              iconPosition="start"
-              label={`Kanallar${channels.length > 0 ? ` (${channels.length})` : ''}`}
-              sx={{
-                minHeight: 36,
-                fontSize: '13px',
-                fontWeight: 600,
-                textTransform: 'none',
-                flex: 1,
-                color: isDark ? '#ABABAD' : undefined,
-                '&.Mui-selected': { color: isDark ? '#5CC5F8' : '#6366f1' }
-              }}
-            />
-          </Tabs>
+            >
+              <MenuItem onClick={() => { setAddMenuAnchor(null); setCreateGroupOpen(true); }}>
+                <ListItemIcon>
+                  <GroupAddIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Yeni Grup Oluştur</ListItemText>
+              </MenuItem>
+            </Menu>
+            <IconButton size="small" sx={{ color: isDark ? '#ABABAD' : '#6b7280', ml: 0.5 }}>
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
 
-          {/* Search */}
+        {/* Search */}
+        <Box sx={{ px: 1.5, py: 1 }}>
           <TextField
             fullWidth
-            placeholder="Kişi veya mesaj ara..."
+            placeholder="Ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             size="small"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 18, color: isDark ? '#ABABAD' : '#9ca3af' }} />
+                  <SearchIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#9ca3af' }} />
                 </InputAdornment>
               ),
               endAdornment: searchTerm && (
@@ -473,27 +455,25 @@ function ChatPageNew() {
                   <IconButton
                     size="small"
                     onClick={() => setSearchTerm('')}
-                    sx={{ padding: 0.5, color: isDark ? '#ABABAD' : undefined }}
+                    sx={{ padding: 0.25, color: isDark ? '#ABABAD' : undefined }}
                   >
-                    <CloseIcon sx={{ fontSize: 16 }} />
+                    <CloseIcon sx={{ fontSize: 14 }} />
                   </IconButton>
                 </InputAdornment>
               ),
               sx: {
-                fontSize: '14px',
+                fontSize: '13px',
                 bgcolor: isDark ? '#1d2126' : '#f3f4f6',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 color: isDark ? '#E0E0E0' : undefined,
                 '& fieldset': { border: 'none' },
-                '&:hover': {
-                  bgcolor: isDark ? '#27242C' : '#e5e7eb'
-                },
+                '&:hover': { bgcolor: isDark ? '#27242C' : '#e5e7eb' },
                 '&.Mui-focused': {
                   bgcolor: isDark ? '#222529' : '#ffffff',
                   boxShadow: isDark ? '0 0 0 2px rgba(18, 100, 163, 0.3)' : '0 0 0 2px rgba(59, 130, 246, 0.1)'
                 },
                 '& .MuiInputBase-input': {
-                  padding: '8px 12px',
+                  padding: '6px 8px',
                   color: isDark ? '#E0E0E0' : undefined,
                   '&::placeholder': {
                     color: isDark ? '#ABABAD' : undefined,
@@ -505,420 +485,255 @@ function ChatPageNew() {
           />
         </Box>
 
-        {/* Scrollable Content */}
-        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          {/* Tab 0: Kişiler (Applicant Chats) */}
-          {activeTab === 0 && (
-            <>
-              {/* Recent Chats Section */}
-              {!searchTerm && recentChats.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Box sx={{ px: 2.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{
-                        fontWeight: 600,
-                        color: isDark ? '#E0E0E0' : '#374151',
-                        fontSize: '13px',
-                        textTransform: 'none'
-                      }}
-                    >
-                      Son Sohbetler
-                    </Typography>
-                    <IconButton size="small" sx={{ padding: 0.5 }}>
-                      <MoreVertIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#9ca3af' }} />
-                    </IconButton>
-                  </Box>
+        {/* Scrollable Sections */}
+        <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', py: 0.5 }}>
 
-                  <Box sx={{ display: 'flex', gap: 1.5, px: 2.5, overflowX: 'auto', pb: 1.5 }}>
-                    {recentChats.map((room) => (
-                      <Box
-                        key={`recent-${room.id}`}
-                        onClick={() => handleRoomSelect(room)}
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          cursor: 'pointer',
-                          minWidth: 60
-                        }}
-                      >
-                        <Badge
-                          overlap="circular"
-                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                          badgeContent={
-                            <Box
-                              sx={{
-                                width: 12,
-                                height: 12,
-                                borderRadius: '50%',
-                                bgcolor: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#35373B' : '#d1d5db'),
-                                border: `2px solid ${isDark ? '#1a1d21' : 'white'}`
-                              }}
-                            />
-                          }
-                        >
-                          <Avatar
-                            sx={{
-                              width: 56,
-                              height: 56,
-                              background: isDark
-                                ? 'linear-gradient(135deg, #1264a3 0%, #1d9bd1 100%)'
-                                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              fontSize: '18px',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {getInitials(room.firstName, room.lastName)}
-                          </Avatar>
-                        </Badge>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            mt: 0.75,
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            color: isDark ? '#E0E0E0' : '#374151',
-                            maxWidth: 60,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            textAlign: 'center'
-                          }}
-                        >
-                          {room.firstName || room.name.split(' ')[0]}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              )}
+          {/* ─── Direct Messages ─── */}
+          <SectionHeader
+            label="Direct Messages"
+            isOpen={dmOpen}
+            onToggle={() => setDmOpen(!dmOpen)}
+            count={filteredRooms.length}
+          />
+          <Collapse in={dmOpen}>
+            {filteredRooms.length === 0 ? (
+              <Typography sx={{
+                px: 2, pl: 4, py: 1, fontSize: '13px',
+                color: isDark ? '#ABABAD' : '#9ca3af', fontStyle: 'italic'
+              }}>
+                {searchTerm ? `"${searchTerm}" için sonuç yok` : 'Henüz sohbet yok'}
+              </Typography>
+            ) : (
+              filteredRooms.map((room) => {
+                const isSelected = selectedRoom?.id === room.id && !selectedChannel;
+                const hasUnread = room.unreadCount > 0;
 
-              {/* Divider */}
-              {!searchTerm && recentChats.length > 0 && (
-                <Divider sx={{ mx: 2.5, my: 1, borderColor: isDark ? '#35373B' : undefined }} />
-              )}
-
-              {/* All Chats Section */}
-              <Box>
-                <Box sx={{ px: 2.5, py: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{
-                      fontWeight: 600,
-                      color: isDark ? '#E0E0E0' : '#374151',
-                      fontSize: '13px',
-                      textTransform: 'none'
-                    }}
-                  >
-                    Tüm Sohbetler
-                  </Typography>
-                  <IconButton size="small" sx={{ padding: 0.5 }}>
-                    <MoreVertIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#9ca3af' }} />
-                  </IconButton>
-                </Box>
-
-                {allChats.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 4, px: 3 }}>
-                    <Typography variant="body2" sx={{ color: isDark ? '#ABABAD' : '#9ca3af', fontSize: '14px' }}>
-                      {searchTerm ? `"${searchTerm}" için sonuç bulunamadı` : 'Henüz sohbet yok'}
-                    </Typography>
-                  </Box>
-                ) : (
-                  allChats.map((room) => {
-                    const isSelected = selectedRoom?.id === room.id;
-                    const hasUnread = room.unreadCount > 0;
-
-                    return (
-                      <Box
-                        key={room.id}
-                        onClick={() => handleRoomSelect(room)}
-                        onMouseEnter={() => setHoveredRoom(room.id)}
-                        onMouseLeave={() => setHoveredRoom(null)}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1.5,
-                          px: 2.5,
-                          py: 1.5,
-                          cursor: 'pointer',
-                          bgcolor: isSelected ? (isDark ? '#1264A3' : '#f3f4f6') : 'transparent',
-                          borderLeft: isSelected
-                            ? `3px solid ${isDark ? '#1264a3' : '#6366f1'}`
-                            : '3px solid transparent',
-                          '&:hover': {
-                            bgcolor: isDark ? '#27242C' : '#f9fafb'
-                          },
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <Badge
-                          overlap="circular"
-                          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                          badgeContent={
-                            <Box
-                              sx={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: '50%',
-                                bgcolor: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#35373B' : '#d1d5db'),
-                                border: `2px solid ${isDark ? '#1a1d21' : 'white'}`
-                              }}
-                            />
-                          }
-                        >
-                          <Avatar
-                            sx={{
-                              width: 44,
-                              height: 44,
-                              background: isSelected
-                                ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #1d9bd1 100%)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
-                                : (isDark ? 'linear-gradient(135deg, #35373B 0%, #4A4D52 100%)' : 'linear-gradient(135deg, #a0aec0 0%, #cbd5e0 100%)'),
-                              fontSize: '16px',
-                              fontWeight: 600
-                            }}
-                          >
-                            {getInitials(room.firstName, room.lastName)}
-                          </Avatar>
-                        </Badge>
-
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{
-                                fontWeight: hasUnread ? 600 : 500,
-                                color: isDark ? '#E0E0E0' : '#111827',
-                                fontSize: '14px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {room.name}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: isDark ? '#ABABAD' : '#6b7280',
-                                fontSize: '11px',
-                                ml: 1,
-                                flexShrink: 0
-                              }}
-                            >
-                              {formatTime(room.lastMessageTime)}
-                            </Typography>
-                          </Box>
-
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: hasUnread ? (isDark ? '#E0E0E0' : '#374151') : (isDark ? '#ABABAD' : '#9ca3af'),
-                                fontSize: '13px',
-                                fontWeight: hasUnread ? 500 : 400,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                flex: 1
-                              }}
-                            >
-                              {room.lastMessage}
-                            </Typography>
-                            {hasUnread && (
-                              <Box
-                                sx={{
-                                  minWidth: 20,
-                                  height: 20,
-                                  borderRadius: '10px',
-                                  bgcolor: isDark ? '#1264a3' : '#ef4444',
-                                  color: 'white',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  px: 0.75,
-                                  ml: 1,
-                                  flexShrink: 0
-                                }}
-                              >
-                                {room.unreadCount}
-                              </Box>
-                            )}
-                          </Box>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#ABABAD' : '#9ca3af'),
-                              fontSize: '11px',
-                              fontWeight: room.participantOnline ? 600 : 400,
-                              mt: 0.25
-                            }}
-                          >
-                            {room.participantOnline ? 'Çevrimiçi' : (room.lastSeen ? `Son görülme: ${formatLastSeen(room.lastSeen)}` : 'Çevrimdışı')}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    );
-                  })
-                )}
-              </Box>
-            </>
-          )}
-
-          {/* Tab 1: Gruplar (Group Chats) */}
-          {activeTab === 1 && (
-            <Box>
-              {groups.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 6, px: 3 }}>
-                  <Box sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '50%',
-                    bgcolor: isDark ? '#27242C' : '#f3f4f6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 16px'
-                  }}>
-                    <GroupIcon sx={{ fontSize: 32, color: isDark ? '#ABABAD' : '#9ca3af' }} />
-                  </Box>
-                  <Typography variant="body1" sx={{ color: isDark ? '#E0E0E0' : '#374151', fontWeight: 500, mb: 1 }}>
-                    Henüz grup yok
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: isDark ? '#ABABAD' : '#9ca3af', mb: 2 }}>
-                    Yeni bir grup oluşturarak başlayın
-                  </Typography>
+                return (
                   <Box
-                    onClick={() => setCreateGroupOpen(true)}
+                    key={room.id}
+                    onClick={() => handleRoomSelect(room)}
+                    onMouseEnter={() => setHoveredRoom(room.id)}
+                    onMouseLeave={() => setHoveredRoom(null)}
                     sx={{
-                      display: 'inline-flex',
+                      display: 'flex',
                       alignItems: 'center',
-                      gap: 1,
-                      px: 3,
-                      py: 1,
-                      borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                      color: 'white',
+                      gap: 1.5,
+                      px: 2,
+                      py: 0.5,
+                      pl: 4,
                       cursor: 'pointer',
-                      fontWeight: 500,
-                      fontSize: '14px',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'
-                      }
+                      bgcolor: isSelected ? (isDark ? '#1264A3' : '#e8e8e8') : 'transparent',
+                      '&:hover': { bgcolor: isSelected ? undefined : (isDark ? '#27242C' : '#f0f0f0') },
+                      transition: 'background 0.15s ease'
                     }}
                   >
-                    <GroupAddIcon sx={{ fontSize: 18 }} />
-                    Grup Oluştur
-                  </Box>
-                </Box>
-              ) : (
-                groups.filter(g => !searchTerm || g.name?.toLowerCase().includes(searchTerm.toLowerCase())).map((group) => {
-                  const isSelected = selectedRoom?.id === group.id;
-
-                  return (
-                    <Box
-                      key={group.id}
-                      onClick={() => handleRoomSelect({ ...group, participantName: group.name })}
-                      onMouseEnter={() => setHoveredRoom(group.id)}
-                      onMouseLeave={() => setHoveredRoom(null)}
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        px: 2.5,
-                        py: 1.5,
-                        cursor: 'pointer',
-                        bgcolor: isSelected ? (isDark ? '#1264A3' : '#f3f4f6') : 'transparent',
-                        borderLeft: isSelected ? `3px solid ${isDark ? '#1264a3' : '#6366f1'}` : '3px solid transparent',
-                        '&:hover': { bgcolor: isDark ? '#27242C' : '#f9fafb' },
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
+                    {/* Avatar with online indicator */}
+                    <Box sx={{ position: 'relative', flexShrink: 0 }}>
                       <Avatar
                         sx={{
-                          width: 44,
-                          height: 44,
+                          width: 20,
+                          height: 20,
+                          fontSize: '9px',
+                          fontWeight: 700,
+                          borderRadius: '4px',
                           background: isSelected
-                            ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #1d9bd1 100%)' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)')
-                            : (isDark ? 'linear-gradient(135deg, #2eb886 0%, #1a9a6c 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)'),
-                          fontSize: '16px',
-                          fontWeight: 600
+                            ? 'rgba(255,255,255,0.3)'
+                            : (isDark ? '#35373B' : '#a0aec0')
                         }}
                       >
-                        <GroupIcon />
+                        {getInitials(room.firstName, room.lastName)}
                       </Avatar>
-
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.25 }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{
-                              fontWeight: 500,
-                              color: isDark ? '#E0E0E0' : '#111827',
-                              fontSize: '14px',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {group.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: isDark ? '#ABABAD' : '#6b7280', fontSize: '11px', ml: 1, flexShrink: 0 }}
-                          >
-                            {formatTime(group.lastMessageTime)}
-                          </Typography>
-                        </Box>
-
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: isDark ? '#ABABAD' : '#9ca3af',
-                            fontSize: '13px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {group.lastMessage}
-                        </Typography>
-
-                        <Typography
-                          variant="caption"
-                          sx={{ color: isDark ? '#ABABAD' : '#6b7280', fontSize: '11px', mt: 0.25 }}
-                        >
-                          {group.memberCount} üye
-                        </Typography>
-                      </Box>
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          bottom: -2,
+                          right: -2,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: room.participantOnline ? '#2EB67D' : 'transparent',
+                          border: room.participantOnline ? `2px solid ${isDark ? '#19181D' : '#fff'}` : 'none'
+                        }}
+                      />
                     </Box>
-                  );
-                })
-              )}
-            </Box>
-          )}
 
-          {/* Tab 2: Kanallar (Channels) */}
-          {activeTab === 2 && (
-            <ChannelSidebar
-              onChannelSelect={(channel) => {
-                setSelectedChannel(channel);
-                setSelectedRoom(null); // Clear room selection
-              }}
-              selectedChannelId={selectedChannel?.id}
-              isDark={isDark}
-            />
-          )}
+                    {/* Name */}
+                    <Typography
+                      sx={{
+                        fontSize: '14px',
+                        color: isSelected ? '#fff' : (isDark ? '#E0E0E0' : '#111827'),
+                        fontWeight: hasUnread ? 700 : 400,
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        lineHeight: '24px'
+                      }}
+                    >
+                      {room.name}
+                    </Typography>
+
+                    {/* Unread badge */}
+                    {hasUnread && (
+                      <Box
+                        sx={{
+                          minWidth: 18,
+                          height: 18,
+                          borderRadius: '9px',
+                          bgcolor: '#E01E5A',
+                          color: 'white',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          px: 0.5,
+                          flexShrink: 0
+                        }}
+                      >
+                        {room.unreadCount}
+                      </Box>
+                    )}
+                  </Box>
+                );
+              })
+            )}
+          </Collapse>
+
+          {/* ─── Group Messages ─── */}
+          <SectionHeader
+            label="Gruplar"
+            isOpen={groupsOpen}
+            onToggle={() => setGroupsOpen(!groupsOpen)}
+            count={filteredGroups.length}
+            onAdd={() => setCreateGroupOpen(true)}
+          />
+          <Collapse in={groupsOpen}>
+            {filteredGroups.length === 0 ? (
+              <Typography sx={{
+                px: 2, pl: 4, py: 1, fontSize: '13px',
+                color: isDark ? '#ABABAD' : '#9ca3af', fontStyle: 'italic'
+              }}>
+                {searchTerm ? 'Sonuç yok' : 'Henüz grup yok'}
+              </Typography>
+            ) : (
+              filteredGroups.map((group) => {
+                const isSelected = selectedRoom?.id === group.id && !selectedChannel;
+
+                return (
+                  <Box
+                    key={group.id}
+                    onClick={() => handleRoomSelect({ ...group, participantName: group.name })}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      px: 2,
+                      py: 0.5,
+                      pl: 4,
+                      cursor: 'pointer',
+                      bgcolor: isSelected ? (isDark ? '#1264A3' : '#e8e8e8') : 'transparent',
+                      '&:hover': { bgcolor: isSelected ? undefined : (isDark ? '#27242C' : '#f0f0f0') },
+                      transition: 'background 0.15s ease'
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '16px', flexShrink: 0, lineHeight: '20px' }}>👥</Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '14px',
+                        color: isSelected ? '#fff' : (isDark ? '#E0E0E0' : '#111827'),
+                        fontWeight: 400,
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        lineHeight: '24px'
+                      }}
+                    >
+                      {group.name}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: '11px',
+                        color: isSelected ? 'rgba(255,255,255,0.7)' : (isDark ? '#ABABAD' : '#9ca3af'),
+                        flexShrink: 0
+                      }}
+                    >
+                      {group.memberCount}
+                    </Typography>
+                  </Box>
+                );
+              })
+            )}
+          </Collapse>
+
+          {/* ─── Channels ─── */}
+          <SectionHeader
+            label="Kanallar"
+            isOpen={channelsOpen}
+            onToggle={() => setChannelsOpen(!channelsOpen)}
+            count={filteredChannels.length}
+          />
+          <Collapse in={channelsOpen}>
+            {filteredChannels.length === 0 ? (
+              <Typography sx={{
+                px: 2, pl: 4, py: 1, fontSize: '13px',
+                color: isDark ? '#ABABAD' : '#9ca3af', fontStyle: 'italic'
+              }}>
+                {searchTerm ? 'Sonuç yok' : 'Henüz kanal yok'}
+              </Typography>
+            ) : (
+              filteredChannels.map((channel) => {
+                const isSelected = selectedChannel?.id === channel.id;
+
+                return (
+                  <Box
+                    key={channel.id}
+                    onClick={() => handleChannelSelect(channel)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      px: 2,
+                      py: 0.5,
+                      pl: 4,
+                      cursor: 'pointer',
+                      bgcolor: isSelected ? (isDark ? '#1264A3' : '#e8e8e8') : 'transparent',
+                      '&:hover': { bgcolor: isSelected ? undefined : (isDark ? '#27242C' : '#f0f0f0') },
+                      transition: 'background 0.15s ease'
+                    }}
+                  >
+                    {channel.type === 'private' ? (
+                      <LockIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#6b7280', flexShrink: 0 }} />
+                    ) : (
+                      <TagIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#6b7280', flexShrink: 0 }} />
+                    )}
+                    <Typography
+                      sx={{
+                        fontSize: '14px',
+                        color: isSelected ? '#fff' : (isDark ? '#E0E0E0' : '#111827'),
+                        fontWeight: 400,
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        lineHeight: '24px'
+                      }}
+                    >
+                      {channel.displayName || channel.name}
+                    </Typography>
+                  </Box>
+                );
+              })
+            )}
+          </Collapse>
+
         </Box>
       </Box>
 
       {/* Main Chat Area */}
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Channel Chat View (when activeTab === 2 and channel selected) */}
-        {activeTab === 2 && selectedChannel ? (
+        {selectedChannel ? (
           <ChannelChatView
             channel={selectedChannel}
             currentUserId={currentUser?.id || 1}
@@ -926,9 +741,7 @@ function ChatPageNew() {
             onLeaveChannel={() => {
               setSelectedChannel(null);
             }}
-            onChannelUpdate={() => {
-              // Refresh channels by re-rendering ChannelSidebar
-            }}
+            onChannelUpdate={() => {}}
             isDark={isDark}
           />
         ) : selectedRoom ? (
@@ -959,18 +772,7 @@ function ChatPageNew() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              ...(isDark ? {
-                bgcolor: '#222529'
-              } : {
-                background: `
-                  linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.20)),
-                  url(/assets/images/42904319_SL-120722-54440-06.jpg)
-                `,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                backgroundAttachment: 'fixed'
-              })
+              bgcolor: isDark ? '#1A1D21' : '#ffffff'
             }}
           >
             <Box sx={{ textAlign: 'center', maxWidth: 480, px: 4 }}>

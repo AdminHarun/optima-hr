@@ -1,24 +1,11 @@
-// Adapted from Rocket.Chat RoomMessage.tsx
-// Converted to Material-UI and simplified for Optima needs
+// src/components/chat/RoomMessage.js - Slack-Style Message Layout
 import React, { memo } from 'react';
-import { Box, Avatar, Typography, Paper } from '@mui/material';
+import { Box, Avatar, Typography } from '@mui/material';
 import MessageHeader from './MessageHeader';
 import MessageContent from './MessageContent';
 import MessageToolbar from './MessageToolbar';
 import { useTheme } from '../../contexts/ThemeContext';
 
-/**
- * Main message component - Rocket.Chat pattern adapted for Optima
- *
- * @param {Object} props
- * @param {Object} props.message - Message object
- * @param {boolean} props.sequential - Is this message part of a sequence from same user
- * @param {boolean} props.isOwnMessage - Is this message from current user
- * @param {Function} props.onEdit - Edit message callback
- * @param {Function} props.onDelete - Delete message callback
- * @param {Function} props.onReply - Reply to message callback
- * @param {Function} props.onReaction - Add reaction callback
- */
 const RoomMessage = ({
   message,
   sequential = false,
@@ -39,21 +26,35 @@ const RoomMessage = ({
 
   const [isEditing, setIsEditing] = React.useState(false);
 
-  // Sequential messages hide avatar and compact header
   const showAvatar = !sequential;
   const showHeader = !sequential;
+
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    return new Date(timestamp).toLocaleTimeString('tr-TR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <Box
       id={`message-${message.id || message.message_id}`}
       sx={{
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: isOwnMessage ? 'flex-end' : 'flex-start', // ADMIN mesaj SAĞDA, applicant mesaj SOLDA
-        px: 2,
-        py: sequential ? 0.2 : 0.5,
+        alignItems: 'flex-start',
+        gap: 1.5,
+        px: 3,
+        py: sequential ? 0.25 : 1,
         position: 'relative',
-        transition: 'all 0.2s ease'
+        '&:hover': {
+          bgcolor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'
+        },
+        '&:hover .message-toolbar': {
+          opacity: 1,
+          visibility: 'visible'
+        },
+        transition: 'background 0.1s ease'
       }}
       data-message-id={message.message_id || message.id}
       data-message-status={message.status}
@@ -62,237 +63,100 @@ const RoomMessage = ({
       data-own={isOwnMessage}
       data-qa-type="message"
     >
-      {/* Avatar ve Mesaj Container */}
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        maxWidth: '80%',
-        flexDirection: isOwnMessage ? 'row-reverse' : 'row',
-        gap: 1
-      }}>
-        {/* Avatar */}
-        <Box sx={{ flexShrink: 0, pt: 0.25 }}>
-          {showAvatar ? (
-            <Avatar
-              src={message.avatar_url}
-              alt={message.sender_name}
-              sx={{
-                width: 32,
-                height: 32,
-                background: isOwnMessage
-                  ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #0d4f82 100%)' : 'linear-gradient(135deg, #6a9fd4 0%, #5a8fc4 100%)')
-                  : (isDark ? 'linear-gradient(135deg, #2eb886 0%, #1a9a6c 100%)' : 'linear-gradient(135deg, #a0c88c 0%, #90b87c 100%)'),
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 1px 4px rgba(100, 150, 200, 0.12)',
-                '&:hover': {
-                  transform: 'scale(1.05)',
-                  boxShadow: '0 2px 8px rgba(100, 150, 200, 0.2)'
-                },
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {message.sender_name?.[0]?.toUpperCase()}
-            </Avatar>
-          ) : (
-            <Box sx={{ width: 32 }} />
-          )}
-        </Box>
-
-        {/* Main Message Container with Toolbar - Dinamik genişlik */}
-        <Box sx={{
-          position: 'relative',
-          display: 'inline-flex',
-          flexDirection: 'column',
-          flex: 1
-        }}>
-          {/* Message Card ile Toolbar'ı içeren wrapper */}
-          <Box sx={{
-            display: 'flex',
-            flexDirection: isOwnMessage ? 'row-reverse' : 'row',
-            alignItems: 'center',
-            gap: 0.5,
-            '&:hover .message-toolbar': {
-              opacity: 1
-            }
-          }}>
-            {/* Message Card - Kompakt ve dinamik */}
-            <Paper
-              elevation={0}
-              sx={{
-                backgroundColor: isOwnMessage
-                  ? (isDark ? '#1264a3' : 'rgba(106, 159, 212, 0.15)')
-                  : (isDark ? '#27242C' : 'rgba(255, 255, 255, 0.92)'),
-                borderRadius: isOwnMessage ? '16px 16px 6px 16px' : '16px 16px 16px 6px',
-                px: 1.25,
-                py: 0.75,
-                position: 'relative',
-                boxShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.2)' : '0 1px 2px rgba(0, 0, 0, 0.06)',
-                border: '1px solid',
-                borderColor: isOwnMessage
-                  ? (isDark ? 'rgba(18, 100, 163, 0.3)' : 'rgba(106, 159, 212, 0.15)')
-                  : (isDark ? '#35373B' : 'rgba(0, 0, 0, 0.08)'),
-                transition: 'all 0.2s ease',
-                display: 'inline-block',
-                width: 'fit-content',
-                maxWidth: '100%',
-                '&:hover': {
-                  boxShadow: isDark ? '0 2px 6px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
-                  transform: 'translateY(-0.5px)'
-                }
-              }}
-            >
-              {/* Header (name + timestamp) */}
-              {showHeader && (
-                <MessageHeader
-                  message={message}
-                  isOwnMessage={isOwnMessage}
-                  onNameClick={onNameClick}
-                  isDark={isDark}
-                />
-              )}
-
-              {/* Message Content */}
-              <MessageContent
-                message={message}
-                isEditing={isEditing}
-                onSaveEdit={(newContent) => {
-                  onEdit?.(message.id, newContent);
-                  setIsEditing(false);
-                }}
-                onCancelEdit={() => setIsEditing(false)}
-                isDark={isDark}
-                isOwnMessage={isOwnMessage}
-              />
-
-              {/* Read Receipt Indicators - WhatsApp/Telegram Style */}
-              {isOwnMessage && !isEditing && !message.is_deleted && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-end',
-                    gap: 0.25,
-                    mt: 0.25,
-                    pr: 0.5
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: '9px',
-                      color: isDark ? '#ABABAD' : '#a0aec0',
-                      lineHeight: 1
-                    }}
-                  >
-                    {new Date(message.created_at).toLocaleTimeString('tr-TR', {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      ml: 0.5
-                    }}
-                  >
-                    {message.status === 'read' ? (
-                      // Double blue checkmarks for read messages
-                      <Box sx={{ display: 'flex', position: 'relative', width: 14, height: 10 }}>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontSize: '12px',
-                            color: '#4fc3f7',
-                            lineHeight: 1,
-                            position: 'absolute',
-                            left: 0,
-                            fontWeight: 600
-                          }}
-                        >
-                          ✓
-                        </Typography>
-                        <Typography
-                          component="span"
-                          sx={{
-                            fontSize: '12px',
-                            color: '#4fc3f7',
-                            lineHeight: 1,
-                            position: 'absolute',
-                            left: 4,
-                            fontWeight: 600
-                          }}
-                        >
-                          ✓
-                        </Typography>
-                      </Box>
-                    ) : message.status === 'sent' ? (
-                      // Single gray checkmark for sent messages
-                      <Typography
-                        component="span"
-                        sx={{
-                          fontSize: '12px',
-                          color: '#cbd5e0',
-                          lineHeight: 1,
-                          fontWeight: 600
-                        }}
-                      >
-                        ✓
-                      </Typography>
-                    ) : (
-                      // Clock icon for pending messages
-                      <Typography
-                        component="span"
-                        sx={{
-                          fontSize: '10px',
-                          color: '#cbd5e0',
-                          lineHeight: 1
-                        }}
-                      >
-                        ⏱
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
-              )}
-
-            </Paper>
-
-            {/* Message Toolbar - 3-dot menu (baloncuğun DIŞINDA) */}
-            {/* Admin mesaj (sağda) -> 3 nokta SOLDA */}
-            {/* Applicant mesaj (solda) -> 3 nokta SAĞDA */}
-            {!isEditing && (
-              <Box
-                className="message-toolbar"
-                sx={{
-                  flexShrink: 0,
-                  opacity: 1, // Her zaman görünür
-                  transition: 'opacity 0.2s ease'
-                }}
-              >
-                <MessageToolbar
-                  message={message}
-                  isOwnMessage={isOwnMessage}
-                  currentUserType={currentUserType}
-                  onEdit={() => setIsEditing(true)}
-                  onDelete={() => onDelete?.(message.id)}
-                  onReply={() => onReply?.(message)}
-                  onForward={onForward}
-                  onCopy={() => onCopy?.(message.content)}
-                  onPin={onPin}
-                  isPinned={isPinned}
-                  isDark={isDark}
-                />
-              </Box>
-            )}
-          </Box>
-        </Box>
+      {/* Avatar or spacer */}
+      <Box sx={{ flexShrink: 0, width: 36, pt: 0.25 }}>
+        {showAvatar ? (
+          <Avatar
+            src={message.avatar_url}
+            alt={message.sender_name}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '8px',
+              background: isOwnMessage
+                ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #0d4f82 100%)' : 'linear-gradient(135deg, #6a9fd4 0%, #5a8fc4 100%)')
+                : (isDark ? 'linear-gradient(135deg, #2eb886 0%, #1a9a6c 100%)' : 'linear-gradient(135deg, #a0c88c 0%, #90b87c 100%)'),
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            {message.sender_name?.[0]?.toUpperCase()}
+          </Avatar>
+        ) : (
+          <Box sx={{ width: 36 }} />
+        )}
       </Box>
+
+      {/* Content area */}
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        {/* Header: Name + Timestamp */}
+        {showHeader && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+            <MessageHeader
+              message={message}
+              isOwnMessage={isOwnMessage}
+              onNameClick={onNameClick}
+              isDark={isDark}
+            />
+            <Typography
+              variant="caption"
+              sx={{
+                color: isDark ? '#ABABAD' : '#9ca3af',
+                fontSize: '12px',
+                flexShrink: 0
+              }}
+            >
+              {formatTime(message.created_at)}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Message Content */}
+        <MessageContent
+          message={message}
+          isEditing={isEditing}
+          onSaveEdit={(newContent) => {
+            onEdit?.(message.id, newContent);
+            setIsEditing(false);
+          }}
+          onCancelEdit={() => setIsEditing(false)}
+          isDark={isDark}
+          isOwnMessage={isOwnMessage}
+        />
+      </Box>
+
+      {/* Toolbar - appears on hover at top-right */}
+      {!isEditing && (
+        <Box
+          className="message-toolbar"
+          sx={{
+            position: 'absolute',
+            top: 4,
+            right: 12,
+            opacity: 0,
+            visibility: 'hidden',
+            transition: 'opacity 0.15s ease',
+            zIndex: 1
+          }}
+        >
+          <MessageToolbar
+            message={message}
+            isOwnMessage={isOwnMessage}
+            currentUserType={currentUserType}
+            onEdit={() => setIsEditing(true)}
+            onDelete={() => onDelete?.(message.id)}
+            onReply={() => onReply?.(message)}
+            onForward={onForward}
+            onCopy={() => onCopy?.(message.content)}
+            onPin={onPin}
+            isPinned={isPinned}
+            isDark={isDark}
+          />
+        </Box>
+      )}
     </Box>
   );
 };
 
-// Memoize to prevent unnecessary re-renders (Rocket.Chat pattern)
 export default memo(RoomMessage);

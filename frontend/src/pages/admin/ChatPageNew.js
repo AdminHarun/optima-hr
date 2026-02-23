@@ -332,7 +332,7 @@ function ChatPageNew() {
         sx={{
           width: 340,
           bgcolor: isDark ? '#1a1d21' : '#ffffff',
-          borderRight: `1px solid ${isDark ? '#3d4147' : '#e5e7eb'}`,
+          borderRight: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
           display: 'flex',
           flexDirection: 'column',
           boxShadow: isDark ? '1px 0 3px rgba(0, 0, 0, 0.2)' : '1px 0 3px rgba(0, 0, 0, 0.05)'
@@ -345,7 +345,7 @@ function ChatPageNew() {
               variant="h6"
               sx={{
                 fontWeight: 700,
-                color: isDark ? '#ffffff' : '#111827',
+                color: isDark ? '#E0E0E0' : '#111827',
                 fontSize: '20px',
                 letterSpacing: '-0.3px'
               }}
@@ -355,7 +355,7 @@ function ChatPageNew() {
             <Box>
               <IconButton
                 size="small"
-                sx={{ color: isDark ? '#8b9aab' : '#6b7280' }}
+                sx={{ color: isDark ? '#ABABAD' : '#6b7280' }}
                 onClick={(e) => setAddMenuAnchor(e.currentTarget)}
               >
                 <AddIcon fontSize="small" />
@@ -370,13 +370,13 @@ function ChatPageNew() {
                     borderRadius: '8px',
                     mt: 1,
                     ...(isDark && {
-                      bgcolor: '#2c2f33',
-                      color: '#ffffff',
+                      bgcolor: '#27242C',
+                      color: '#E0E0E0',
                       '& .MuiMenuItem-root': {
-                        color: '#d1d9e0',
-                        '&:hover': { bgcolor: '#3d4147' }
+                        color: '#E0E0E0',
+                        '&:hover': { bgcolor: '#35373B' }
                       },
-                      '& .MuiListItemIcon-root': { color: '#8b9aab' }
+                      '& .MuiListItemIcon-root': { color: '#ABABAD' }
                     })
                   }
                 }}
@@ -388,7 +388,7 @@ function ChatPageNew() {
                   <ListItemText>Yeni Grup Oluştur</ListItemText>
                 </MenuItem>
               </Menu>
-              <IconButton size="small" sx={{ color: isDark ? '#8b9aab' : '#6b7280', ml: 0.5 }}>
+              <IconButton size="small" sx={{ color: isDark ? '#ABABAD' : '#6b7280', ml: 0.5 }}>
                 <MoreVertIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -420,8 +420,8 @@ function ChatPageNew() {
                 fontWeight: 600,
                 textTransform: 'none',
                 flex: 1,
-                color: isDark ? '#8b9aab' : undefined,
-                '&.Mui-selected': { color: isDark ? '#1d9bd1' : '#6366f1' }
+                color: isDark ? '#ABABAD' : undefined,
+                '&.Mui-selected': { color: isDark ? '#5CC5F8' : '#6366f1' }
               }}
             />
             <Tab
@@ -434,8 +434,8 @@ function ChatPageNew() {
                 fontWeight: 600,
                 textTransform: 'none',
                 flex: 1,
-                color: isDark ? '#8b9aab' : undefined,
-                '&.Mui-selected': { color: isDark ? '#1d9bd1' : '#6366f1' }
+                color: isDark ? '#ABABAD' : undefined,
+                '&.Mui-selected': { color: isDark ? '#5CC5F8' : '#6366f1' }
               }}
             />
             <Tab
@@ -448,8 +448,8 @@ function ChatPageNew() {
                 fontWeight: 600,
                 textTransform: 'none',
                 flex: 1,
-                color: isDark ? '#8b9aab' : undefined,
-                '&.Mui-selected': { color: isDark ? '#1d9bd1' : '#6366f1' }
+                color: isDark ? '#ABABAD' : undefined,
+                '&.Mui-selected': { color: isDark ? '#5CC5F8' : '#6366f1' }
               }}
             />
           </Tabs>
@@ -464,7 +464,7 @@ function ChatPageNew() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 18, color: isDark ? '#8b9aab' : '#9ca3af' }} />
+                  <SearchIcon sx={{ fontSize: 18, color: isDark ? '#ABABAD' : '#9ca3af' }} />
                 </InputAdornment>
               ),
               endAdornment: searchTerm && (
@@ -472,7 +472,7 @@ function ChatPageNew() {
                   <IconButton
                     size="small"
                     onClick={() => setSearchTerm('')}
-                    sx={{ padding: 0.5, color: isDark ? '#8b9aab' : undefined }}
+                    sx={{ padding: 0.5, color: isDark ? '#ABABAD' : undefined }}
                   >
                     <CloseIcon sx={{ fontSize: 16 }} />
                   </IconButton>
@@ -482,10 +482,10 @@ function ChatPageNew() {
                 fontSize: '14px',
                 bgcolor: isDark ? '#1d2126' : '#f3f4f6',
                 borderRadius: '8px',
-                color: isDark ? '#d1d9e0' : undefined,
+                color: isDark ? '#E0E0E0' : undefined,
                 '& fieldset': { border: 'none' },
                 '&:hover': {
-                  bgcolor: isDark ? '#2c2f33' : '#e5e7eb'
+                  bgcolor: isDark ? '#27242C' : '#e5e7eb'
                 },
                 '&.Mui-focused': {
                   bgcolor: isDark ? '#222529' : '#ffffff',
@@ -493,9 +493,9 @@ function ChatPageNew() {
                 },
                 '& .MuiInputBase-input': {
                   padding: '8px 12px',
-                  color: isDark ? '#d1d9e0' : undefined,
+                  color: isDark ? '#E0E0E0' : undefined,
                   '&::placeholder': {
-                    color: isDark ? '#8b9aab' : undefined,
+                    color: isDark ? '#ABABAD' : undefined,
                     opacity: 1
                   }
                 }
@@ -517,7 +517,7 @@ function ChatPageNew() {
                       variant="subtitle2"
                       sx={{
                         fontWeight: 600,
-                        color: isDark ? '#d1d9e0' : '#374151',
+                        color: isDark ? '#E0E0E0' : '#374151',
                         fontSize: '13px',
                         textTransform: 'none'
                       }}
@@ -525,7 +525,7 @@ function ChatPageNew() {
                       Son Sohbetler
                     </Typography>
                     <IconButton size="small" sx={{ padding: 0.5 }}>
-                      <MoreVertIcon sx={{ fontSize: 16, color: isDark ? '#8b9aab' : '#9ca3af' }} />
+                      <MoreVertIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#9ca3af' }} />
                     </IconButton>
                   </Box>
 
@@ -551,7 +551,7 @@ function ChatPageNew() {
                                 width: 12,
                                 height: 12,
                                 borderRadius: '50%',
-                                bgcolor: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#4a4f55' : '#d1d5db'),
+                                bgcolor: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#35373B' : '#d1d5db'),
                                 border: `2px solid ${isDark ? '#1a1d21' : 'white'}`
                               }}
                             />
@@ -578,7 +578,7 @@ function ChatPageNew() {
                             mt: 0.75,
                             fontSize: '12px',
                             fontWeight: 500,
-                            color: isDark ? '#d1d9e0' : '#374151',
+                            color: isDark ? '#E0E0E0' : '#374151',
                             maxWidth: 60,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -596,7 +596,7 @@ function ChatPageNew() {
 
               {/* Divider */}
               {!searchTerm && recentChats.length > 0 && (
-                <Divider sx={{ mx: 2.5, my: 1, borderColor: isDark ? '#3d4147' : undefined }} />
+                <Divider sx={{ mx: 2.5, my: 1, borderColor: isDark ? '#35373B' : undefined }} />
               )}
 
               {/* All Chats Section */}
@@ -606,7 +606,7 @@ function ChatPageNew() {
                     variant="subtitle2"
                     sx={{
                       fontWeight: 600,
-                      color: isDark ? '#d1d9e0' : '#374151',
+                      color: isDark ? '#E0E0E0' : '#374151',
                       fontSize: '13px',
                       textTransform: 'none'
                     }}
@@ -614,13 +614,13 @@ function ChatPageNew() {
                     Tüm Sohbetler
                   </Typography>
                   <IconButton size="small" sx={{ padding: 0.5 }}>
-                    <MoreVertIcon sx={{ fontSize: 16, color: isDark ? '#8b9aab' : '#9ca3af' }} />
+                    <MoreVertIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#9ca3af' }} />
                   </IconButton>
                 </Box>
 
                 {allChats.length === 0 ? (
                   <Box sx={{ textAlign: 'center', py: 4, px: 3 }}>
-                    <Typography variant="body2" sx={{ color: isDark ? '#8b9aab' : '#9ca3af', fontSize: '14px' }}>
+                    <Typography variant="body2" sx={{ color: isDark ? '#ABABAD' : '#9ca3af', fontSize: '14px' }}>
                       {searchTerm ? `"${searchTerm}" için sonuç bulunamadı` : 'Henüz sohbet yok'}
                     </Typography>
                   </Box>
@@ -642,12 +642,12 @@ function ChatPageNew() {
                           px: 2.5,
                           py: 1.5,
                           cursor: 'pointer',
-                          bgcolor: isSelected ? (isDark ? '#3d4147' : '#f3f4f6') : 'transparent',
+                          bgcolor: isSelected ? (isDark ? '#1264A3' : '#f3f4f6') : 'transparent',
                           borderLeft: isSelected
                             ? `3px solid ${isDark ? '#1264a3' : '#6366f1'}`
                             : '3px solid transparent',
                           '&:hover': {
-                            bgcolor: isDark ? '#2c2f33' : '#f9fafb'
+                            bgcolor: isDark ? '#27242C' : '#f9fafb'
                           },
                           transition: 'all 0.2s ease'
                         }}
@@ -661,7 +661,7 @@ function ChatPageNew() {
                                 width: 10,
                                 height: 10,
                                 borderRadius: '50%',
-                                bgcolor: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#4a4f55' : '#d1d5db'),
+                                bgcolor: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#35373B' : '#d1d5db'),
                                 border: `2px solid ${isDark ? '#1a1d21' : 'white'}`
                               }}
                             />
@@ -673,7 +673,7 @@ function ChatPageNew() {
                               height: 44,
                               background: isSelected
                                 ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #1d9bd1 100%)' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)')
-                                : (isDark ? 'linear-gradient(135deg, #3d4147 0%, #4a4f55 100%)' : 'linear-gradient(135deg, #a0aec0 0%, #cbd5e0 100%)'),
+                                : (isDark ? 'linear-gradient(135deg, #35373B 0%, #4A4D52 100%)' : 'linear-gradient(135deg, #a0aec0 0%, #cbd5e0 100%)'),
                               fontSize: '16px',
                               fontWeight: 600
                             }}
@@ -688,7 +688,7 @@ function ChatPageNew() {
                               variant="subtitle2"
                               sx={{
                                 fontWeight: hasUnread ? 600 : 500,
-                                color: isDark ? '#ffffff' : '#111827',
+                                color: isDark ? '#E0E0E0' : '#111827',
                                 fontSize: '14px',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -700,7 +700,7 @@ function ChatPageNew() {
                             <Typography
                               variant="caption"
                               sx={{
-                                color: isDark ? '#8b9aab' : '#6b7280',
+                                color: isDark ? '#ABABAD' : '#6b7280',
                                 fontSize: '11px',
                                 ml: 1,
                                 flexShrink: 0
@@ -714,7 +714,7 @@ function ChatPageNew() {
                             <Typography
                               variant="body2"
                               sx={{
-                                color: hasUnread ? (isDark ? '#d1d9e0' : '#374151') : (isDark ? '#8b9aab' : '#9ca3af'),
+                                color: hasUnread ? (isDark ? '#E0E0E0' : '#374151') : (isDark ? '#ABABAD' : '#9ca3af'),
                                 fontSize: '13px',
                                 fontWeight: hasUnread ? 500 : 400,
                                 overflow: 'hidden',
@@ -750,7 +750,7 @@ function ChatPageNew() {
                           <Typography
                             variant="caption"
                             sx={{
-                              color: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#8b9aab' : '#9ca3af'),
+                              color: room.participantOnline ? (isDark ? '#2eb886' : '#10b981') : (isDark ? '#ABABAD' : '#9ca3af'),
                               fontSize: '11px',
                               fontWeight: room.participantOnline ? 600 : 400,
                               mt: 0.25
@@ -776,18 +776,18 @@ function ChatPageNew() {
                     width: 64,
                     height: 64,
                     borderRadius: '50%',
-                    bgcolor: isDark ? '#2c2f33' : '#f3f4f6',
+                    bgcolor: isDark ? '#27242C' : '#f3f4f6',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     margin: '0 auto 16px'
                   }}>
-                    <GroupIcon sx={{ fontSize: 32, color: isDark ? '#8b9aab' : '#9ca3af' }} />
+                    <GroupIcon sx={{ fontSize: 32, color: isDark ? '#ABABAD' : '#9ca3af' }} />
                   </Box>
-                  <Typography variant="body1" sx={{ color: isDark ? '#d1d9e0' : '#374151', fontWeight: 500, mb: 1 }}>
+                  <Typography variant="body1" sx={{ color: isDark ? '#E0E0E0' : '#374151', fontWeight: 500, mb: 1 }}>
                     Henüz grup yok
                   </Typography>
-                  <Typography variant="body2" sx={{ color: isDark ? '#8b9aab' : '#9ca3af', mb: 2 }}>
+                  <Typography variant="body2" sx={{ color: isDark ? '#ABABAD' : '#9ca3af', mb: 2 }}>
                     Yeni bir grup oluşturarak başlayın
                   </Typography>
                   <Box
@@ -830,9 +830,9 @@ function ChatPageNew() {
                         px: 2.5,
                         py: 1.5,
                         cursor: 'pointer',
-                        bgcolor: isSelected ? (isDark ? '#3d4147' : '#f3f4f6') : 'transparent',
+                        bgcolor: isSelected ? (isDark ? '#1264A3' : '#f3f4f6') : 'transparent',
                         borderLeft: isSelected ? `3px solid ${isDark ? '#1264a3' : '#6366f1'}` : '3px solid transparent',
-                        '&:hover': { bgcolor: isDark ? '#2c2f33' : '#f9fafb' },
+                        '&:hover': { bgcolor: isDark ? '#27242C' : '#f9fafb' },
                         transition: 'all 0.2s ease'
                       }}
                     >
@@ -856,7 +856,7 @@ function ChatPageNew() {
                             variant="subtitle2"
                             sx={{
                               fontWeight: 500,
-                              color: isDark ? '#ffffff' : '#111827',
+                              color: isDark ? '#E0E0E0' : '#111827',
                               fontSize: '14px',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -867,7 +867,7 @@ function ChatPageNew() {
                           </Typography>
                           <Typography
                             variant="caption"
-                            sx={{ color: isDark ? '#8b9aab' : '#6b7280', fontSize: '11px', ml: 1, flexShrink: 0 }}
+                            sx={{ color: isDark ? '#ABABAD' : '#6b7280', fontSize: '11px', ml: 1, flexShrink: 0 }}
                           >
                             {formatTime(group.lastMessageTime)}
                           </Typography>
@@ -876,7 +876,7 @@ function ChatPageNew() {
                         <Typography
                           variant="body2"
                           sx={{
-                            color: isDark ? '#8b9aab' : '#9ca3af',
+                            color: isDark ? '#ABABAD' : '#9ca3af',
                             fontSize: '13px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -888,7 +888,7 @@ function ChatPageNew() {
 
                         <Typography
                           variant="caption"
-                          sx={{ color: isDark ? '#8b9aab' : '#6b7280', fontSize: '11px', mt: 0.25 }}
+                          sx={{ color: isDark ? '#ABABAD' : '#6b7280', fontSize: '11px', mt: 0.25 }}
                         >
                           {group.memberCount} üye
                         </Typography>
@@ -1009,7 +1009,7 @@ function ChatPageNew() {
                 variant="h5"
                 sx={{
                   fontWeight: 700,
-                  color: isDark ? '#ffffff' : '#111827',
+                  color: isDark ? '#E0E0E0' : '#111827',
                   mb: 1.5,
                   fontSize: '24px'
                 }}
@@ -1019,7 +1019,7 @@ function ChatPageNew() {
               <Typography
                 variant="body1"
                 sx={{
-                  color: isDark ? '#8b9aab' : '#6b7280',
+                  color: isDark ? '#ABABAD' : '#6b7280',
                   fontSize: '15px',
                   lineHeight: 1.6
                 }}

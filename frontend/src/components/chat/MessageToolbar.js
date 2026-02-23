@@ -34,7 +34,8 @@ const MessageToolbar = ({
   onForward,
   onCopy,
   onPin,
-  isPinned = false
+  isPinned = false,
+  isDark = false
 }) => {
   // Admin her mesajı silebilir
   const canDelete = isOwnMessage || currentUserType === 'admin';
@@ -65,11 +66,11 @@ const MessageToolbar = ({
           width: 24,
           height: 24,
           borderRadius: '8px',
-          color: '#718096',
-          backgroundColor: open ? 'rgba(100, 150, 200, 0.15)' : 'transparent',
+          color: isDark ? '#ABABAD' : '#718096',
+          backgroundColor: open ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(100, 150, 200, 0.15)') : 'transparent',
           '&:hover': {
-            backgroundColor: 'rgba(100, 150, 200, 0.12)',
-            color: '#5a9fd4'
+            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(100, 150, 200, 0.12)',
+            color: isDark ? '#E0E0E0' : '#5a9fd4'
           },
           transition: 'all 0.2s ease'
         }}
@@ -94,9 +95,13 @@ const MessageToolbar = ({
         PaperProps={{
           sx: {
             borderRadius: '12px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            boxShadow: isDark ? '0 4px 20px rgba(0, 0, 0, 0.4)' : '0 4px 20px rgba(0, 0, 0, 0.15)',
             minWidth: 180,
             mt: 0.5,
+            ...(isDark && {
+              bgcolor: '#222529',
+              border: '1px solid #35373B'
+            }),
             '& .MuiMenuItem-root': {
               px: 2,
               py: 1,
@@ -104,8 +109,9 @@ const MessageToolbar = ({
               mx: 0.5,
               my: 0.25,
               fontSize: '14px',
+              color: isDark ? '#E0E0E0' : undefined,
               '&:hover': {
-                backgroundColor: 'rgba(100, 150, 200, 0.08)'
+                backgroundColor: isDark ? '#27242C' : 'rgba(100, 150, 200, 0.08)'
               }
             }
           }
@@ -114,7 +120,7 @@ const MessageToolbar = ({
         {/* Yanıtla */}
         <MenuItem onClick={() => handleMenuAction(() => onReply?.(message))}>
           <ListItemIcon>
-            <Reply fontSize="small" sx={{ color: '#5a9fd4' }} />
+            <Reply fontSize="small" sx={{ color: isDark ? '#5CC5F8' : '#5a9fd4' }} />
           </ListItemIcon>
           <ListItemText>Yanıtla</ListItemText>
         </MenuItem>
@@ -122,7 +128,7 @@ const MessageToolbar = ({
         {/* İlet */}
         <MenuItem onClick={() => handleMenuAction(() => onForward?.(message))}>
           <ListItemIcon>
-            <Forward fontSize="small" sx={{ color: '#5a9fd4' }} />
+            <Forward fontSize="small" sx={{ color: isDark ? '#5CC5F8' : '#5a9fd4' }} />
           </ListItemIcon>
           <ListItemText>İlet</ListItemText>
         </MenuItem>
@@ -133,7 +139,7 @@ const MessageToolbar = ({
           onCopy?.();
         })}>
           <ListItemIcon>
-            <ContentCopy fontSize="small" sx={{ color: '#5a9fd4' }} />
+            <ContentCopy fontSize="small" sx={{ color: isDark ? '#5CC5F8' : '#5a9fd4' }} />
           </ListItemIcon>
           <ListItemText>Kopyala</ListItemText>
         </MenuItem>

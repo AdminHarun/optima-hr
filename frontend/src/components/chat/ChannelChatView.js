@@ -34,6 +34,7 @@ import {
 import ThreadPanel from './ThreadPanel';
 import MentionInput from './MentionInput';
 
+import { useTheme } from '../../contexts/ThemeContext';
 import { API_BASE_URL, WS_BASE_URL } from '../../config/config';
 
 const getSiteHeaders = () => {
@@ -48,6 +49,8 @@ const ChannelChatView = ({
   onLeaveChannel,
   onChannelUpdate
 }) => {
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme !== 'basic-light';
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -408,8 +411,8 @@ const ChannelChatView = ({
 
   if (!channel) {
     return (
-      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Typography color="text.secondary">Bir kanal secin</Typography>
+      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: isDark ? '#222529' : undefined }}>
+        <Typography sx={{ color: isDark ? '#ABABAD' : 'text.secondary' }}>Bir kanal secin</Typography>
       </Box>
     );
   }
@@ -422,25 +425,25 @@ const ChannelChatView = ({
         <Box
           sx={{
             p: 2,
-            borderBottom: '1px solid #e5e7eb',
+            borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            bgcolor: 'white'
+            bgcolor: isDark ? '#222529' : 'white'
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {channel.type === 'private' ? (
-              <LockIcon sx={{ color: '#6b7280' }} />
+              <LockIcon sx={{ color: isDark ? '#ABABAD' : '#6b7280' }} />
             ) : (
-              <TagIcon sx={{ color: '#6b7280' }} />
+              <TagIcon sx={{ color: isDark ? '#ABABAD' : '#6b7280' }} />
             )}
             <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2, color: isDark ? '#E0E0E0' : undefined }}>
                 {channel.displayName}
               </Typography>
               {channel.topic && (
-                <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#6b7280' }}>
                   {channel.topic}
                 </Typography>
               )}
@@ -449,13 +452,14 @@ const ChannelChatView = ({
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip
-              icon={<PeopleIcon sx={{ fontSize: 16 }} />}
+              icon={<PeopleIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : undefined }} />}
               label={channel.memberCount || 0}
               size="small"
               variant="outlined"
+              sx={isDark ? { color: '#ABABAD', borderColor: '#35373B' } : {}}
             />
 
-            <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)}>
+            <IconButton size="small" onClick={(e) => setMenuAnchor(e.currentTarget)} sx={{ color: isDark ? '#ABABAD' : undefined }}>
               <MoreIcon />
             </IconButton>
 
@@ -463,10 +467,20 @@ const ChannelChatView = ({
               anchorEl={menuAnchor}
               open={Boolean(menuAnchor)}
               onClose={() => setMenuAnchor(null)}
+              PaperProps={{
+                sx: isDark ? {
+                  bgcolor: '#222529',
+                  border: '1px solid #35373B',
+                  '& .MuiMenuItem-root': {
+                    color: '#E0E0E0',
+                    '&:hover': { bgcolor: '#27242C' }
+                  }
+                } : {}
+              }}
             >
               <MenuItem onClick={handleToggleStar}>
                 <ListItemIcon>
-                  {channel.membership?.starred ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                  {channel.membership?.starred ? <StarIcon fontSize="small" sx={{ color: '#f59e0b' }} /> : <StarBorderIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : undefined }} />}
                 </ListItemIcon>
                 <ListItemText>
                   {channel.membership?.starred ? 'Yildizdan Kaldir' : 'Yildizla'}
@@ -474,16 +488,16 @@ const ChannelChatView = ({
               </MenuItem>
               <MenuItem onClick={handleToggleMute}>
                 <ListItemIcon>
-                  {channel.membership?.muted ? <UnmuteIcon fontSize="small" /> : <MuteIcon fontSize="small" />}
+                  {channel.membership?.muted ? <UnmuteIcon fontSize="small" sx={{ color: isDark ? '#5CC5F8' : undefined }} /> : <MuteIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : undefined }} />}
                 </ListItemIcon>
                 <ListItemText>
                   {channel.membership?.muted ? 'Bildirimleri Ac' : 'Sessize Al'}
                 </ListItemText>
               </MenuItem>
-              <Divider />
-              <MenuItem onClick={handleLeaveChannel} sx={{ color: 'error.main' }}>
+              <Divider sx={isDark ? { borderColor: '#35373B' } : {}} />
+              <MenuItem onClick={handleLeaveChannel} sx={{ color: '#fc8181 !important' }}>
                 <ListItemIcon>
-                  <LeaveIcon fontSize="small" color="error" />
+                  <LeaveIcon fontSize="small" sx={{ color: '#fc8181' }} />
                 </ListItemIcon>
                 <ListItemText>Kanaldan Ayril</ListItemText>
               </MenuItem>
@@ -498,20 +512,27 @@ const ChannelChatView = ({
             flex: 1,
             overflowY: 'auto',
             p: 2,
-            bgcolor: '#f9fafb'
+            bgcolor: isDark ? '#1A1D21' : '#f9fafb',
+            '&::-webkit-scrollbar': { width: '6px' },
+            '&::-webkit-scrollbar-track': { backgroundColor: 'transparent' },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: isDark ? '#35373B' : 'rgba(100, 150, 200, 0.2)',
+              borderRadius: '3px',
+              '&:hover': { backgroundColor: isDark ? '#4A4D52' : 'rgba(100, 150, 200, 0.3)' }
+            }
           }}
         >
           {loading && messages.length === 0 ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={32} />
+              <CircularProgress size={32} sx={isDark ? { color: '#5CC5F8' } : {}} />
             </Box>
           ) : messages.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 8 }}>
-              <TagIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 2 }} />
-              <Typography variant="h6" sx={{ color: '#6b7280', mb: 1 }}>
+              <TagIcon sx={{ fontSize: 48, color: isDark ? '#35373B' : '#d1d5db', mb: 2 }} />
+              <Typography variant="h6" sx={{ color: isDark ? '#ABABAD' : '#6b7280', mb: 1 }}>
                 #{channel.name} kanalina hos geldiniz!
               </Typography>
-              <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+              <Typography variant="body2" sx={{ color: isDark ? '#6b7280' : '#9ca3af' }}>
                 Bu kanalin ilk mesajini siz gonderin.
               </Typography>
             </Box>
@@ -520,18 +541,18 @@ const ChannelChatView = ({
               <Box key={date}>
                 {/* Date Header */}
                 <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
-                  <Divider sx={{ flex: 1 }} />
+                  <Divider sx={{ flex: 1, borderColor: isDark ? '#35373B' : undefined }} />
                   <Typography
                     variant="caption"
                     sx={{
                       px: 2,
-                      color: '#6b7280',
+                      color: isDark ? '#ABABAD' : '#6b7280',
                       fontWeight: 500
                     }}
                   >
                     {formatDateHeader(date)}
                   </Typography>
-                  <Divider sx={{ flex: 1 }} />
+                  <Divider sx={{ flex: 1, borderColor: isDark ? '#35373B' : undefined }} />
                 </Box>
 
                 {/* Messages */}
@@ -553,7 +574,7 @@ const ChannelChatView = ({
                         pl: showAvatar ? 0 : 5.5,
                         position: 'relative',
                         '&:hover': {
-                          bgcolor: 'rgba(99, 102, 241, 0.04)'
+                          bgcolor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(99, 102, 241, 0.04)'
                         },
                         borderRadius: 1,
                         py: 0.5,
@@ -567,8 +588,11 @@ const ChannelChatView = ({
                           sx={{
                             width: 36,
                             height: 36,
-                            bgcolor: isOwn ? '#6366f1' : '#e5e7eb',
-                            fontSize: '14px'
+                            bgcolor: isOwn
+                              ? (isDark ? '#1264a3' : '#6366f1')
+                              : (isDark ? '#27242C' : '#e5e7eb'),
+                            fontSize: '14px',
+                            color: isDark ? '#E0E0E0' : undefined
                           }}
                         >
                           {getInitials(message.senderName)}
@@ -580,11 +604,16 @@ const ChannelChatView = ({
                           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.25 }}>
                             <Typography
                               variant="body2"
-                              sx={{ fontWeight: 600, color: isOwn ? '#6366f1' : '#1f2937' }}
+                              sx={{
+                                fontWeight: 600,
+                                color: isOwn
+                                  ? (isDark ? '#5CC5F8' : '#6366f1')
+                                  : (isDark ? '#2EB67D' : '#1f2937')
+                              }}
                             >
                               {message.senderName}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: '#9ca3af' }}>
+                            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#9ca3af' }}>
                               {formatMessageTime(message.createdAt)}
                             </Typography>
                           </Box>
@@ -593,7 +622,7 @@ const ChannelChatView = ({
                         <Typography
                           variant="body2"
                           sx={{
-                            color: '#374151',
+                            color: isDark ? '#E0E0E0' : '#374151',
                             whiteSpace: 'pre-wrap',
                             wordBreak: 'break-word'
                           }}
@@ -603,7 +632,7 @@ const ChannelChatView = ({
                             <Typography
                               component="span"
                               variant="caption"
-                              sx={{ ml: 1, color: '#9ca3af' }}
+                              sx={{ ml: 1, color: isDark ? '#ABABAD' : '#9ca3af' }}
                             >
                               (duzenlendi)
                             </Typography>
@@ -622,24 +651,24 @@ const ChannelChatView = ({
                               px: 1,
                               py: 0.25,
                               borderRadius: 1,
-                              bgcolor: 'rgba(99, 102, 241, 0.08)',
+                              bgcolor: isDark ? 'rgba(92, 197, 248, 0.08)' : 'rgba(99, 102, 241, 0.08)',
                               cursor: 'pointer',
                               '&:hover': {
-                                bgcolor: 'rgba(99, 102, 241, 0.15)'
+                                bgcolor: isDark ? 'rgba(92, 197, 248, 0.15)' : 'rgba(99, 102, 241, 0.15)'
                               }
                             }}
                           >
-                            <ForumIcon sx={{ fontSize: 14, color: '#6366f1' }} />
+                            <ForumIcon sx={{ fontSize: 14, color: isDark ? '#5CC5F8' : '#6366f1' }} />
                             <Typography
                               variant="caption"
-                              sx={{ color: '#6366f1', fontWeight: 600 }}
+                              sx={{ color: isDark ? '#5CC5F8' : '#6366f1', fontWeight: 600 }}
                             >
                               {message.replyCount} yanit
                             </Typography>
                             {message.lastReply && (
                               <Typography
                                 variant="caption"
-                                sx={{ color: '#9ca3af', ml: 0.5 }}
+                                sx={{ color: isDark ? '#ABABAD' : '#9ca3af', ml: 0.5 }}
                               >
                                 - {message.lastReply.senderName}
                               </Typography>
@@ -657,10 +686,10 @@ const ChannelChatView = ({
                             right: 8,
                             display: 'flex',
                             gap: 0.5,
-                            bgcolor: 'white',
+                            bgcolor: isDark ? '#222529' : 'white',
                             borderRadius: 1,
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            border: '1px solid #e5e7eb',
+                            boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+                            border: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
                             p: 0.25
                           }}
                         >
@@ -670,7 +699,7 @@ const ChannelChatView = ({
                               onClick={() => setSelectedThread(message)}
                               sx={{ p: 0.5 }}
                             >
-                              <ReplyIcon sx={{ fontSize: 18, color: '#6b7280' }} />
+                              <ReplyIcon sx={{ fontSize: 18, color: isDark ? '#ABABAD' : '#6b7280' }} />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -688,12 +717,12 @@ const ChannelChatView = ({
         <Box
           sx={{
             p: 2,
-            borderTop: '1px solid #e5e7eb',
-            bgcolor: 'white'
+            borderTop: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
+            bgcolor: isDark ? '#222529' : 'white'
           }}
         >
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
-            <IconButton size="small" disabled>
+            <IconButton size="small" disabled sx={{ color: isDark ? '#ABABAD' : undefined }}>
               <AttachIcon />
             </IconButton>
 
@@ -703,7 +732,7 @@ const ChannelChatView = ({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#6366f1',
+                    color: isDark ? '#5CC5F8' : '#6366f1',
                     fontSize: '11px',
                     pl: 1,
                     display: 'block',
@@ -724,17 +753,23 @@ const ChannelChatView = ({
                 disabled={sending}
                 multiline
                 maxRows={4}
+                isDark={isDark}
               />
             </Box>
 
-            <IconButton size="small" disabled>
+            <IconButton size="small" disabled sx={{ color: isDark ? '#ABABAD' : undefined }}>
               <EmojiIcon />
             </IconButton>
 
             <IconButton
-              color="primary"
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || sending}
+              sx={{
+                color: isDark
+                  ? (!newMessage.trim() || sending ? '#35373B' : '#2EB67D')
+                  : undefined,
+                ...(!isDark && { color: 'primary.main' })
+              }}
             >
               {sending ? <CircularProgress size={20} /> : <SendIcon />}
             </IconButton>

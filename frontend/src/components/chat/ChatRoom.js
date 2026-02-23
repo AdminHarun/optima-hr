@@ -254,7 +254,7 @@ const ChatRoom = ({
         elevation={0}
         sx={{
           borderRadius: 0,
-          borderBottom: `1px solid ${isDark ? '#3d4147' : 'rgba(100, 150, 200, 0.08)'}`,
+          borderBottom: `1px solid ${isDark ? '#35373B' : 'rgba(100, 150, 200, 0.08)'}`,
           px: 2,
           py: 0.5,
           background: isDark ? '#222529' : 'linear-gradient(180deg, #ffffff 0%, rgba(250, 251, 252, 0.95) 100%)',
@@ -309,7 +309,7 @@ const ChatRoom = ({
               variant="dot"
               sx={{
                 '& .MuiBadge-badge': {
-                  backgroundColor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#4a4f55' : '#cbd5e0'),
+                  backgroundColor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#35373B' : '#cbd5e0'),
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
@@ -354,7 +354,7 @@ const ChatRoom = ({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: isDark ? '#ffffff' : '#2d3748',
+                color: isDark ? '#E0E0E0' : '#2d3748',
                 letterSpacing: '-0.2px',
                 cursor: !isGroup && participantId ? 'pointer' : 'default',
                 transition: 'color 0.2s ease',
@@ -370,7 +370,7 @@ const ChatRoom = ({
             <Typography
               variant="caption"
               sx={{
-                color: isGroup ? (isDark ? '#8b9aab' : '#6b7280') : (participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#8b9aab' : '#a0aec0')),
+                color: isGroup ? (isDark ? '#ABABAD' : '#6b7280') : (participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#ABABAD' : '#a0aec0')),
                 fontSize: '12px',
                 fontWeight: 500,
                 display: 'flex',
@@ -406,7 +406,7 @@ const ChatRoom = ({
                       width: 5,
                       height: 5,
                       borderRadius: '50%',
-                      bgcolor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#4a4f55' : '#cbd5e0'),
+                      bgcolor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#35373B' : '#cbd5e0'),
                       display: 'inline-block'
                     }}
                   />
@@ -456,7 +456,7 @@ const ChatRoom = ({
                 onClick={handleVideoCallClick}
                 disabled={!isConnected}
                 sx={{
-                  color: isConnected ? (isDark ? '#1d9bd1' : '#5a9fd4') : (isDark ? '#8b9aab' : '#a0aec0'),
+                  color: isConnected ? (isDark ? '#5CC5F8' : '#5a9fd4') : (isDark ? '#ABABAD' : '#a0aec0'),
                   backgroundColor: isConnected
                     ? (isDark ? 'rgba(29, 155, 209, 0.15)' : 'rgba(90, 159, 212, 0.1)')
                     : (isDark ? 'rgba(139, 154, 171, 0.1)' : 'rgba(160, 174, 192, 0.1)'),
@@ -478,13 +478,13 @@ const ChatRoom = ({
             <IconButton
               size="small"
               sx={{
-                color: isDark ? '#8b9aab' : '#a0aec0',
+                color: isDark ? '#ABABAD' : '#a0aec0',
                 borderRadius: '12px',
                 width: 40,
                 height: 40,
                 '&:hover': {
                   backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(100, 150, 200, 0.08)',
-                  color: isDark ? '#d1d9e0' : '#718096'
+                  color: isDark ? '#E0E0E0' : '#718096'
                 }
               }}
             >
@@ -595,7 +595,7 @@ const ChatRoom = ({
               </Box>
               <Typography
                 sx={{
-                  color: isDark ? '#d1d9e0' : '#555',
+                  color: isDark ? '#E0E0E0' : '#555',
                   fontSize: '0.9rem',
                   fontStyle: 'italic',
                   wordBreak: 'break-word',

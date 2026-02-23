@@ -37,7 +37,9 @@ const MessageContent = ({
   message,
   isEditing,
   onSaveEdit,
-  onCancelEdit
+  onCancelEdit,
+  isDark = false,
+  isOwnMessage = false
 }) => {
   const [editText, setEditText] = useState(message.content || '');
   const [linkPreviews, setLinkPreviews] = useState([]);
@@ -296,13 +298,13 @@ const MessageContent = ({
         }}
         onClick={() => window.open(fullUrl, '_blank')}
       >
-        <InsertDriveFile fontSize="medium" sx={{ color: '#5a9fd4' }} />
+        <InsertDriveFile fontSize="medium" sx={{ color: isDark ? '#5CC5F8' : '#5a9fd4' }} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: '#2d3748' }}>
+          <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#2d3748' }}>
             {file.name || 'Dosya'}
           </Typography>
           {file.size && (
-            <Typography variant="caption" sx={{ color: '#718096' }}>
+            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#718096' }}>
               {(file.size / 1024).toFixed(2)} KB • İndirmek için tıkla
             </Typography>
           )}
@@ -319,13 +321,14 @@ const MessageContent = ({
           mt: 1,
           maxWidth: '400px',
           borderRadius: '12px',
-          border: '1px solid rgba(100, 150, 200, 0.15)',
-          boxShadow: '0 2px 6px rgba(100, 150, 200, 0.1)',
+          border: `1px solid ${isDark ? '#35373B' : 'rgba(100, 150, 200, 0.15)'}`,
+          boxShadow: isDark ? '0 2px 6px rgba(0,0,0,0.3)' : '0 2px 6px rgba(100, 150, 200, 0.1)',
           cursor: 'pointer',
           transition: 'all 0.2s ease',
+          ...(isDark && { bgcolor: '#222529' }),
           '&:hover': {
-            borderColor: '#5a9fd4',
-            boxShadow: '0 4px 12px rgba(100, 150, 200, 0.2)',
+            borderColor: isDark ? '#5CC5F8' : '#5a9fd4',
+            boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(100, 150, 200, 0.2)',
             transform: 'translateY(-2px)'
           }
         }}
@@ -340,15 +343,15 @@ const MessageContent = ({
             sx={{ objectFit: 'cover' }}
           />
         )}
-        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 }, ...(isDark && { bgcolor: '#222529' }) }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-            <LinkIcon sx={{ fontSize: 18, color: '#5a9fd4', mt: 0.25 }} />
+            <LinkIcon sx={{ fontSize: 18, color: isDark ? '#5CC5F8' : '#5a9fd4', mt: 0.25 }} />
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 variant="body2"
                 sx={{
                   fontWeight: 600,
-                  color: '#2d3748',
+                  color: isDark ? '#E0E0E0' : '#2d3748',
                   mb: 0.5,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -361,7 +364,7 @@ const MessageContent = ({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#718096',
+                    color: isDark ? '#ABABAD' : '#718096',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
@@ -477,13 +480,13 @@ const MessageContent = ({
               sx={{
                 mb: 1,
                 p: 1,
-                backgroundColor: 'rgba(90, 159, 212, 0.06)',
-                borderLeft: '3px solid #5a9fd4',
+                backgroundColor: isDark ? 'rgba(92, 197, 248, 0.08)' : 'rgba(90, 159, 212, 0.06)',
+                borderLeft: `3px solid ${isDark ? '#5CC5F8' : '#5a9fd4'}`,
                 borderRadius: '6px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  backgroundColor: 'rgba(90, 159, 212, 0.12)'
+                  backgroundColor: isDark ? 'rgba(92, 197, 248, 0.15)' : 'rgba(90, 159, 212, 0.12)'
                 }
               }}
               onClick={() => {
@@ -500,12 +503,12 @@ const MessageContent = ({
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <ReplyIcon sx={{ fontSize: 16, color: '#5a9fd4', mt: 0.25 }} />
+                <ReplyIcon sx={{ fontSize: 16, color: isDark ? '#5CC5F8' : '#5a9fd4', mt: 0.25 }} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     variant="caption"
                     sx={{
-                      color: '#5a9fd4',
+                      color: isDark ? '#5CC5F8' : '#5a9fd4',
                       fontWeight: 600,
                       fontSize: '12px',
                       display: 'block',
@@ -517,7 +520,7 @@ const MessageContent = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      color: '#718096',
+                      color: isDark ? '#ABABAD' : '#718096',
                       fontSize: '13px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -535,21 +538,23 @@ const MessageContent = ({
             <Box
               id={`${message.id}-content`}
             sx={{
-              color: message.is_deleted ? '#a0aec0' : 'text.primary',
+              color: message.is_deleted
+                ? (isDark ? '#ABABAD' : '#a0aec0')
+                : (isDark ? '#E0E0E0' : 'text.primary'),
               fontStyle: message.is_deleted ? 'italic' : 'normal',
               wordBreak: 'break-word',
               // Custom styling for markdown elements
               '& p': { m: 0, lineHeight: 1.5 },
-              '& a': { color: '#5a9fd4', textDecoration: 'underline' },
+              '& a': { color: isDark ? '#5CC5F8' : '#5a9fd4', textDecoration: 'underline' },
               '& pre': { m: 0, p: 0, bgcolor: 'transparent !important' },
               '& ul, & ol': { m: 0.5, pl: 2 },
               '& blockquote': {
-                borderLeft: '4px solid #cbd5e0',
+                borderLeft: `4px solid ${isDark ? '#35373B' : '#cbd5e0'}`,
                 m: 0,
                 pl: 2,
                 py: 0.5,
-                color: '#4a5568',
-                bgcolor: 'rgba(0,0,0,0.02)'
+                color: isDark ? '#ABABAD' : '#4a5568',
+                bgcolor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'
               }
               }}
             >
@@ -580,7 +585,8 @@ const MessageContent = ({
                         <code
                           className={className}
                           style={{
-                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                            color: isDark ? '#E01E5A' : undefined,
                             padding: '2px 4px',
                             borderRadius: '4px',
                             fontSize: '0.9em',

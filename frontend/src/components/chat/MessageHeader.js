@@ -7,7 +7,7 @@ import { Box, Typography, Chip } from '@mui/material';
  * Message Header Component - Shows sender name and timestamp
  * Status indicators are shown at bottom of message (RoomMessage.js)
  */
-const MessageHeader = ({ message, isOwnMessage, onNameClick }) => {
+const MessageHeader = ({ message, isOwnMessage, onNameClick, isDark = false }) => {
   const formatDateAndTime = (timestamp) => {
     return new Date(timestamp).toLocaleString('tr-TR', {
       year: 'numeric',
@@ -34,12 +34,16 @@ const MessageHeader = ({ message, isOwnMessage, onNameClick }) => {
         onClick={() => onNameClick?.()}
         sx={{
           fontWeight: 700,
-          color: isOwnMessage ? '#1c61ab' : '#8bb94a',
+          color: isOwnMessage
+            ? (isDark ? '#5CC5F8' : '#1c61ab')
+            : (isDark ? '#2EB67D' : '#8bb94a'),
           fontSize: '0.9rem',
           cursor: 'pointer',
           '&:hover': {
             textDecoration: 'underline',
-            color: isOwnMessage ? '#144887' : '#6b9337'
+            color: isOwnMessage
+              ? (isDark ? '#7DD3FC' : '#144887')
+              : (isDark ? '#4ADE80' : '#6b9337')
           },
           transition: 'color 0.2s'
         }}

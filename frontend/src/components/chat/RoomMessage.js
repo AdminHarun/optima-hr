@@ -123,7 +123,7 @@ const RoomMessage = ({
               sx={{
                 backgroundColor: isOwnMessage
                   ? (isDark ? '#1264a3' : 'rgba(106, 159, 212, 0.15)')
-                  : (isDark ? '#3d4147' : 'rgba(255, 255, 255, 0.92)'),
+                  : (isDark ? '#27242C' : 'rgba(255, 255, 255, 0.92)'),
                 borderRadius: isOwnMessage ? '16px 16px 6px 16px' : '16px 16px 16px 6px',
                 px: 1.25,
                 py: 0.75,
@@ -132,7 +132,7 @@ const RoomMessage = ({
                 border: '1px solid',
                 borderColor: isOwnMessage
                   ? (isDark ? 'rgba(18, 100, 163, 0.3)' : 'rgba(106, 159, 212, 0.15)')
-                  : (isDark ? 'rgba(61, 65, 71, 0.5)' : 'rgba(0, 0, 0, 0.08)'),
+                  : (isDark ? '#35373B' : 'rgba(0, 0, 0, 0.08)'),
                 transition: 'all 0.2s ease',
                 display: 'inline-block',
                 width: 'fit-content',
@@ -182,7 +182,7 @@ const RoomMessage = ({
                     variant="caption"
                     sx={{
                       fontSize: '9px',
-                      color: isDark ? 'rgba(255,255,255,0.5)' : '#a0aec0',
+                      color: isDark ? '#ABABAD' : '#a0aec0',
                       lineHeight: 1
                     }}
                   >

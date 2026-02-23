@@ -61,7 +61,8 @@ const ChannelSidebar = ({
   onChannelSelect,
   selectedChannelId,
   collapsed = false,
-  onCollapseToggle
+  onCollapseToggle,
+  isDark = false
 }) => {
   const [channels, setChannels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -200,10 +201,10 @@ const ChannelSidebar = ({
   // Get channel icon component
   const getChannelIcon = (channel) => {
     if (channel.type === 'private') {
-      return <LockIcon fontSize="small" sx={{ color: '#9ca3af' }} />;
+      return <LockIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : '#9ca3af' }} />;
     }
     const IconComponent = channelIcons[channel.icon] || channelIcons.default;
-    return <IconComponent fontSize="small" sx={{ color: '#9ca3af' }} />;
+    return <IconComponent fontSize="small" sx={{ color: isDark ? '#ABABAD' : '#9ca3af' }} />;
   };
 
   // Separate starred and regular channels
@@ -225,7 +226,7 @@ const ChannelSidebar = ({
 
   if (collapsed) {
     return (
-      <Box sx={{ width: 60, borderRight: '1px solid #e5e7eb', bgcolor: '#f9fafb' }}>
+      <Box sx={{ width: 60, borderRight: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`, bgcolor: isDark ? '#19181D' : '#f9fafb' }}>
         <Tooltip title="Kanallar" placement="right">
           <IconButton onClick={onCollapseToggle} sx={{ m: 1 }}>
             <TagIcon />
@@ -239,8 +240,8 @@ const ChannelSidebar = ({
     <Box
       sx={{
         width: 260,
-        borderRight: '1px solid #e5e7eb',
-        bgcolor: '#f9fafb',
+        borderRight: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
+        bgcolor: isDark ? '#19181D' : '#f9fafb',
         display: 'flex',
         flexDirection: 'column',
         height: '100%'
@@ -250,17 +251,17 @@ const ChannelSidebar = ({
       <Box
         sx={{
           p: 2,
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: `1px solid ${isDark ? '#35373B' : '#e5e7eb'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between'
         }}
       >
-        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1f2937' }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#1f2937' }}>
           Kanallar
         </Typography>
         <Tooltip title="Yeni Kanal">
-          <IconButton size="small" onClick={() => setCreateDialogOpen(true)}>
+          <IconButton size="small" onClick={() => setCreateDialogOpen(true)} sx={{ color: isDark ? '#ABABAD' : undefined }}>
             <AddIcon fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -287,7 +288,7 @@ const ChannelSidebar = ({
           <>
             <ListItemButton
               onClick={() => toggleSection('starred')}
-              sx={{ py: 0.5, px: 2 }}
+              sx={{ py: 0.5, px: 2, '&:hover': { bgcolor: isDark ? '#27242C' : undefined } }}
             >
               <ListItemIcon sx={{ minWidth: 28 }}>
                 <StarIcon fontSize="small" sx={{ color: '#f59e0b' }} />
@@ -297,11 +298,11 @@ const ChannelSidebar = ({
                 primaryTypographyProps={{
                   fontSize: '12px',
                   fontWeight: 600,
-                  color: '#6b7280',
+                  color: isDark ? '#ABABAD' : '#6b7280',
                   textTransform: 'uppercase'
                 }}
               />
-              {expandedSections.starred ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+              {expandedSections.starred ? <ExpandLessIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : undefined }} /> : <ExpandMoreIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : undefined }} />}
             </ListItemButton>
 
             <Collapse in={expandedSections.starred}>
@@ -315,33 +316,34 @@ const ChannelSidebar = ({
                     onToggleStar={(e) => handleToggleStar(e, channel)}
                     getIcon={getChannelIcon}
                     formatTime={formatTime}
+                    isDark={isDark}
                   />
                 ))}
               </List>
             </Collapse>
 
-            <Divider sx={{ my: 1 }} />
+            <Divider sx={{ my: 1, borderColor: isDark ? '#35373B' : undefined }} />
           </>
         )}
 
         {/* Regular Channels */}
         <ListItemButton
           onClick={() => toggleSection('channels')}
-          sx={{ py: 0.5, px: 2 }}
+          sx={{ py: 0.5, px: 2, '&:hover': { bgcolor: isDark ? '#27242C' : undefined } }}
         >
           <ListItemIcon sx={{ minWidth: 28 }}>
-            <TagIcon fontSize="small" sx={{ color: '#6b7280' }} />
+            <TagIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : '#6b7280' }} />
           </ListItemIcon>
           <ListItemText
             primary="Kanallar"
             primaryTypographyProps={{
               fontSize: '12px',
               fontWeight: 600,
-              color: '#6b7280',
+              color: isDark ? '#ABABAD' : '#6b7280',
               textTransform: 'uppercase'
             }}
           />
-          {expandedSections.channels ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+          {expandedSections.channels ? <ExpandLessIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : undefined }} /> : <ExpandMoreIcon fontSize="small" sx={{ color: isDark ? '#ABABAD' : undefined }} />}
         </ListItemButton>
 
         <Collapse in={expandedSections.channels}>
@@ -355,6 +357,7 @@ const ChannelSidebar = ({
                 onToggleStar={(e) => handleToggleStar(e, channel)}
                 getIcon={getChannelIcon}
                 formatTime={formatTime}
+                isDark={isDark}
               />
             ))}
           </List>
@@ -367,8 +370,15 @@ const ChannelSidebar = ({
         onClose={() => setCreateDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: isDark ? {
+            bgcolor: '#222529',
+            color: '#E0E0E0',
+            border: '1px solid #35373B'
+          } : {}
+        }}
       >
-        <DialogTitle>Yeni Kanal Olustur</DialogTitle>
+        <DialogTitle sx={isDark ? { color: '#E0E0E0' } : {}}>Yeni Kanal Olustur</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
@@ -381,6 +391,16 @@ const ChannelSidebar = ({
                 name: e.target.value.toLowerCase().replace(/[^a-z0-9-_]/g, '-')
               })}
               helperText="Kucuk harf, rakam, tire ve alt cizgi kullanilabilir"
+              sx={isDark ? {
+                '& .MuiOutlinedInput-root': {
+                  color: '#E0E0E0',
+                  '& fieldset': { borderColor: '#35373B' },
+                  '&:hover fieldset': { borderColor: '#ABABAD' },
+                  '&.Mui-focused fieldset': { borderColor: '#5CC5F8' }
+                },
+                '& .MuiInputLabel-root': { color: '#ABABAD' },
+                '& .MuiFormHelperText-root': { color: '#ABABAD' }
+              } : {}}
             />
 
             <TextField
@@ -389,6 +409,15 @@ const ChannelSidebar = ({
               placeholder="Ornek Kanal"
               value={newChannel.displayName}
               onChange={(e) => setNewChannel({ ...newChannel, displayName: e.target.value })}
+              sx={isDark ? {
+                '& .MuiOutlinedInput-root': {
+                  color: '#E0E0E0',
+                  '& fieldset': { borderColor: '#35373B' },
+                  '&:hover fieldset': { borderColor: '#ABABAD' },
+                  '&.Mui-focused fieldset': { borderColor: '#5CC5F8' }
+                },
+                '& .MuiInputLabel-root': { color: '#ABABAD' }
+              } : {}}
             />
 
             <TextField
@@ -399,22 +428,43 @@ const ChannelSidebar = ({
               placeholder="Bu kanal ne icin kullanilacak?"
               value={newChannel.description}
               onChange={(e) => setNewChannel({ ...newChannel, description: e.target.value })}
+              sx={isDark ? {
+                '& .MuiOutlinedInput-root': {
+                  color: '#E0E0E0',
+                  '& fieldset': { borderColor: '#35373B' },
+                  '&:hover fieldset': { borderColor: '#ABABAD' },
+                  '&.Mui-focused fieldset': { borderColor: '#5CC5F8' }
+                },
+                '& .MuiInputLabel-root': { color: '#ABABAD' }
+              } : {}}
             />
 
             <FormControl fullWidth>
-              <InputLabel>Kanal Turu</InputLabel>
+              <InputLabel sx={isDark ? { color: '#ABABAD' } : {}}>Kanal Turu</InputLabel>
               <Select
                 value={newChannel.type}
                 label="Kanal Turu"
                 onChange={(e) => setNewChannel({ ...newChannel, type: e.target.value })}
+                sx={isDark ? {
+                  color: '#E0E0E0',
+                  '& .MuiOutlinedInput-notchedOutline': { borderColor: '#35373B' },
+                  '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#ABABAD' },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#5CC5F8' },
+                  '& .MuiSvgIcon-root': { color: '#ABABAD' }
+                } : {}}
+                MenuProps={isDark ? {
+                  PaperProps: {
+                    sx: { bgcolor: '#222529', border: '1px solid #35373B' }
+                  }
+                } : {}}
               >
-                <MenuItem value="public">
+                <MenuItem value="public" sx={isDark ? { color: '#E0E0E0', '&:hover': { bgcolor: '#27242C' } } : {}}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TagIcon fontSize="small" />
                     <span>Acik - Herkes gorebilir ve katilabilir</span>
                   </Box>
                 </MenuItem>
-                <MenuItem value="private">
+                <MenuItem value="private" sx={isDark ? { color: '#E0E0E0', '&:hover': { bgcolor: '#27242C' } } : {}}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <LockIcon fontSize="small" />
                     <span>Ozel - Sadece davet edilenler</span>
@@ -425,11 +475,12 @@ const ChannelSidebar = ({
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Iptal</Button>
+          <Button onClick={() => setCreateDialogOpen(false)} sx={isDark ? { color: '#ABABAD' } : {}}>Iptal</Button>
           <Button
             variant="contained"
             onClick={handleCreateChannel}
             disabled={creating || !newChannel.name.trim() || !newChannel.displayName.trim()}
+            sx={isDark ? { bgcolor: '#2EB67D', '&:hover': { bgcolor: '#249963' } } : {}}
           >
             {creating ? <CircularProgress size={20} /> : 'Olustur'}
           </Button>
@@ -446,7 +497,8 @@ const ChannelListItem = ({
   onSelect,
   onToggleStar,
   getIcon,
-  formatTime
+  formatTime,
+  isDark = false
 }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -462,10 +514,13 @@ const ChannelListItem = ({
         sx={{
           py: 0.75,
           px: 2,
+          '&:hover': {
+            bgcolor: isDark ? '#27242C' : undefined
+          },
           '&.Mui-selected': {
-            bgcolor: 'rgba(99, 102, 241, 0.08)',
+            bgcolor: isDark ? '#1264A3' : 'rgba(99, 102, 241, 0.08)',
             '&:hover': {
-              bgcolor: 'rgba(99, 102, 241, 0.12)'
+              bgcolor: isDark ? 'rgba(18, 100, 163, 0.8)' : 'rgba(99, 102, 241, 0.12)'
             }
           }
         }}
@@ -481,13 +536,15 @@ const ChannelListItem = ({
                 variant="body2"
                 sx={{
                   fontWeight: channel.membership?.unreadCount > 0 ? 600 : 400,
-                  color: channel.isMember ? '#1f2937' : '#9ca3af'
+                  color: channel.isMember
+                    ? (isDark ? '#E0E0E0' : '#1f2937')
+                    : (isDark ? '#6b7280' : '#9ca3af')
                 }}
               >
                 {channel.displayName}
               </Typography>
               {channel.membership?.muted && (
-                <MuteIcon sx={{ fontSize: 14, color: '#9ca3af' }} />
+                <MuteIcon sx={{ fontSize: 14, color: isDark ? '#ABABAD' : '#9ca3af' }} />
               )}
             </Box>
           }
@@ -495,7 +552,7 @@ const ChannelListItem = ({
             <Typography
               variant="caption"
               sx={{
-                color: '#6b7280',
+                color: isDark ? '#ABABAD' : '#6b7280',
                 display: 'block',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -512,7 +569,7 @@ const ChannelListItem = ({
         {channel.membership?.unreadCount > 0 && (
           <Badge
             badgeContent={channel.membership.unreadCount}
-            color="primary"
+            color={isDark ? 'error' : 'primary'}
             sx={{ mr: 1 }}
           />
         )}
@@ -527,14 +584,14 @@ const ChannelListItem = ({
             {channel.membership?.starred ? (
               <StarIcon sx={{ fontSize: 16, color: '#f59e0b' }} />
             ) : (
-              <StarBorderIcon sx={{ fontSize: 16, color: '#9ca3af' }} />
+              <StarBorderIcon sx={{ fontSize: 16, color: isDark ? '#ABABAD' : '#9ca3af' }} />
             )}
           </IconButton>
         )}
 
         {/* Join indicator for non-members */}
         {!channel.isMember && channel.type === 'public' && (
-          <Typography variant="caption" sx={{ color: '#6366f1', fontWeight: 500 }}>
+          <Typography variant="caption" sx={{ color: isDark ? '#5CC5F8' : '#6366f1', fontWeight: 500 }}>
             Katil
           </Typography>
         )}

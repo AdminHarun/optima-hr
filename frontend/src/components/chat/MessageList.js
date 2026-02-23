@@ -218,8 +218,8 @@ const MessageList = ({
         sx={{
           fontSize: '11px',
           fontWeight: 600,
-          color: isDark ? '#8b9aab' : '#718096',
-          background: isDark ? 'rgba(61, 65, 71, 0.6)' : 'rgba(100, 150, 200, 0.08)',
+          color: isDark ? '#ABABAD' : '#718096',
+          background: isDark ? 'rgba(53, 55, 59, 0.8)' : 'rgba(100, 150, 200, 0.08)',
           px: 2,
           py: 0.75,
           borderRadius: '12px',
@@ -348,10 +348,10 @@ const MessageList = ({
           backgroundColor: 'transparent',
         },
         '&::-webkit-scrollbar-thumb': {
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(100, 150, 200, 0.2)',
+          backgroundColor: isDark ? '#35373B' : 'rgba(100, 150, 200, 0.2)',
           borderRadius: '3px',
           '&:hover': {
-            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(100, 150, 200, 0.3)',
+            backgroundColor: isDark ? '#4A4D52' : 'rgba(100, 150, 200, 0.3)',
           },
         },
       }}
@@ -367,7 +367,7 @@ const MessageList = ({
             p: 4
           }}
         >
-          <Typography variant="body2" sx={{ color: isDark ? '#8b9aab' : 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: isDark ? '#ABABAD' : 'text.secondary' }}>
             Henüz mesaj yok. İlk mesajı gönderin!
           </Typography>
         </Box>

@@ -385,23 +385,23 @@ const ChatComposer = ({
           sx={{
             mb: 1,
             p: 1.25,
-            backgroundColor: 'rgba(90, 159, 212, 0.08)',
-            borderLeft: '3px solid #5a9fd4',
+            backgroundColor: isDark ? 'rgba(29, 155, 209, 0.1)' : 'rgba(90, 159, 212, 0.08)',
+            borderLeft: `3px solid ${isDark ? '#5CC5F8' : '#5a9fd4'}`,
             borderRadius: '8px',
             display: 'flex',
             alignItems: 'flex-start',
             gap: 1.5
           }}
         >
-          <ReplyIcon sx={{ fontSize: 18, color: '#5a9fd4', mt: 0.25 }} />
+          <ReplyIcon sx={{ fontSize: 18, color: isDark ? '#5CC5F8' : '#5a9fd4', mt: 0.25 }} />
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="caption" sx={{ color: '#5a9fd4', fontWeight: 600, display: 'block' }}>
+            <Typography variant="caption" sx={{ color: isDark ? '#5CC5F8' : '#5a9fd4', fontWeight: 600, display: 'block' }}>
               {replyingTo.sender_name}
             </Typography>
             <Typography
               variant="body2"
               sx={{
-                color: '#718096',
+                color: isDark ? '#ABABAD' : '#718096',
                 fontSize: '13px',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -415,10 +415,10 @@ const ChatComposer = ({
             size="small"
             onClick={onCancelReply}
             sx={{
-              color: '#a0aec0',
+              color: isDark ? '#ABABAD' : '#a0aec0',
               '&:hover': {
-                backgroundColor: 'rgba(160, 174, 192, 0.15)',
-                color: '#718096'
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(160, 174, 192, 0.15)',
+                color: isDark ? '#E0E0E0' : '#718096'
               }
             }}
           >
@@ -433,9 +433,9 @@ const ChatComposer = ({
           sx={{
             mb: 1,
             p: 1.25,
-            backgroundColor: 'rgba(99, 102, 241, 0.05)',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(99, 102, 241, 0.05)',
             borderRadius: '12px',
-            border: '1px solid rgba(99, 102, 241, 0.15)',
+            border: `1px solid ${isDark ? '#35373B' : 'rgba(99, 102, 241, 0.15)'}`,
             display: 'flex',
             alignItems: 'center',
             gap: 1.5
@@ -484,7 +484,7 @@ const ChatComposer = ({
               variant="body2"
               sx={{
                 fontWeight: 600,
-                color: '#1e293b',
+                color: isDark ? '#E0E0E0' : '#1e293b',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -493,7 +493,7 @@ const ChatComposer = ({
             >
               {selectedFile.name}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#64748b' }}>
               {(selectedFile.size / 1024).toFixed(1)} KB
               {selectedFile.name?.startsWith('clipboard-') && (
                 <Box component="span" sx={{ ml: 1, color: '#6366f1' }}>
@@ -547,10 +547,10 @@ const ChatComposer = ({
           </IconButton>
 
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#2d3748' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#2d3748' }}>
               Sesli Mesaj
             </Typography>
-            <Typography variant="caption" sx={{ color: '#718096' }}>
+            <Typography variant="caption" sx={{ color: isDark ? '#ABABAD' : '#718096' }}>
               {formatTime(recordingTime)}
             </Typography>
           </Box>
@@ -653,12 +653,12 @@ const ChatComposer = ({
                 onClick={(e) => setEmojiAnchorEl(e.currentTarget)}
                 disabled={disabled}
                 sx={{
-                  color: '#a0aec0',
-                  backgroundColor: 'rgba(100, 150, 200, 0.08)',
+                  color: isDark ? '#ABABAD' : '#a0aec0',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100, 150, 200, 0.08)',
                   borderRadius: '10px',
                   '&:hover': {
-                    color: '#5a9fd4',
-                    backgroundColor: 'rgba(100, 150, 200, 0.15)',
+                    color: isDark ? '#E0E0E0' : '#5a9fd4',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(100, 150, 200, 0.15)',
                     transform: 'scale(1.03)'
                   },
                   transition: 'all 0.2s ease'
@@ -675,12 +675,12 @@ const ChatComposer = ({
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled}
                 sx={{
-                  color: '#a0aec0',
-                  backgroundColor: 'rgba(100, 150, 200, 0.08)',
+                  color: isDark ? '#ABABAD' : '#a0aec0',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100, 150, 200, 0.08)',
                   borderRadius: '10px',
                   '&:hover': {
-                    color: '#5a9fd4',
-                    backgroundColor: 'rgba(100, 150, 200, 0.15)',
+                    color: isDark ? '#E0E0E0' : '#5a9fd4',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(100, 150, 200, 0.15)',
                     transform: 'scale(1.03)'
                   },
                   transition: 'all 0.2s ease'
@@ -697,12 +697,12 @@ const ChatComposer = ({
                 onClick={(e) => setCannedResponsesAnchorEl(e.currentTarget)}
                 disabled={disabled}
                 sx={{
-                  color: '#a0aec0',
-                  backgroundColor: 'rgba(100, 150, 200, 0.08)',
+                  color: isDark ? '#ABABAD' : '#a0aec0',
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(100, 150, 200, 0.08)',
                   borderRadius: '10px',
                   '&:hover': {
                     color: '#f59e0b',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.1)',
                     transform: 'scale(1.03)'
                   },
                   transition: 'all 0.2s ease'
@@ -744,23 +744,23 @@ const ChatComposer = ({
                 inputProps={{ maxLength }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(100, 150, 200, 0.04)',
+                    backgroundColor: isDark ? '#222529' : 'rgba(100, 150, 200, 0.04)',
                     borderRadius: '14px',
-                    border: '1.5px solid transparent',
+                    border: `1.5px solid ${isDark ? '#35373B' : 'transparent'}`,
                     '& fieldset': {
                       borderColor: 'transparent'
                     },
                     '&:hover': {
-                      backgroundColor: 'rgba(100, 150, 200, 0.06)',
-                      borderColor: 'rgba(100, 150, 200, 0.15)',
+                      backgroundColor: isDark ? '#27242C' : 'rgba(100, 150, 200, 0.06)',
+                      borderColor: isDark ? '#ABABAD' : 'rgba(100, 150, 200, 0.15)',
                       '& fieldset': {
                         borderColor: 'transparent'
                       }
                     },
                     '&.Mui-focused': {
-                      backgroundColor: '#ffffff',
-                      borderColor: 'rgba(90, 159, 212, 0.3)',
-                      boxShadow: '0 0 0 3px rgba(90, 159, 212, 0.08)',
+                      backgroundColor: isDark ? '#1A1D21' : '#ffffff',
+                      borderColor: isDark ? '#1264A3' : 'rgba(90, 159, 212, 0.3)',
+                      boxShadow: isDark ? '0 0 0 3px rgba(18, 100, 163, 0.15)' : '0 0 0 3px rgba(90, 159, 212, 0.08)',
                       '& fieldset': {
                         borderColor: 'transparent'
                       }
@@ -772,7 +772,11 @@ const ChatComposer = ({
                     px: 1.75,
                     fontSize: '14px',
                     lineHeight: 1.5,
-                    color: '#2d3748'
+                    color: isDark ? '#E0E0E0' : '#2d3748',
+                    '&::placeholder': {
+                      color: isDark ? '#ABABAD' : undefined,
+                      opacity: 1
+                    }
                   }
                 }}
               />
@@ -815,23 +819,23 @@ const ChatComposer = ({
                 disabled={!canSend && !audioBlob}
                 sx={{
                   background: (canSend || audioBlob)
-                    ? 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)'
-                    : 'rgba(160, 174, 192, 0.15)',
-                  color: (canSend || audioBlob) ? '#ffffff' : '#cbd5e0',
+                    ? (isDark ? '#2EB67D' : 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)')
+                    : (isDark ? '#35373B' : 'rgba(160, 174, 192, 0.15)'),
+                  color: (canSend || audioBlob) ? '#ffffff' : (isDark ? '#ABABAD' : '#cbd5e0'),
                   width: 42,
                   height: 42,
                   borderRadius: '12px',
-                  boxShadow: (canSend || audioBlob) ? '0 2px 8px rgba(106, 159, 212, 0.25)' : 'none',
+                  boxShadow: (canSend || audioBlob) ? (isDark ? '0 2px 8px rgba(46, 182, 125, 0.3)' : '0 2px 8px rgba(106, 159, 212, 0.25)') : 'none',
                   '&:hover': {
                     background: (canSend || audioBlob)
-                      ? 'linear-gradient(135deg, #5a8fc4 0%, #90b87c 100%)'
-                      : 'rgba(160, 174, 192, 0.15)',
+                      ? (isDark ? '#249963' : 'linear-gradient(135deg, #5a8fc4 0%, #90b87c 100%)')
+                      : (isDark ? '#27242C' : 'rgba(160, 174, 192, 0.15)'),
                     transform: (canSend || audioBlob) ? 'scale(1.03)' : 'none',
-                    boxShadow: (canSend || audioBlob) ? '0 4px 12px rgba(106, 159, 212, 0.3)' : 'none'
+                    boxShadow: (canSend || audioBlob) ? (isDark ? '0 4px 12px rgba(46, 182, 125, 0.4)' : '0 4px 12px rgba(106, 159, 212, 0.3)') : 'none'
                   },
                   '&.Mui-disabled': {
-                    background: 'rgba(160, 174, 192, 0.15)',
-                    color: '#cbd5e0'
+                    background: isDark ? '#35373B' : 'rgba(160, 174, 192, 0.15)',
+                    color: isDark ? '#ABABAD' : '#cbd5e0'
                   },
                   transition: 'all 0.2s ease'
                 }}
@@ -893,16 +897,20 @@ const ChatComposer = ({
         PaperProps={{
           sx: {
             borderRadius: '16px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.4)' : '0 8px 32px rgba(0, 0, 0, 0.12)',
             maxHeight: 400,
-            width: 320
+            width: 320,
+            ...(isDark && {
+              bgcolor: '#222529',
+              border: '1px solid #35373B'
+            })
           }
         }}
       >
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <QuickReplyIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1e293b' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: isDark ? '#E0E0E0' : '#1e293b' }}>
               Hazır Yanıtlar
             </Typography>
           </Box>
@@ -915,11 +923,11 @@ const ChatComposer = ({
                   p: 1.5,
                   borderRadius: '10px',
                   cursor: 'pointer',
-                  border: '1px solid #e2e8f0',
-                  backgroundColor: '#fff',
+                  border: `1px solid ${isDark ? '#35373B' : '#e2e8f0'}`,
+                  backgroundColor: isDark ? '#1A1D21' : '#fff',
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)',
                     borderColor: '#f59e0b',
                     transform: 'translateX(4px)'
                   }
@@ -939,7 +947,7 @@ const ChatComposer = ({
                 <Typography
                   variant="caption"
                   sx={{
-                    color: '#64748b',
+                    color: isDark ? '#ABABAD' : '#64748b',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',

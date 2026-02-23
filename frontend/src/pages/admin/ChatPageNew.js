@@ -22,6 +22,7 @@ function ChatPageNew() {
   const { currentUser } = useEmployeeAuth();
   const { currentTheme } = useTheme();
   const isDark = currentTheme !== 'basic-light';
+  console.log('🎨 Chat Theme Debug:', { currentTheme, isDark });
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [groups, setGroups] = useState([]);

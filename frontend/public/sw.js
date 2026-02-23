@@ -1,8 +1,8 @@
 // Optima HR - Service Worker
 // Cache strategy: Network-first for API, Cache-first for static assets
 
-const STATIC_CACHE = 'optima-static-v1';
-const API_CACHE = 'optima-api-v1';
+const STATIC_CACHE = 'optima-static-v2';
+const API_CACHE = 'optima-api-v2';
 const EXPECTED_CACHES = [STATIC_CACHE, API_CACHE];
 
 // Assets to pre-cache on install

@@ -23,6 +23,7 @@ import {
 import MessageList from './MessageList';
 import ChatComposer from './ChatComposer';
 import ApplicantProfileModal from './ApplicantProfileModal';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /**
  * Chat Room Component - Main chat interface
@@ -72,6 +73,9 @@ const ChatRoom = ({
   memberCount = 0,
   groupDescription = null
 }) => {
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme !== 'basic-light';
+
   // Drag and drop state
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragFile, setDragFile] = useState(null);
@@ -250,10 +254,10 @@ const ChatRoom = ({
         elevation={0}
         sx={{
           borderRadius: 0,
-          borderBottom: '1px solid rgba(100, 150, 200, 0.08)',
+          borderBottom: `1px solid ${isDark ? '#3d4147' : 'rgba(100, 150, 200, 0.08)'}`,
           px: 2,
           py: 0.5,
-          background: 'linear-gradient(180deg, #ffffff 0%, rgba(250, 251, 252, 0.95) 100%)',
+          background: isDark ? '#222529' : 'linear-gradient(180deg, #ffffff 0%, rgba(250, 251, 252, 0.95) 100%)',
           zIndex: 10,
           flexShrink: 0
         }}
@@ -305,11 +309,11 @@ const ChatRoom = ({
               variant="dot"
               sx={{
                 '& .MuiBadge-badge': {
-                  backgroundColor: participantOnline ? '#48bb78' : '#cbd5e0',
+                  backgroundColor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#4a4f55' : '#cbd5e0'),
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  border: '1.5px solid white',
+                  border: `1.5px solid ${isDark ? '#222529' : 'white'}`,
                   boxShadow: participantOnline ? '0 0 0 2px rgba(72, 187, 120, 0.2)' : 'none'
                 }
               }}
@@ -320,7 +324,9 @@ const ChatRoom = ({
                 sx={{
                   width: 32,
                   height: 32,
-                  background: 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)',
+                  background: isDark
+                    ? 'linear-gradient(135deg, #1264a3 0%, #1d9bd1 100%)'
+                    : 'linear-gradient(135deg, #6a9fd4 0%, #a0c88c 100%)',
                   fontSize: '14px',
                   fontWeight: 600,
                   boxShadow: '0 1px 4px rgba(100, 150, 200, 0.12)',
@@ -348,7 +354,7 @@ const ChatRoom = ({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: '#2d3748',
+                color: isDark ? '#ffffff' : '#2d3748',
                 letterSpacing: '-0.2px',
                 cursor: !isGroup && participantId ? 'pointer' : 'default',
                 transition: 'color 0.2s ease',
@@ -364,7 +370,7 @@ const ChatRoom = ({
             <Typography
               variant="caption"
               sx={{
-                color: isGroup ? '#6b7280' : (participantOnline ? '#48bb78' : '#a0aec0'),
+                color: isGroup ? (isDark ? '#8b9aab' : '#6b7280') : (participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#8b9aab' : '#a0aec0')),
                 fontSize: '12px',
                 fontWeight: 500,
                 display: 'flex',
@@ -400,7 +406,7 @@ const ChatRoom = ({
                       width: 5,
                       height: 5,
                       borderRadius: '50%',
-                      bgcolor: participantOnline ? '#48bb78' : '#cbd5e0',
+                      bgcolor: participantOnline ? (isDark ? '#2eb886' : '#48bb78') : (isDark ? '#4a4f55' : '#cbd5e0'),
                       display: 'inline-block'
                     }}
                   />
@@ -421,7 +427,9 @@ const ChatRoom = ({
                 px: 1.5,
                 py: 0.5,
                 borderRadius: '8px',
-                backgroundColor: isConnected ? 'rgba(72, 187, 120, 0.1)' : 'rgba(245, 101, 101, 0.1)',
+                backgroundColor: isConnected
+                  ? (isDark ? 'rgba(46, 184, 134, 0.15)' : 'rgba(72, 187, 120, 0.1)')
+                  : (isDark ? 'rgba(245, 101, 101, 0.15)' : 'rgba(245, 101, 101, 0.1)'),
                 transition: 'all 0.3s ease'
               }}
             >
@@ -448,8 +456,10 @@ const ChatRoom = ({
                 onClick={handleVideoCallClick}
                 disabled={!isConnected}
                 sx={{
-                  color: isConnected ? '#5a9fd4' : '#a0aec0',
-                  backgroundColor: isConnected ? 'rgba(90, 159, 212, 0.1)' : 'rgba(160, 174, 192, 0.1)',
+                  color: isConnected ? (isDark ? '#1d9bd1' : '#5a9fd4') : (isDark ? '#8b9aab' : '#a0aec0'),
+                  backgroundColor: isConnected
+                    ? (isDark ? 'rgba(29, 155, 209, 0.15)' : 'rgba(90, 159, 212, 0.1)')
+                    : (isDark ? 'rgba(139, 154, 171, 0.1)' : 'rgba(160, 174, 192, 0.1)'),
                   borderRadius: '12px',
                   width: 40,
                   height: 40,
@@ -468,13 +478,13 @@ const ChatRoom = ({
             <IconButton
               size="small"
               sx={{
-                color: '#a0aec0',
+                color: isDark ? '#8b9aab' : '#a0aec0',
                 borderRadius: '12px',
                 width: 40,
                 height: 40,
                 '&:hover': {
-                  backgroundColor: 'rgba(100, 150, 200, 0.08)',
-                  color: '#718096'
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(100, 150, 200, 0.08)',
+                  color: isDark ? '#d1d9e0' : '#718096'
                 }
               }}
             >
@@ -530,6 +540,7 @@ const ChatRoom = ({
             onPinMessage={onPinMessage}
             onCopyMessage={handleCopyMessage}
             onNameClick={() => participantId && setShowProfileModal(true)}
+            isDark={isDark}
           />
 
           {/* Live Typing Preview - Comm100 Style (Admin can see what applicant is typing) */}
@@ -540,8 +551,8 @@ const ChatRoom = ({
                 py: 1.5,
                 mx: 2,
                 mb: 1,
-                backgroundColor: 'rgba(139, 185, 74, 0.08)',
-                border: '1px dashed rgba(139, 185, 74, 0.4)',
+                backgroundColor: isDark ? 'rgba(46, 184, 134, 0.1)' : 'rgba(139, 185, 74, 0.08)',
+                border: isDark ? '1px dashed rgba(46, 184, 134, 0.4)' : '1px dashed rgba(139, 185, 74, 0.4)',
                 borderRadius: '12px',
                 flexShrink: 0
               }}
@@ -584,7 +595,7 @@ const ChatRoom = ({
               </Box>
               <Typography
                 sx={{
-                  color: '#555',
+                  color: isDark ? '#d1d9e0' : '#555',
                   fontSize: '0.9rem',
                   fontStyle: 'italic',
                   wordBreak: 'break-word',
@@ -603,7 +614,7 @@ const ChatRoom = ({
               sx={{
                 px: 3,
                 py: 1,
-                backgroundColor: '#f5f6f7',
+                backgroundColor: isDark ? '#1d2126' : '#f5f6f7',
                 flexShrink: 0
               }}
             >
@@ -667,6 +678,7 @@ const ChatRoom = ({
             onCancelReply={() => setReplyingTo(null)}
             droppedFile={dragFile}
             onDroppedFileHandled={() => setDragFile(null)}
+            isDark={isDark}
           />
         </>
       )}

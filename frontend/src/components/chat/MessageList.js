@@ -24,7 +24,8 @@ const MessageList = ({
   onNameClick,
   onLoadMore,
   hasMore = false,
-  isLoadingMore = false
+  isLoadingMore = false,
+  isDark = false
 }) => {
   const messagesEndRef = useRef(null);
   const messageListRef = useRef(null);
@@ -217,8 +218,8 @@ const MessageList = ({
         sx={{
           fontSize: '11px',
           fontWeight: 600,
-          color: '#718096',
-          background: 'rgba(100, 150, 200, 0.08)',
+          color: isDark ? '#8b9aab' : '#718096',
+          background: isDark ? 'rgba(61, 65, 71, 0.6)' : 'rgba(100, 150, 200, 0.08)',
           px: 2,
           py: 0.75,
           borderRadius: '12px',
@@ -324,15 +325,19 @@ const MessageList = ({
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        // Background with subtle overlay for better readability
-        background: `
-          linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.20)),
-          url(/assets/images/42904319_SL-120722-54440-06.jpg)
-        `,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
+        // Background
+        ...(isDark ? {
+          bgcolor: '#222529'
+        } : {
+          background: `
+            linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.20)),
+            url(/assets/images/42904319_SL-120722-54440-06.jpg)
+          `,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          backgroundAttachment: 'fixed',
+        }),
         // Smooth scrolling
         scrollBehavior: 'smooth',
         // Custom scrollbar styling
@@ -343,10 +348,10 @@ const MessageList = ({
           backgroundColor: 'transparent',
         },
         '&::-webkit-scrollbar-thumb': {
-          backgroundColor: 'rgba(100, 150, 200, 0.2)',
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(100, 150, 200, 0.2)',
           borderRadius: '3px',
           '&:hover': {
-            backgroundColor: 'rgba(100, 150, 200, 0.3)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(100, 150, 200, 0.3)',
           },
         },
       }}
@@ -362,8 +367,8 @@ const MessageList = ({
             p: 4
           }}
         >
-          <Typography variant="body2" color="text.secondary">
-            Henüz mesaj yok. İlk mesajı gönderin! 👋
+          <Typography variant="body2" sx={{ color: isDark ? '#8b9aab' : 'text.secondary' }}>
+            Henüz mesaj yok. İlk mesajı gönderin!
           </Typography>
         </Box>
       ) : (

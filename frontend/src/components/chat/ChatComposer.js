@@ -45,7 +45,8 @@ const ChatComposer = ({
   replyingTo = null,
   onCancelReply = null,
   droppedFile = null,
-  onDroppedFileHandled = null
+  onDroppedFileHandled = null,
+  isDark = false
 }) => {
   const [message, setMessage] = useState('');
   const [emojiAnchorEl, setEmojiAnchorEl] = useState(null);
@@ -371,8 +372,8 @@ const ChatComposer = ({
     <Paper
       elevation={0}
       sx={{
-        borderTop: '1px solid rgba(100, 150, 200, 0.12)',
-        background: '#ffffff',
+        borderTop: `1px solid ${isDark ? '#3d4147' : 'rgba(100, 150, 200, 0.12)'}`,
+        background: isDark ? '#1d2126' : '#ffffff',
         p: 0.75,
         boxShadow: 'none',
         flexShrink: 0

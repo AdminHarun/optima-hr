@@ -5,6 +5,7 @@ import { Box, Avatar, Typography, Paper } from '@mui/material';
 import MessageHeader from './MessageHeader';
 import MessageContent from './MessageContent';
 import MessageToolbar from './MessageToolbar';
+import { useTheme } from '../../contexts/ThemeContext';
 
 /**
  * Main message component - Rocket.Chat pattern adapted for Optima
@@ -33,6 +34,9 @@ const RoomMessage = ({
   isPinned = false,
   onNameClick
 }) => {
+  const { currentTheme } = useTheme();
+  const isDark = currentTheme !== 'basic-light';
+
   const [isEditing, setIsEditing] = React.useState(false);
 
   // Sequential messages hide avatar and compact header
@@ -76,8 +80,8 @@ const RoomMessage = ({
                 width: 32,
                 height: 32,
                 background: isOwnMessage
-                  ? 'linear-gradient(135deg, #6a9fd4 0%, #5a8fc4 100%)'
-                  : 'linear-gradient(135deg, #a0c88c 0%, #90b87c 100%)',
+                  ? (isDark ? 'linear-gradient(135deg, #1264a3 0%, #0d4f82 100%)' : 'linear-gradient(135deg, #6a9fd4 0%, #5a8fc4 100%)')
+                  : (isDark ? 'linear-gradient(135deg, #2eb886 0%, #1a9a6c 100%)' : 'linear-gradient(135deg, #a0c88c 0%, #90b87c 100%)'),
                 fontSize: '12px',
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -117,20 +121,24 @@ const RoomMessage = ({
             <Paper
               elevation={0}
               sx={{
-                backgroundColor: isOwnMessage ? 'rgba(106, 159, 212, 0.15)' : 'rgba(255, 255, 255, 0.92)',
+                backgroundColor: isOwnMessage
+                  ? (isDark ? '#1264a3' : 'rgba(106, 159, 212, 0.15)')
+                  : (isDark ? '#3d4147' : 'rgba(255, 255, 255, 0.92)'),
                 borderRadius: isOwnMessage ? '16px 16px 6px 16px' : '16px 16px 16px 6px',
                 px: 1.25,
                 py: 0.75,
                 position: 'relative',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.06)',
+                boxShadow: isDark ? '0 1px 2px rgba(0, 0, 0, 0.2)' : '0 1px 2px rgba(0, 0, 0, 0.06)',
                 border: '1px solid',
-                borderColor: isOwnMessage ? 'rgba(106, 159, 212, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+                borderColor: isOwnMessage
+                  ? (isDark ? 'rgba(18, 100, 163, 0.3)' : 'rgba(106, 159, 212, 0.15)')
+                  : (isDark ? 'rgba(61, 65, 71, 0.5)' : 'rgba(0, 0, 0, 0.08)'),
                 transition: 'all 0.2s ease',
                 display: 'inline-block',
                 width: 'fit-content',
                 maxWidth: '100%',
                 '&:hover': {
-                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                  boxShadow: isDark ? '0 2px 6px rgba(0, 0, 0, 0.3)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
                   transform: 'translateY(-0.5px)'
                 }
               }}
@@ -141,6 +149,7 @@ const RoomMessage = ({
                   message={message}
                   isOwnMessage={isOwnMessage}
                   onNameClick={onNameClick}
+                  isDark={isDark}
                 />
               )}
 
@@ -153,6 +162,8 @@ const RoomMessage = ({
                   setIsEditing(false);
                 }}
                 onCancelEdit={() => setIsEditing(false)}
+                isDark={isDark}
+                isOwnMessage={isOwnMessage}
               />
 
               {/* Read Receipt Indicators - WhatsApp/Telegram Style */}
@@ -171,7 +182,7 @@ const RoomMessage = ({
                     variant="caption"
                     sx={{
                       fontSize: '9px',
-                      color: '#a0aec0',
+                      color: isDark ? 'rgba(255,255,255,0.5)' : '#a0aec0',
                       lineHeight: 1
                     }}
                   >
@@ -272,6 +283,7 @@ const RoomMessage = ({
                   onCopy={() => onCopy?.(message.content)}
                   onPin={onPin}
                   isPinned={isPinned}
+                  isDark={isDark}
                 />
               </Box>
             )}

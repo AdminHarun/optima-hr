@@ -62,7 +62,6 @@ import IntegrationsPage from './pages/admin/IntegrationsPage';
 
 // Utils
 import './utils/createDemoData';
-import './utils/initEmployeeData';
 
 // Unauthorized Page
 const UnauthorizedPage = () => (

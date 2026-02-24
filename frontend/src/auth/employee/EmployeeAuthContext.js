@@ -1,5 +1,6 @@
-// Employee Authentication Context - Tamamen ayrı sistem
+// Employee Authentication Context - Backend JWT + httpOnly Cookie
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config/config';
 
 const EmployeeAuthContext = createContext();
 
@@ -85,111 +86,125 @@ export const EmployeeAuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Sayfa yüklendiğinde session kontrolü
+  // Sayfa yüklendiğinde backend'den oturum kontrolü
   useEffect(() => {
-    checkEmployeeSession();
+    checkSession();
   }, []);
 
-  // Session timeout kontrolü (8 saat)
-  useEffect(() => {
-    if (isAuthenticated) {
-      const sessionTimeout = setInterval(() => {
-        const session = getEmployeeSession();
-        if (session) {
-          const now = new Date().getTime();
-          const loginTime = new Date(session.loginTime).getTime();
-          const eightHours = 8 * 60 * 60 * 1000; // 8 saat ms
-
-          if (now - loginTime > eightHours) {
-            console.log('Employee session expired after 8 hours');
-            logout();
-          }
-        }
-      }, 60000); // Her dakika kontrol et
-
-      return () => clearInterval(sessionTimeout);
-    }
-  }, [isAuthenticated]);
-
-  const checkEmployeeSession = () => {
+  // Backend'den oturum kontrolü - /api/auth/me
+  const checkSession = async () => {
     try {
-      const session = getEmployeeSession();
-      if (session && session.userId) {
-        const user = getEmployeeById(session.userId);
-        if (user && user.isActive) {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        method: 'GET',
+        credentials: 'include', // httpOnly cookie gönder
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.user) {
+          // Backend'den gelen kullanıcı verisini uyumlu formata dönüştür
+          const user = {
+            id: data.user.id,
+            email: data.user.email,
+            first_name: data.user.first_name,
+            firstName: data.user.first_name,
+            last_name: data.user.last_name,
+            lastName: data.user.last_name,
+            role: data.user.role,
+            siteId: data.user.site_code,
+            site_code: data.user.site_code,
+            avatar: data.user.avatar_url,
+            avatar_url: data.user.avatar_url,
+            phone: data.user.phone,
+            isActive: data.user.is_active,
+            is_active: data.user.is_active,
+            employee_id: data.user.employee_id,
+            two_factor_enabled: data.user.two_factor_enabled,
+            lastLogin: data.user.last_login
+          };
           setCurrentUser(user);
           setIsAuthenticated(true);
-          console.log('Employee session restored:', user.email);
-        } else {
-          clearEmployeeSession();
+          console.log('Session restored:', user.email);
         }
       }
     } catch (error) {
-      console.error('Employee session check error:', error);
-      clearEmployeeSession();
+      console.error('Session check error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Backend'den login - /api/auth/login
   const login = async (email, password) => {
     try {
-      // Email ve şifre kontrolü
-      const user = authenticateEmployee(email, password);
-      
-      if (!user) {
-        throw new Error('Geçersiz email veya şifre');
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        credentials: 'include', // cookie'yi kabul et
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Giriş başarısız');
       }
 
-      if (!user.isActive) {
-        throw new Error('Hesabınız deaktif durumda');
-      }
-
-      // Cihaz bilgilerini topla
-      const deviceInfo = await collectEmployeeDeviceInfo();
-
-      // Session oluştur
-      const session = {
-        userId: user.id,
-        email: user.email,
-        loginTime: new Date().toISOString(),
-        deviceInfo,
-        lastActivity: new Date().toISOString()
+      // Kullanıcı bilgisini uyumlu formata dönüştür
+      const user = {
+        id: data.user.id,
+        email: data.user.email,
+        first_name: data.user.first_name,
+        firstName: data.user.first_name,
+        last_name: data.user.last_name,
+        lastName: data.user.last_name,
+        role: data.user.role,
+        siteId: data.user.site_code,
+        site_code: data.user.site_code,
+        avatar: data.user.avatar_url,
+        avatar_url: data.user.avatar_url,
+        phone: data.user.phone,
+        isActive: data.user.is_active,
+        is_active: data.user.is_active,
+        employee_id: data.user.employee_id,
+        two_factor_enabled: data.user.two_factor_enabled,
+        lastLogin: data.user.last_login
       };
-
-      // Session'ı kaydet
-      localStorage.setItem('employee_session', JSON.stringify(session));
-      
-      // Son giriş zamanını güncelle
-      updateEmployeeLastLogin(user.id);
 
       setCurrentUser(user);
       setIsAuthenticated(true);
 
-      console.log('Employee login successful:', user.email);
+      console.log('Login successful:', user.email);
       return { success: true };
 
     } catch (error) {
-      console.error('Employee login error:', error);
+      console.error('Login error:', error);
       return { success: false, error: error.message };
     }
   };
 
-  const logout = () => {
+  // Backend'den logout - /api/auth/logout
+  const logout = async () => {
     try {
-      // Session'ı temizle
-      localStorage.removeItem('employee_session');
-      
-      // State'i temizle
-      setCurrentUser(null);
-      setIsAuthenticated(false);
-      
-      console.log('Employee logout successful');
-      return { success: true };
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
     } catch (error) {
-      console.error('Employee logout error:', error);
-      return { success: false };
+      console.error('Logout API error:', error);
     }
+
+    // State her durumda temizle
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+
+    console.log('Logout successful');
+    return { success: true };
   };
 
   // Yetki kontrolü
@@ -215,17 +230,6 @@ export const EmployeeAuthProvider = ({ children }) => {
     return currentUser.siteId === siteId;
   };
 
-  // Aktivite güncelleme
-  const updateActivity = () => {
-    if (isAuthenticated) {
-      const session = getEmployeeSession();
-      if (session) {
-        session.lastActivity = new Date().toISOString();
-        localStorage.setItem('employee_session', JSON.stringify(session));
-      }
-    }
-  };
-
   const value = {
     currentUser,
     isLoading,
@@ -234,7 +238,6 @@ export const EmployeeAuthProvider = ({ children }) => {
     logout,
     hasPermission,
     hasAccessToSite,
-    updateActivity,
     PERMISSIONS,
     EMPLOYEE_ROLES
   };
@@ -244,59 +247,6 @@ export const EmployeeAuthProvider = ({ children }) => {
       {children}
     </EmployeeAuthContext.Provider>
   );
-};
-
-// Helper fonksiyonlar - SADECE EMPLOYEE İÇİN
-const getEmployeeSession = () => {
-  try {
-    const session = localStorage.getItem('employee_session');
-    return session ? JSON.parse(session) : null;
-  } catch {
-    return null;
-  }
-};
-
-const clearEmployeeSession = () => {
-  localStorage.removeItem('employee_session');
-};
-
-const authenticateEmployee = (email, password) => {
-  const employees = JSON.parse(localStorage.getItem('employees') || '[]');
-  const employee = employees.find(emp => 
-    emp.email.toLowerCase() === email.toLowerCase()
-  );
-  
-  if (employee && employee.passwordHash === btoa(unescape(encodeURIComponent(password)))) {
-    return employee;
-  }
-  
-  return null;
-};
-
-const getEmployeeById = (id) => {
-  const employees = JSON.parse(localStorage.getItem('employees') || '[]');
-  return employees.find(emp => emp.id === id);
-};
-
-const updateEmployeeLastLogin = (userId) => {
-  const employees = JSON.parse(localStorage.getItem('employees') || '[]');
-  const updatedEmployees = employees.map(emp => 
-    emp.id === userId 
-      ? { ...emp, lastLogin: new Date().toISOString() }
-      : emp
-  );
-  localStorage.setItem('employees', JSON.stringify(updatedEmployees));
-};
-
-const collectEmployeeDeviceInfo = async () => {
-  return {
-    userAgent: navigator.userAgent,
-    platform: navigator.platform,
-    language: navigator.language,
-    screenResolution: `${window.screen.width}x${window.screen.height}`,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    timestamp: new Date().toISOString()
-  };
 };
 
 // Custom hook

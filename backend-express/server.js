@@ -1,6 +1,9 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { testConnection, sequelize } = require('./config/database');
@@ -39,6 +42,7 @@ const twoFactorRoutes = require('./routes/twoFactor');
 const ssoRoutes = require('./routes/sso');
 const integrationRoutes = require('./routes/integrations');
 const workflowRoutes = require('./routes/workflows');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,10 +54,34 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware
+// Security Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false
+}));
+app.use(cookieParser());
 app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Rate Limiting - Auth
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { success: false, error: 'Cok fazla giris denemesi. 15 dakika sonra tekrar deneyin.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Genel API limiti
+const apiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  message: { success: false, error: 'Cok fazla istek. Lutfen bekleyin.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api/', apiLimiter);
 
 // Static files for uploads with cache headers
 const staticOptions = {
@@ -82,6 +110,7 @@ app.get('/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/employees', bulkRoutes);
 app.use('/api/invitations', invitationRoutes);

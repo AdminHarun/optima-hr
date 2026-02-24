@@ -16,33 +16,9 @@ const databaseMigrationService = require('./services/databaseMigrationService');
 // Import models and associations first
 require('./models/associations');
 
-// Routes
-const employeeRoutes = require('./routes/employees');
-const bulkRoutes = require('./routes/bulk');
-const invitationRoutes = require('./routes/invitations');
-const applicationRoutes = require('./routes/applications');
-const chatRoutes = require('./routes/chat');
-const channelRoutes = require('./routes/channels');
-const searchRoutes = require('./routes/search');
-const recordingRoutes = require('./routes/recordings');
-const linkPreviewRoutes = require('./routes/link-preview');
-const managementRoutes = require('./routes/management');
-const mediaRoutes = require('./routes/media');
-const voiceRoutes = require('./routes/voice');
-const scheduledRoutes = require('./routes/scheduled');
-const bookmarkRoutes = require('./routes/bookmarks');
-const pinRoutes = require('./routes/pins');
-const readReceiptRoutes = require('./routes/read-receipts');
-const screenShareRoutes = require('./routes/screen-share');
-const taskRoutes = require('./routes/tasks');
-const calendarRoutes = require('./routes/calendar');
-const fileRoutes = require('./routes/files');
-const roleRoutes = require('./routes/roles');
-const twoFactorRoutes = require('./routes/twoFactor');
-const ssoRoutes = require('./routes/sso');
-const integrationRoutes = require('./routes/integrations');
-const workflowRoutes = require('./routes/workflows');
+// Routes - Grouped API (Part 6)
 const authRoutes = require('./routes/auth');
+const { adminRouter, employeeRouter, publicRouter, sharedRouter, chatRoutes } = require('./routes/apiGroups');
 
 const app = express();
 const server = http.createServer(app);
@@ -109,33 +85,55 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
+// ============================================
+// API ROUTES - Grouped (Part 6)
+// ============================================
 app.use('/api/auth', authLimiter, authRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/employees', bulkRoutes);
-app.use('/api/invitations', invitationRoutes);
-app.use('/api/applications', applicationRoutes);
+
+// Admin routes - IK Yonetim Paneli
+app.use('/api/admin', adminRouter);
+
+// Employee routes - Calisan Self-Servis
+app.use('/api/employee', employeeRouter);
+
+// Public routes - Kariyer Portali
+app.use('/api/public', publicRouter);
+
+// Shared routes - Tum uygulamalar
+app.use('/api', sharedRouter);
+
+// Chat - Ozel mount
 app.use('/chat/api', chatRoutes);
-app.use('/api/channels', channelRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api/recordings', recordingRoutes);
-app.use('/api/link-preview', linkPreviewRoutes);
-app.use('/api/management', managementRoutes);
-app.use('/api/media', mediaRoutes);
-app.use('/api/voice', voiceRoutes);
-app.use('/api/scheduled', scheduledRoutes);
-app.use('/api/bookmarks', bookmarkRoutes);
-app.use('/api/pins', pinRoutes);
-app.use('/api/read-receipts', readReceiptRoutes);
-app.use('/api/screen-share', screenShareRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/calendar', calendarRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/roles', roleRoutes);
-app.use('/api/2fa', twoFactorRoutes);
-app.use('/api/sso', ssoRoutes);
-app.use('/api/integrations', integrationRoutes);
-app.use('/api/workflows', workflowRoutes);
+
+// ============================================
+// LEGACY ROUTES - Geriye uyumluluk
+// Eski frontend hala /api/employees gibi path'ler kullanir
+// Yeni uygulamalara gecis tamamlaninca kaldirilacak
+// ============================================
+app.use('/api/employees', require('./routes/employees'));
+app.use('/api/employees', require('./routes/bulk'));
+app.use('/api/invitations', require('./routes/invitations'));
+app.use('/api/applications', require('./routes/applications'));
+app.use('/api/recordings', require('./routes/recordings'));
+app.use('/api/management', require('./routes/management'));
+app.use('/api/roles', require('./routes/roles'));
+app.use('/api/2fa', require('./routes/twoFactor'));
+app.use('/api/sso', require('./routes/sso'));
+app.use('/api/integrations', require('./routes/integrations'));
+app.use('/api/workflows', require('./routes/workflows'));
+app.use('/api/scheduled', require('./routes/scheduled'));
+app.use('/api/tasks', require('./routes/tasks'));
+app.use('/api/calendar', require('./routes/calendar'));
+app.use('/api/files', require('./routes/files'));
+app.use('/api/channels', require('./routes/channels'));
+app.use('/api/search', require('./routes/search'));
+app.use('/api/link-preview', require('./routes/link-preview'));
+app.use('/api/media', require('./routes/media'));
+app.use('/api/voice', require('./routes/voice'));
+app.use('/api/bookmarks', require('./routes/bookmarks'));
+app.use('/api/pins', require('./routes/pins'));
+app.use('/api/read-receipts', require('./routes/read-receipts'));
+app.use('/api/screen-share', require('./routes/screen-share'));
 
 // Health check endpoint (Phase 4.6 - Load Balancing support)
 app.get('/health', async (req, res) => {

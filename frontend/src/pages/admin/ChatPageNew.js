@@ -366,22 +366,14 @@ function ChatPageNew() {
     { icon: '⚙', label: 'Admin', path: '/admin/settings' },
   ];
 
-  // Get current user initials for far-left sidebar
-  const userInitials = currentUser
-    ? `${currentUser.firstName?.[0] || ''}${currentUser.lastName?.[0] || ''}`.toUpperCase()
-    : 'HR';
-
   return (
     <Box sx={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 1200,
+      height: 'calc(100vh - 64px - 48px)',
       display: 'flex',
       overflow: 'hidden',
-      bgcolor: isDark ? '#1A1D21' : '#ffffff'
+      bgcolor: isDark ? '#1A1D21' : '#ffffff',
+      mx: -3,
+      mb: -3
     }}>
       {/* ═══ Far-Left Sidebar - demo: .far-sidebar 70px ═══ */}
       <Box
@@ -531,60 +523,6 @@ function ChatPageNew() {
 
         {/* Spacer */}
         <Box sx={{ flex: 1 }} />
-
-        {/* Add Workspace Button */}
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            border: `2px dashed ${isDark ? '#35373B' : '#d1d5db'}`,
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: isDark ? '#ABABAD' : '#6b7280',
-            fontSize: '20px',
-            mb: 1.5,
-            '&:hover': {
-              borderColor: isDark ? '#ABABAD' : '#9ca3af',
-              color: isDark ? '#E0E0E0' : '#374151'
-            }
-          }}
-        >
-          +
-        </Box>
-
-        {/* User Avatar */}
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, #36C5F0, #2EB67D)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '14px',
-            color: 'white',
-            cursor: 'pointer',
-            position: 'relative'
-          }}
-        >
-          {userInitials}
-          {/* Online indicator */}
-          <Box sx={{
-            position: 'absolute',
-            bottom: -2,
-            right: -2,
-            width: 12,
-            height: 12,
-            bgcolor: '#2EB67D',
-            border: `2px solid ${isDark ? '#1A1D21' : '#f8f9fa'}`,
-            borderRadius: '50%'
-          }} />
-        </Box>
       </Box>
 
       {/* ═══ Main Sidebar - Slack Style 260px ═══ */}
@@ -725,30 +663,6 @@ function ChatPageNew() {
               }
             }}
           />
-        </Box>
-
-        {/* Upgrade Banner - demo: .upgrade-banner */}
-        <Box
-          sx={{
-            mx: 1.5,
-            my: 1.5,
-            p: 1.5,
-            bgcolor: isDark ? '#27242C' : '#f3f4f6',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            '&:hover': { bgcolor: isDark ? '#35373B' : '#e5e7eb' }
-          }}
-        >
-          <Typography sx={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: isDark ? '#E0E0E0' : '#111827',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-            🚀 Upgrade Plan
-          </Typography>
         </Box>
 
         {/* Nav Items - Slack Style */}
@@ -1035,41 +949,6 @@ function ChatPageNew() {
               })
             )}
           </Collapse>
-
-          {/* ─── Apps ─── */}
-          <SectionHeader
-            label="Apps"
-            isOpen={true}
-            onToggle={() => {}}
-          />
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1.5,
-              px: 2,
-              py: '6px',
-              pl: 4,
-              cursor: 'pointer',
-              '&:hover': { bgcolor: isDark ? '#27242C' : '#f0f0f0' }
-            }}
-          >
-            <Avatar
-              sx={{
-                width: 20,
-                height: 20,
-                borderRadius: '4px',
-                fontSize: '9px',
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #E01E5A 25%, #36C5F0 25%, #36C5F0 50%, #2EB67D 50%, #2EB67D 75%, #ECB22E 75%)'
-              }}
-            >
-              {' '}
-            </Avatar>
-            <Typography sx={{ fontSize: '14px', color: isDark ? '#E0E0E0' : '#111827' }}>
-              Slackbot
-            </Typography>
-          </Box>
 
         </Box>
       </Box>

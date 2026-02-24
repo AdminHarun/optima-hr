@@ -1,9 +1,8 @@
-// Admin Header - Liquid Glass Theme with Elegant Tabs & Theme Picker
+// Admin Header - Liquid Glass Theme with Elegant Tabs
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useTheme, THEMES } from '../../contexts/ThemeContext';
 import SiteSelector from './SiteSelector';
 import {
   AppBar,
@@ -11,13 +10,7 @@ import {
   Typography,
   IconButton,
   Badge,
-  Menu,
-  MenuItem,
-  Avatar,
   Box,
-  Divider,
-  ListItemIcon,
-  ListItemText,
   Chip,
   Dialog,
   DialogTitle,
@@ -25,66 +18,30 @@ import {
   Button,
   List,
   ListItem,
-  ListItemAvatar
+  ListItemAvatar,
+  Avatar
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
-  Logout as LogoutIcon,
   Person as PersonIcon,
   Chat as ChatIcon,
   Mail as MailIcon,
   Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
   Info as InfoIcon,
   VideoCall as VideoCallIcon,
-  CalendarToday as CalendarIcon,
-  Palette as PaletteIcon,
-  Check as CheckIcon,
-  LightMode as LightModeIcon,
-  DarkMode as DarkModeIcon,
-  Landscape as LandscapeIcon
+  CalendarToday as CalendarIcon
 } from '@mui/icons-material';
 
 function AdminHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, logout, hasPermission, PERMISSIONS } = useEmployeeAuth();
-  const { currentTheme, themeConfig, themes, changeTheme, isLoading: themeLoading } = useTheme();
+  const { currentUser } = useEmployeeAuth();
 
-  // Menu states
-  const [anchorEl, setAnchorEl] = useState(null);
   const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
   // Bildirim context'inden gercek zamanli bildirimler
   const { unreadCount: unreadMessages, notifications: contextNotifications, markAsRead } = useNotifications();
   const unreadMails = 0;
-
-  const handleProfileMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleProfileMenuClose = () => {
-    setAnchorEl(null);
-    setThemeMenuOpen(false);
-  };
-
-  const handleLogout = () => {
-    handleProfileMenuClose();
-    const result = logout();
-    if (result.success) {
-      navigate('/admin/login');
-    }
-  };
-
-  const handleProfile = () => {
-    handleProfileMenuClose();
-    navigate('/admin/profile');
-  };
-
-  const handleThemeChange = (themeId) => {
-    changeTheme(themeId);
-  };
 
   const handleNotificationOpen = () => {
     setNotificationDialogOpen(true);
@@ -92,34 +49,6 @@ function AdminHeader() {
 
   const handleDialogClose = () => {
     setNotificationDialogOpen(false);
-  };
-
-  const getRoleDisplayName = (role) => {
-    const roleNames = {
-      'SUPER_ADMIN': 'Super Admin',
-      'ADMIN': 'Admin',
-      'HR_MANAGER': 'HR Muduru',
-      'HR': 'Insan Kaynaklari',
-      'HR_EXPERT': 'HR Uzmani',
-      'RECRUITER': 'Ise Alim Uzmani',
-      'HR_ASSISTANT': 'HR Asistani',
-      'USER': 'Kullanici'
-    };
-    return roleNames[role] || role;
-  };
-
-  const getRoleColor = (role) => {
-    const colors = {
-      'SUPER_ADMIN': 'error',
-      'ADMIN': 'primary',
-      'HR_MANAGER': 'success',
-      'HR': 'success',
-      'HR_EXPERT': 'info',
-      'RECRUITER': 'success',
-      'HR_ASSISTANT': 'warning',
-      'USER': 'default'
-    };
-    return colors[role] || 'default';
   };
 
   const formatTimeAgo = (timestamp) => {
@@ -288,7 +217,7 @@ function AdminHeader() {
             </Box>
           </Box>
 
-          {/* Sağ Taraf - Bildirimler ve Profil (Sabit) */}
+          {/* Sağ Taraf - Bildirimler */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, WebkitAppRegion: 'no-drag', minWidth: 180, justifyContent: 'flex-end' }}>
             <IconButton
               color="inherit"
@@ -305,311 +234,9 @@ function AdminHeader() {
                 <NotificationsIcon />
               </Badge>
             </IconButton>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
-                <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2, color: 'var(--theme-header-text, white)' }}>
-                  {currentUser.firstName} {currentUser.lastName}
-                </Typography>
-                <Chip
-                  size="small"
-                  label={getRoleDisplayName(currentUser.role)}
-                  color={getRoleColor(currentUser.role)}
-                  sx={{
-                    height: '18px',
-                    fontSize: '10px',
-                    background: 'rgba(255, 255, 255, 0.2)',
-                    color: 'white'
-                  }}
-                />
-              </Box>
-
-              <IconButton
-                onClick={handleProfileMenuOpen}
-                sx={{
-                  padding: 0,
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 4px 20px rgba(255, 255, 255, 0.3)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                <Avatar
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1))',
-                    border: '2px solid rgba(255, 255, 255, 0.3)',
-                    fontWeight: 'bold'
-                  }}
-                  src={currentUser.avatar}
-                >
-                  {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
-                </Avatar>
-              </IconButton>
-            </Box>
           </Box>
         </Toolbar>
       </AppBar>
-
-      {/* Profil Menüsü - Tema Seçici ile */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleProfileMenuClose}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            minWidth: 340,
-            maxWidth: 400,
-            maxHeight: '80vh',
-            borderRadius: '16px',
-            background: 'var(--theme-card-bg, rgba(255, 255, 255, 0.95))',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid var(--theme-card-border, rgba(0, 0, 0, 0.1))',
-            boxShadow: 'var(--theme-card-shadow, 0 8px 32px rgba(0, 0, 0, 0.15))',
-            overflow: 'hidden'
-          }
-        }}
-      >
-        {/* Kullanıcı Bilgisi */}
-        <Box sx={{ p: 2.5, pb: 1.5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-            <Avatar
-              sx={{
-                width: 48,
-                height: 48,
-                background: `var(--theme-button-primary)`,
-                fontWeight: 'bold'
-              }}
-              src={currentUser.avatar}
-            >
-              {currentUser.firstName?.[0]}{currentUser.lastName?.[0]}
-            </Avatar>
-            <Box>
-              <Typography variant="body1" fontWeight="bold" sx={{ color: 'var(--theme-primary)' }}>
-                {currentUser.firstName} {currentUser.lastName}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                {currentUser.email}
-              </Typography>
-            </Box>
-          </Box>
-          <Chip
-            size="small"
-            label={getRoleDisplayName(currentUser.role)}
-            color={getRoleColor(currentUser.role)}
-            sx={{ fontSize: '11px' }}
-          />
-        </Box>
-
-        <Divider />
-
-        {/* Tema Seçici */}
-        <Box sx={{ px: 2, py: 1.5 }}>
-          <Box
-            onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 2,
-              cursor: 'pointer',
-              p: 1.5,
-              borderRadius: '10px',
-              '&:hover': { background: 'rgba(0, 0, 0, 0.04)' },
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <Box sx={{
-              width: 40,
-              height: 40,
-              borderRadius: '10px',
-              background: 'var(--theme-button-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <PaletteIcon sx={{ color: 'white', fontSize: 22 }} />
-            </Box>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="body2" fontWeight={600}>Tema Seçimi</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {themeConfig?.name || 'Basic Light'}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                width: 28,
-                height: 28,
-                borderRadius: '8px',
-                backgroundImage: themeConfig?.preview ? `url(${themeConfig.preview})` : 'var(--theme-button-primary)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                border: '2px solid rgba(0, 0, 0, 0.1)'
-              }}
-            />
-          </Box>
-
-          {/* Tema Listesi */}
-          {themeMenuOpen && (
-            <Box sx={{
-              mt: 1.5,
-              maxHeight: 350,
-              overflowY: 'auto',
-              borderRadius: '12px',
-              border: '1px solid rgba(0, 0, 0, 0.08)',
-              background: 'rgba(0, 0, 0, 0.02)',
-              '&::-webkit-scrollbar': { width: '6px' },
-              '&::-webkit-scrollbar-thumb': {
-                background: 'rgba(0, 0, 0, 0.2)',
-                borderRadius: '3px'
-              }
-            }}>
-              {/* Basic Themes */}
-              <Box sx={{ p: 1.5, pb: 0.5 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Temel Temalar
-                </Typography>
-              </Box>
-              {themes.filter(t => t.id.startsWith('basic')).map((theme) => (
-                <Box
-                  key={theme.id}
-                  onClick={() => handleThemeChange(theme.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    p: 1.5,
-                    mx: 1,
-                    mb: 0.5,
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    background: currentTheme === theme.id ? 'rgba(0, 0, 0, 0.08)' : 'transparent',
-                    border: currentTheme === theme.id ? '1px solid var(--theme-primary)' : '1px solid transparent',
-                    '&:hover': { background: 'rgba(0, 0, 0, 0.04)' },
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <Box sx={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: '8px',
-                    background: theme.colors.button.primary,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '2px solid rgba(255, 255, 255, 0.3)'
-                  }}>
-                    {theme.id === 'basic-light' ? (
-                      <LightModeIcon sx={{ color: 'white', fontSize: 18 }} />
-                    ) : (
-                      <DarkModeIcon sx={{ color: 'white', fontSize: 18 }} />
-                    )}
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="body2" fontWeight={500}>{theme.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{theme.description}</Typography>
-                  </Box>
-                  {currentTheme === theme.id && (
-                    <CheckIcon sx={{ color: 'var(--theme-primary)', fontSize: 18 }} />
-                  )}
-                </Box>
-              ))}
-
-              {/* Wallpaper Themes */}
-              <Box sx={{ p: 1.5, pb: 0.5, pt: 2 }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Manzara Temaları
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1, p: 1 }}>
-                {themes.filter(t => !t.id.startsWith('basic')).map((theme) => (
-                  <Box
-                    key={theme.id}
-                    onClick={() => handleThemeChange(theme.id)}
-                    sx={{
-                      position: 'relative',
-                      borderRadius: '10px',
-                      overflow: 'hidden',
-                      cursor: 'pointer',
-                      aspectRatio: '16/10',
-                      border: currentTheme === theme.id ? '3px solid var(--theme-primary)' : '2px solid transparent',
-                      '&:hover': {
-                        transform: 'scale(1.02)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                      },
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: `url(${theme.preview})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center'
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)'
-                      }}
-                    />
-                    <Box sx={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      p: 1
-                    }}>
-                      <Typography variant="caption" sx={{ color: 'white', fontWeight: 600, fontSize: '0.7rem' }}>
-                        {theme.name}
-                      </Typography>
-                    </Box>
-                    {currentTheme === theme.id && (
-                      <Box sx={{
-                        position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        bgcolor: 'var(--theme-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <CheckIcon sx={{ color: 'white', fontSize: 14 }} />
-                      </Box>
-                    )}
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          )}
-        </Box>
-
-        <Divider />
-
-        <MenuItem onClick={handleProfile} sx={{ py: 1.5 }}>
-          <ListItemIcon>
-            <PersonIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Profilim</ListItemText>
-        </MenuItem>
-
-        <Divider />
-
-        <MenuItem onClick={handleLogout} sx={{ color: 'error.main', py: 1.5 }}>
-          <ListItemIcon>
-            <LogoutIcon fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText>Çıkış Yap</ListItemText>
-        </MenuItem>
-      </Menu>
 
       {/* Bildirimler Dialog */}
       <Dialog

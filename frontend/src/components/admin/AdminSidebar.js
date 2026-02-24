@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import ProfileDropdownMenu from './ProfileDropdownMenu';
+import PreferencesModal from './PreferencesModal';
 import {
   Drawer,
   List,
@@ -12,22 +14,15 @@ import {
   Typography,
   Box,
   Divider,
-  Chip,
   Collapse
 } from '@mui/material';
 
 import {
   Dashboard as DashboardIcon,
-  People as PeopleIcon,
   Assignment as AssignmentIcon,
-  Chat as ChatIcon,
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
-  PersonAdd as PersonAddIcon,
-  Security as SecurityIcon,
-  Business as BusinessIcon,
   Group as GroupIcon,
-  Description as DocumentsIcon,
   EventAvailable as LeavesIcon,
   AccountBalance as PayrollIcon,
   Work as WorkIcon,
@@ -50,9 +45,11 @@ const DRAWER_WIDTH = 280;
 function AdminSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentUser, hasPermission, PERMISSIONS, EMPLOYEE_ROLES } = useEmployeeAuth();
+  const { currentUser, hasPermission, PERMISSIONS } = useEmployeeAuth();
   const { themeConfig } = useTheme();
   const [openEmployeeMenu, setOpenEmployeeMenu] = useState(false);
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   // Ana menü öğeleri
   const menuItems = [
@@ -193,45 +190,16 @@ function AdminSidebar() {
       }}
     >
       {/* Sidebar Header */}
-      <Box sx={{ p: 3, textAlign: 'center', color: 'var(--theme-sidebar-text, white)' }}>
+      <Box sx={{ p: 2, textAlign: 'center', color: 'var(--theme-sidebar-text, white)' }}>
         <img
           src={optimaLogo}
           alt="Optima Logo"
           style={{
-            maxWidth: '200px',
+            maxWidth: '160px',
             height: 'auto',
-            marginBottom: '16px',
             filter: 'brightness(0) invert(1)'
           }}
         />
-        <Typography variant="body2" sx={{ opacity: 0.8 }}>
-          Yönetim Paneli
-        </Typography>
-      </Box>
-
-      <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-
-      {/* Kullanıcı Bilgisi */}
-      <Box sx={{ p: 2, color: 'var(--theme-sidebar-text, white)' }}>
-        <Typography variant="body2" sx={{ opacity: 0.8 }}>
-          Hoş geldiniz,
-        </Typography>
-        <Typography variant="body1" fontWeight="bold">
-          {currentUser?.firstName} {currentUser?.lastName}
-        </Typography>
-
-        {currentUser?.role !== EMPLOYEE_ROLES.SUPER_ADMIN && (
-          <Chip
-            size="small"
-            label={currentUser?.siteName || 'Site Atanmadı'}
-            sx={{
-              mt: 1,
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: 'white',
-              fontSize: '11px'
-            }}
-          />
-        )}
       </Box>
 
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
@@ -359,24 +327,61 @@ function AdminSidebar() {
         ))}
       </List>
 
-      {/* Sidebar Footer */}
-      <Box sx={{ mt: 'auto', p: 2, color: 'var(--theme-sidebar-text, white)', textAlign: 'center' }}>
-        <Typography variant="caption" sx={{ opacity: 0.6 }}>
-          v1.5.0 - OPTIMA HR Management System
-        </Typography>
-        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 1 }}>
-          <Chip
-            size="small"
-            label="Güvenli"
-            icon={<SecurityIcon />}
-            sx={{
-              background: 'rgba(76, 175, 80, 0.2)',
-              color: 'white',
-              fontSize: '10px'
-            }}
-          />
+      {/* Profil Avatar Kutusu */}
+      <Box sx={{ mt: 'auto', p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+        <Box
+          onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+          sx={{
+            width: 36,
+            height: 36,
+            borderRadius: '8px',
+            bgcolor: 'var(--theme-button-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '14px',
+            color: 'white',
+            position: 'relative',
+            '&:hover': { opacity: 0.9 }
+          }}
+        >
+          {currentUser?.avatar ? (
+            <img src={currentUser.avatar} alt="" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+          ) : (
+            `${currentUser?.firstName?.[0] || ''}${currentUser?.lastName?.[0] || ''}`.toUpperCase()
+          )}
+          {/* Online status dot */}
+          <Box sx={{
+            position: 'absolute',
+            bottom: -2,
+            right: -2,
+            width: 12,
+            height: 12,
+            bgcolor: '#2EB67D',
+            border: '2px solid var(--theme-sidebar-bg)',
+            borderRadius: '50%'
+          }} />
         </Box>
       </Box>
+
+      {/* ProfileDropdownMenu - Part 2 */}
+      <ProfileDropdownMenu
+        anchorEl={profileMenuAnchor}
+        open={Boolean(profileMenuAnchor)}
+        onClose={() => setProfileMenuAnchor(null)}
+        onPreferencesClick={() => {
+          setProfileMenuAnchor(null);
+          setPreferencesOpen(true);
+        }}
+      />
+
+      {/* PreferencesModal - Part 3 */}
+      <PreferencesModal
+        open={preferencesOpen}
+        onClose={() => setPreferencesOpen(false)}
+      />
     </Drawer>
   );
 }

@@ -28,7 +28,7 @@ import {
   Chat as ChatIcon,
   Download as DownloadIcon
 } from '@mui/icons-material';
-import sessionManager from '../utils/sessionManager';
+import sessionManager from '@shared/utils/sessionManager';
 
 // Profili tum site-specific key'lerde ara
 const findProfileAcrossSites = (profileId) => {
@@ -36,7 +36,7 @@ const findProfileAcrossSites = (profileId) => {
     try {
       const sites = JSON.parse(localStorage.getItem('sites') || '[]');
       if (sites.length > 0) return sites.map(s => s.code);
-    } catch (e) {}
+    } catch (e) { }
     return ['FXB', 'MTD', 'ZBH'];
   })();
   for (const siteCode of siteCodes) {
@@ -149,7 +149,7 @@ function ApplicantProfile() {
           : security
       );
       localStorage.setItem(securitiesKey, JSON.stringify(updatedSecurities));
-      
+
       setChangePasswordDialog(false);
       setPasswords({ current: '', new: '', confirm: '' });
       alert('Şifre başarıyla değiştirildi');
@@ -165,7 +165,7 @@ function ApplicantProfile() {
     const applicationsData = JSON.parse(localStorage.getItem(appsKey) || '[]');
     const applications = Array.isArray(applicationsData) ? applicationsData : [applicationsData].filter(Boolean);
     const userApplication = applications.find(app => app.profileId === applicantId);
-    
+
     if (userApplication) {
       navigate(`/applicant-chat/${userApplication.id}`);
     } else {
@@ -186,10 +186,10 @@ function ApplicantProfile() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Profil Header */}
-      <Paper sx={{ 
-        p: 3, 
-        mb: 3, 
-        background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)', 
+      <Paper sx={{
+        p: 3,
+        mb: 3,
+        background: 'linear-gradient(135deg, #1c61ab 0%, #8bb94a 100%)',
         color: 'white',
         borderRadius: '16px'
       }}>
@@ -205,19 +205,19 @@ function ApplicantProfile() {
               {applicantInfo.email}
             </Typography>
             <Box mt={1}>
-              <Chip 
+              <Chip
                 label="Aktif Profil"
                 sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}
               />
             </Box>
           </Box>
           <Box>
-            <Button 
-              variant="outlined" 
+            <Button
+              variant="outlined"
               startIcon={<ChatIcon />}
               onClick={handleStartChat}
-              sx={{ 
-                color: 'white', 
+              sx={{
+                color: 'white',
                 borderColor: 'white',
                 '&:hover': {
                   borderColor: 'white',
@@ -253,7 +253,7 @@ function ApplicantProfile() {
                   label="Ad"
                   value={applicantInfo.firstName || ''}
                   disabled={!editMode}
-                  onChange={(e) => setApplicantInfo(prev => ({...prev, firstName: e.target.value}))}
+                  onChange={(e) => setApplicantInfo(prev => ({ ...prev, firstName: e.target.value }))}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -262,7 +262,7 @@ function ApplicantProfile() {
                   label="Soyad"
                   value={applicantInfo.lastName || ''}
                   disabled={!editMode}
-                  onChange={(e) => setApplicantInfo(prev => ({...prev, lastName: e.target.value}))}
+                  onChange={(e) => setApplicantInfo(prev => ({ ...prev, lastName: e.target.value }))}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -271,7 +271,7 @@ function ApplicantProfile() {
                   label="Telefon"
                   value={applicantInfo.phone || ''}
                   disabled={!editMode}
-                  onChange={(e) => setApplicantInfo(prev => ({...prev, phone: e.target.value}))}
+                  onChange={(e) => setApplicantInfo(prev => ({ ...prev, phone: e.target.value }))}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -294,8 +294,8 @@ function ApplicantProfile() {
 
             {editMode && (
               <Box mt={2}>
-                <Button 
-                  variant="contained" 
+                <Button
+                  variant="contained"
                   onClick={handleSaveProfile}
                   sx={{ mr: 1 }}
                 >
@@ -311,7 +311,7 @@ function ApplicantProfile() {
           {/* Güvenlik */}
           <Paper sx={{ p: 3, mb: 3, borderRadius: '16px' }}>
             <Typography variant="h6" gutterBottom>Güvenlik</Typography>
-            <Button 
+            <Button
               startIcon={<SecurityIcon />}
               variant="outlined"
               onClick={() => setChangePasswordDialog(true)}
@@ -373,7 +373,7 @@ function ApplicantProfile() {
             label="Mevcut Şifre"
             type="password"
             value={passwords.current}
-            onChange={(e) => setPasswords(prev => ({...prev, current: e.target.value}))}
+            onChange={(e) => setPasswords(prev => ({ ...prev, current: e.target.value }))}
             margin="normal"
           />
           <TextField
@@ -381,7 +381,7 @@ function ApplicantProfile() {
             label="Yeni Şifre"
             type="password"
             value={passwords.new}
-            onChange={(e) => setPasswords(prev => ({...prev, new: e.target.value}))}
+            onChange={(e) => setPasswords(prev => ({ ...prev, new: e.target.value }))}
             margin="normal"
             helperText="En az 8 karakter"
           />
@@ -390,7 +390,7 @@ function ApplicantProfile() {
             label="Yeni Şifre Tekrar"
             type="password"
             value={passwords.confirm}
-            onChange={(e) => setPasswords(prev => ({...prev, confirm: e.target.value}))}
+            onChange={(e) => setPasswords(prev => ({ ...prev, confirm: e.target.value }))}
             margin="normal"
           />
         </DialogContent>

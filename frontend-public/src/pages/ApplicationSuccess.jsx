@@ -1,7 +1,7 @@
 // src/pages/ApplicationSuccess.js - Basvuru Basarili Sayfasi
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import sessionManager from '../utils/sessionManager';
+import sessionManager from '@shared/utils/sessionManager';
 import {
   Container,
   Paper,

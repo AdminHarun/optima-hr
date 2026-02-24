@@ -1,0 +1,13 @@
+{
+  "name": "@optima/shared",
+  "version": "1.0.0",
+  "description": "Optima HR - Shared components, services, hooks, and theme",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {},
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "@mui/material": ">=5.0.0"
+  }
+}

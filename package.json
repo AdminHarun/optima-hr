@@ -7,6 +7,10 @@
   "author": "Optima HR",
   "license": "MIT",
   "homepage": ".",
+  "workspaces": [
+    "shared",
+    "frontend"
+  ],
   "scripts": {
     "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:build:mac": "electron-builder --mac",

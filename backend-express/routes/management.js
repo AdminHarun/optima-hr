@@ -827,7 +827,7 @@ router.post('/init', async (req, res) => {
         first_name: 'Super',
         last_name: 'Admin',
         email: 'admin@optima.com',
-        password_hash: 'admin123',
+        password_hash: process.env.ADMIN_SEED_PASSWORD || require('crypto').randomBytes(16).toString('hex'),
         role: 'SUPER_ADMIN',
         site_code: null,
         is_active: true,

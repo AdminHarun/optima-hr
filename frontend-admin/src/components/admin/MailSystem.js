@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Box,
   Paper,
@@ -839,7 +840,7 @@ function MailSystem() {
                     lineHeight: 1.6
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: selectedMail.html_body
+                    __html: DOMPurify.sanitize(selectedMail.html_body, { ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'img', 'div', 'span', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'blockquote', 'pre', 'code', 'hr'], ALLOWED_ATTR: ['href', 'src', 'alt', 'style', 'class', 'target', 'width', 'height'] })
                   }}
                 />
               ) : (

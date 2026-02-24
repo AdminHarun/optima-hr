@@ -12,12 +12,17 @@ async function seedAdmins() {
     await sequelize.authenticate();
     console.log('✅ Database connected');
 
+    const seedPassword = process.env.ADMIN_SEED_PASSWORD || require('crypto').randomBytes(16).toString('hex');
+    if (!process.env.ADMIN_SEED_PASSWORD) {
+      console.log('⚠️  ADMIN_SEED_PASSWORD env var tanımlanmamış, rastgele şifre:', seedPassword);
+    }
+
     const admins = [
       {
         first_name: 'Super',
         last_name: 'Admin',
         email: 'admin@company.com',
-        password_hash: 'admin123',
+        password_hash: seedPassword,
         role: 'SUPER_ADMIN',
         is_active: true,
       },
@@ -25,7 +30,7 @@ async function seedAdmins() {
         first_name: 'Furkan',
         last_name: 'Dağhan',
         email: 'furkan@optima.com',
-        password_hash: 'furkan123',
+        password_hash: seedPassword,
         role: 'ADMIN',
         is_active: true,
       },
@@ -33,7 +38,7 @@ async function seedAdmins() {
         first_name: 'Harun',
         last_name: 'Yönetici',
         email: 'harun@optima.com',
-        password_hash: 'harun123',
+        password_hash: seedPassword,
         role: 'HR',
         is_active: true,
       },

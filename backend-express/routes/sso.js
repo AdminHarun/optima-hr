@@ -17,7 +17,10 @@ const AdminUser = require('../models/AdminUser');
 const Employee = require('../models/Employee');
 const { logAuditEvent } = require('../middleware/auditLogger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+    console.warn('⚠️  JWT_SECRET env var tanımlanmamış! Geçici rastgele key kullanılıyor.');
+    return require('crypto').randomBytes(64).toString('hex');
+})();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_CALLBACK_URL = process.env.GOOGLE_CALLBACK_URL || '/api/sso/google/callback';

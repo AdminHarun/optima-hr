@@ -14,7 +14,10 @@ const Employee = require('../models/Employee');
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  console.warn('⚠️  JWT_SECRET env var tanımlanmamış! Geçici rastgele key kullanılıyor.');
+  return require('crypto').randomBytes(64).toString('hex');
+})();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 const COOKIE_NAME = 'optima_token';
 

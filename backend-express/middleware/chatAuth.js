@@ -14,7 +14,10 @@ const AdminUser = require('../models/AdminUser');
 const Employee = require('../models/Employee');
 const redisService = require('../services/RedisService');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  console.warn('⚠️  JWT_SECRET env var tanımlanmamış! Geçici rastgele key kullanılıyor.');
+  return require('crypto').randomBytes(64).toString('hex');
+})();
 
 /**
  * JWT Token dogrulama (REST API icin)

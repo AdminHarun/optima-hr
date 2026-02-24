@@ -25,6 +25,14 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
 
+    // Auto-allow all optima-hr.net subdomains
+    try {
+      const url = new URL(origin);
+      if (url.hostname === 'optima-hr.net' || url.hostname.endsWith('.optima-hr.net')) {
+        return callback(null, true);
+      }
+    } catch (e) { }
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {

@@ -24,7 +24,7 @@ const getEnv = (viteKey, craKey, defaultValue) => {
 };
 
 // Auto-detect production environment based on hostname
-const isProduction = typeof window !== 'undefined' && window.location.hostname === 'optima-hr.net';
+const isProduction = typeof window !== 'undefined' && window.location.hostname.endsWith('optima-hr.net');
 
 // Base URLs - auto-detect production, fallback to env vars, then localhost for dev
 export const API_BASE_URL = isProduction

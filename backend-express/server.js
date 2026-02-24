@@ -575,6 +575,29 @@ const runMigrations = async () => {
 
     console.log('✅ All background migrations completed');
 
+    // Seed admin users if none exist
+    try {
+      const AdminUser = require('./models/AdminUser');
+      const count = await AdminUser.count();
+      if (count === 0) {
+        console.log('🌱 No admin users found, seeding default accounts...');
+        const admins = [
+          { first_name: 'Super', last_name: 'Admin', email: 'admin@company.com', password_hash: 'admin123', role: 'SUPER_ADMIN', is_active: true },
+          { first_name: 'Furkan', last_name: 'Dağhan', email: 'furkan@optima.com', password_hash: 'furkan123', role: 'ADMIN', is_active: true },
+          { first_name: 'Harun', last_name: 'Yönetici', email: 'harun@optima.com', password_hash: 'harun123', role: 'HR', is_active: true },
+        ];
+        for (const admin of admins) {
+          await AdminUser.findOrCreate({ where: { email: admin.email }, defaults: admin });
+          console.log(`  ✅ Created: ${admin.email} (${admin.role})`);
+        }
+        console.log('🎉 Admin seed completed!');
+      } else {
+        console.log(`⏭️  ${count} admin user(s) already exist, skipping seed`);
+      }
+    } catch (seedErr) {
+      console.log('⚠️ Admin seed note:', seedErr.message);
+    }
+
     // Start data retention scheduler (Phase 3.5)
     try {
       const { scheduleDataRetention } = require('./services/dataRetention');

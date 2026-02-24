@@ -210,7 +210,7 @@ app.use((error, req, res, next) => {
 // Start server
 const startServer = async () => {
   try {
-    console.log('🚀 Server v1.0.2 starting - quick boot for Railway');
+    console.log('🚀 Server v1.0.3 starting - quick boot for Railway');
 
     // Test database connection first
     await testConnection();

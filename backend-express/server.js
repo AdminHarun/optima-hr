@@ -24,6 +24,10 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 9000;
 
+// Trust proxy - Required for Railway/Cloudflare reverse proxy
+// Fixes express-rate-limit ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set('trust proxy', 1);
+
 // Global request logger (before everything)
 app.use((req, res, next) => {
   console.log('🌍 INCOMING REQUEST:', req.method, req.url, 'Origin:', req.headers.origin);

@@ -66,7 +66,7 @@ async function runDbIndexMigration() {
     if (await addIndexSafe('management_admin_users', 'role', 'idx_admin_users_role')) created++;
 
     // Channels
-    if (await addIndexSafe('channels', 'site_code, is_active', 'idx_channels_site_active')) created++;
+    if (await addIndexSafe('channels', 'site_code, is_archived', 'idx_channels_site_archived')) created++;
     if (await addIndexSafe('channel_members', 'employee_id', 'idx_channel_members_employee')) created++;
 
     // Files

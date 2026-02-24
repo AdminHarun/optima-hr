@@ -257,6 +257,8 @@ const runMigrations = async () => {
       // Chat message columns
       console.log('🔄 Checking chat message columns...');
       await addColumnSafe('chat_messages', 'reply_to_message_id', 'VARCHAR(100)');
+      await addColumnSafe('chat_messages', 'mentions', 'JSONB DEFAULT NULL');
+      await addColumnSafe('chat_messages', 'metadata', 'JSONB DEFAULT NULL');
       console.log('✅ Chat message columns checked');
 
       // Chat room columns for group chat

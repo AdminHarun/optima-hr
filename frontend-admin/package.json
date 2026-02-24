@@ -1,0 +1,141 @@
+{
+  "name": "optima-hr",
+  "version": "1.0.0",
+  "description": "Optima HR - Human Resources Management System",
+  "author": "Optima HR",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.js",
+  "homepage": "/",
+  "dependencies": {
+    "@daily-co/daily-js": "^0.87.0",
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/lab": "^7.0.0-beta.17",
+    "@mui/material": "^7.3.2",
+    "@mui/x-date-pickers": "^8.12.0",
+    "axios": "^1.12.2",
+    "colorthief": "^2.4.0",
+    "date-fns": "^4.1.0",
+    "emoji-mart": "^5.6.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-player": "^3.3.3",
+    "react-resizable-panels": "^3.0.6",
+    "react-router-dom": "^7.9.1",
+    "react-virtuoso": "^4.12.3",
+    "electron-updater": "^6.1.7",
+    "electron-log": "^5.0.3",
+    "electron-store": "^8.1.0",
+    "lexical": "^0.12.5",
+    "@lexical/react": "^0.12.5",
+    "@lexical/rich-text": "^0.12.5",
+    "@lexical/history": "^0.12.5",
+    "@lexical/utils": "^0.12.5",
+    "@lexical/markdown": "^0.12.5",
+    "@lexical/code": "^0.12.5",
+    "@lexical/link": "^0.12.5",
+    "@lexical/list": "^0.12.5",
+    "@lexical/selection": "^0.12.5",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^8.2.2",
+    "cross-env": "^10.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-is-dev": "^3.0.1",
+    "vite": "^5.2.0",
+    "wait-on": "^8.0.1"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite",
+    "start:legacy": "react-scripts start",
+    "build:legacy": "react-scripts build",
+    "electron:dev": "concurrently \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:3000 && cross-env VITE_DEV_SERVER_URL=http://localhost:3000 electron .\"",
+    "electron:build": "npm run build && electron-builder -mw",
+    "electron:publish": "npm run build && electron-builder -mw --publish always"
+  },
+  "build": {
+    "appId": "com.optimahr.desktop",
+    "productName": "Optima HR",
+    "copyright": "Copyright © 2024 Optima HR",
+    "files": [
+      "build/**/*",
+      "node_modules/**/*",
+      "electron/**/*",
+      "public/logo3.png",
+      "public/logo3.ico"
+    ],
+    "directories": {
+      "buildResources": "public",
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.business",
+      "icon": "public/logo3.png",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "darkModeSupport": true,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "title": "Optima HR Installer",
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "public/logo3.ico",
+      "publish": [
+        "github"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Optima HR",
+      "deleteAppDataOnUninstall": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "furkandaghan",
+      "repo": "optima-hr",
+      "releaseType": "release"
+    }
+  }
+}

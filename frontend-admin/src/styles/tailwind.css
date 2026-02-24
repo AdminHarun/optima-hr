@@ -1,0 +1,198 @@
+/**
+ * Tailwind CSS Entry Point
+ *
+ * Bu dosyayi index.js veya App.js'de import edin:
+ * import './styles/tailwind.css';
+ */
+
+/* CSS Variables'i dahil et */
+@import './variables.css';
+
+/* Tailwind direktifleri */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== CHAT COMPONENT STILLERI ===== */
+
+@layer components {
+  /* Glassmorphism Card */
+  .glass-card {
+    @apply tw-bg-glass tw-backdrop-blur-glass tw-border tw-border-glass tw-rounded-xl;
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* Message Bubble - Kendi */
+  .message-bubble-own {
+    @apply tw-max-w-message tw-p-3 tw-rounded-bubble-own tw-ml-auto;
+    background: var(--chat-own-bg);
+    color: var(--chat-own-text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Message Bubble - Diger */
+  .message-bubble-other {
+    @apply tw-max-w-message tw-p-3 tw-rounded-bubble-other tw-mr-auto;
+    background: var(--chat-other-bg);
+    color: var(--chat-other-text);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Message Bubble - Sistem */
+  .message-bubble-system {
+    @apply tw-mx-auto tw-px-4 tw-py-2 tw-rounded-full tw-text-sm tw-text-center;
+    background: var(--chat-system-bg);
+    color: var(--chat-system-text);
+  }
+
+  /* Online Status Badge */
+  .status-badge {
+    @apply tw-w-3 tw-h-3 tw-rounded-full tw-border-2 tw-border-white;
+  }
+
+  .status-badge-online {
+    @apply status-badge tw-bg-presence-online;
+  }
+
+  .status-badge-offline {
+    @apply status-badge tw-bg-presence-offline;
+  }
+
+  .status-badge-away {
+    @apply status-badge tw-bg-presence-away;
+  }
+
+  .status-badge-busy {
+    @apply status-badge tw-bg-presence-busy;
+  }
+
+  /* Cift Tik Ikonlari */
+  .check-icon {
+    @apply tw-inline-flex tw-items-center tw-gap-0.5;
+  }
+
+  .check-sent {
+    color: var(--check-sent);
+  }
+
+  .check-delivered {
+    color: var(--check-delivered);
+  }
+
+  .check-read {
+    color: var(--check-read);
+  }
+
+  /* Typing Indicator */
+  .typing-dots {
+    @apply tw-flex tw-items-center tw-gap-1;
+  }
+
+  .typing-dot {
+    @apply tw-w-2 tw-h-2 tw-rounded-full tw-bg-gray-400 tw-animate-typing-bounce;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  /* Chat Sidebar Item */
+  .chat-sidebar-item {
+    @apply tw-flex tw-items-center tw-gap-3 tw-p-3 tw-rounded-lg tw-cursor-pointer tw-transition-all;
+  }
+
+  .chat-sidebar-item:hover {
+    @apply tw-bg-gray-100;
+  }
+
+  .chat-sidebar-item-active {
+    @apply tw-bg-primary-50;
+    border-left: 3px solid var(--color-primary);
+  }
+
+  /* Employee Directory Item */
+  .employee-item {
+    @apply tw-flex tw-items-center tw-gap-3 tw-p-3 tw-rounded-lg tw-cursor-pointer tw-transition-all;
+  }
+
+  .employee-item:hover {
+    @apply tw-bg-gray-50;
+  }
+
+  /* Channel Tab */
+  .channel-tab {
+    @apply tw-px-4 tw-py-2 tw-rounded-t-lg tw-font-medium tw-text-sm tw-cursor-pointer tw-transition-all;
+  }
+
+  .channel-tab-active {
+    @apply tw-bg-white tw-text-primary-500;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .channel-tab-inactive {
+    @apply tw-text-gray-500 hover:tw-text-gray-700 hover:tw-bg-gray-100;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+@layer utilities {
+  /* Text truncate */
+  .text-truncate {
+    @apply tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap;
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-medium) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--border-medium);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: var(--border-dark);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Gradient text */
+  .text-gradient-primary {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Safe area for mobile */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+}

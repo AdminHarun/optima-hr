@@ -327,42 +327,124 @@ function AdminSidebar() {
         ))}
       </List>
 
-      {/* Profil Avatar Kutusu */}
-      <Box sx={{ mt: 'auto', p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-        <Box
-          onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '8px',
-            bgcolor: 'var(--theme-button-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: '14px',
-            color: 'white',
-            position: 'relative',
-            '&:hover': { opacity: 0.9 }
-          }}
-        >
-          {currentUser?.avatar ? (
-            <img src={currentUser.avatar} alt="" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
-          ) : (
-            `${currentUser?.firstName?.[0] || ''}${currentUser?.lastName?.[0] || ''}`.toUpperCase()
-          )}
-          {/* Online status dot */}
+      {/* Profil Karti - Premium Tasarim */}
+      <Box
+        onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+        sx={{
+          mt: 'auto',
+          p: 1.5,
+          mx: 1,
+          mb: 1,
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          pt: 2,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
+          borderRadius: '12px',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            background: 'var(--theme-sidebar-hover, rgba(255,255,255,0.08))',
+          }
+        }}
+      >
+        {/* Avatar */}
+        <Box sx={{ position: 'relative', flexShrink: 0 }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, var(--theme-button-primary, #1c61ab), #6366f1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: '15px',
+              color: 'white',
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
+              overflow: 'hidden'
+            }}
+          >
+            {currentUser?.avatar ? (
+              <img src={currentUser.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              `${currentUser?.first_name?.[0] || currentUser?.firstName?.[0] || ''}${currentUser?.last_name?.[0] || currentUser?.lastName?.[0] || ''}`.toUpperCase()
+            )}
+          </Box>
+          {/* Online Status Dot */}
           <Box sx={{
             position: 'absolute',
-            bottom: -2,
-            right: -2,
+            bottom: -1,
+            right: -1,
             width: 12,
             height: 12,
             bgcolor: '#2EB67D',
-            border: '2px solid var(--theme-sidebar-bg)',
-            borderRadius: '50%'
+            border: '2.5px solid var(--theme-sidebar-bg, #1a1d21)',
+            borderRadius: '50%',
+            boxShadow: '0 0 6px rgba(46, 182, 125, 0.5)'
           }} />
+        </Box>
+
+        {/* Kullanici Bilgileri */}
+        <Box sx={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <Typography
+            sx={{
+              color: 'var(--theme-sidebar-text, #fff)',
+              fontWeight: 700,
+              fontSize: '13.5px',
+              lineHeight: 1.3,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            {currentUser?.first_name || currentUser?.firstName || ''} {currentUser?.last_name || currentUser?.lastName || ''}
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                px: 0.8,
+                py: 0.15,
+                borderRadius: '4px',
+                bgcolor: 'rgba(99, 102, 241, 0.15)',
+                border: '1px solid rgba(99, 102, 241, 0.2)'
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: '#a5b4fc',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase'
+                }}
+              >
+                {currentUser?.role === 'SUPER_ADMIN' ? 'Super Admin' :
+                  currentUser?.role === 'ADMIN' ? 'Admin' :
+                    currentUser?.role === 'HR_MANAGER' ? 'IK Yonetici' :
+                      currentUser?.role === 'HR' ? 'IK' :
+                        currentUser?.role === 'HR_EXPERT' ? 'IK Uzman' :
+                          currentUser?.role || 'Kullanici'}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Uc Nokta Menu Ikonu */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: '16px',
+            flexShrink: 0,
+          }}
+        >
+          ⋮
         </Box>
       </Box>
 

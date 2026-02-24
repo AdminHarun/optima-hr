@@ -10,18 +10,42 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.87.0",
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.11.0",
     "@emotion/styled": "^11.11.0",
+    "@lexical/code": "^0.12.5",
+    "@lexical/history": "^0.12.5",
+    "@lexical/link": "^0.12.5",
+    "@lexical/list": "^0.12.5",
+    "@lexical/markdown": "^0.12.5",
+    "@lexical/react": "^0.12.5",
+    "@lexical/rich-text": "^0.12.5",
+    "@lexical/selection": "^0.12.5",
+    "@lexical/utils": "^0.12.5",
     "@mui/icons-material": "^5.14.0",
+    "@mui/lab": "^7.0.0-beta.17",
     "@mui/material": "^5.14.0",
+    "@mui/x-date-pickers": "^8.12.0",
     "axios": "^1.6.0",
+    "colorthief": "^2.4.0",
+    "date-fns": "^4.1.0",
+    "emoji-mart": "^5.6.0",
+    "lexical": "^0.12.5",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
+    "react-player": "^3.3.3",
+    "react-resizable-panels": "^3.0.6",
     "react-router-dom": "^6.14.0",
+    "react-syntax-highlighter": "^16.1.0",
+    "react-virtuoso": "^4.12.3",
     "socket.io-client": "^4.7.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.0.0",
-    "vite": "^5.0.0"
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^5.4.21"
   }
 }

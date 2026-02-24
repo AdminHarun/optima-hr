@@ -1,0 +1,163 @@
+/**
+ * Optima HR - Ortak CSS Variables
+ *
+ * MUI ve Tailwind icin paylasilan tema degiskenleri.
+ * Bu dosya her iki framework tarafindan da kullanilir.
+ */
+
+:root {
+  /* ===== ANA RENKLER ===== */
+
+  /* Primary - Kurumsal Mavi */
+  --color-primary: #1c61ab;
+  --color-primary-light: #3d8fd4;
+  --color-primary-dark: #144887;
+  --color-primary-rgb: 28, 97, 171;
+
+  /* Accent - Yesil */
+  --color-accent: #8bb94a;
+  --color-accent-light: #a5d062;
+  --color-accent-dark: #6f9438;
+
+  /* Secondary */
+  --color-secondary: #6b7280;
+  --color-secondary-light: #9ca3af;
+  --color-secondary-dark: #4b5563;
+
+  /* ===== GLASSMORPHISM ===== */
+
+  /* Calisanlar icin - Kurumsal Mavi */
+  --glass-bg: rgba(255, 255, 255, 0.15);
+  --glass-bg-dark: rgba(0, 0, 0, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-blur: 20px;
+
+  /* Gradient */
+  --primary-gradient: linear-gradient(135deg, #1c61ab 0%, #3d8fd4 100%);
+  --accent-gradient: linear-gradient(135deg, #8bb94a 0%, #a5d062 100%);
+
+  /* Golgeler */
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-glass-hover: 0 12px 40px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+
+  /* ===== ADAY TEMASI ===== */
+
+  --candidate-bg: rgba(139, 185, 74, 0.1);
+  --candidate-border: rgba(139, 185, 74, 0.15);
+  --candidate-text: #4a5e2f;
+
+  /* ===== CHAT RENKLERI ===== */
+
+  /* Mesaj Baloncuklari */
+  --chat-own-bg: linear-gradient(135deg, #1c61ab 0%, #3d8fd4 100%);
+  --chat-own-text: #ffffff;
+  --chat-other-bg: rgba(255, 255, 255, 0.9);
+  --chat-other-text: #1f2937;
+  --chat-system-bg: rgba(107, 114, 128, 0.1);
+  --chat-system-text: #6b7280;
+
+  /* Cift Tik Renkleri */
+  --check-sent: #9ca3b8;
+  --check-delivered: #9ca3b8;
+  --check-read: #3b82f6;
+
+  /* ===== PRESENCE RENKLERI ===== */
+
+  --presence-online: #22c55e;
+  --presence-offline: #94a3b8;
+  --presence-away: #f59e0b;
+  --presence-busy: #ef4444;
+  --presence-dnd: #dc2626;
+
+  /* ===== YAZI RENKLERI ===== */
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+
+  /* ===== ARKAPLAN ===== */
+
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-dark: #1f2937;
+
+  /* Chat Panel Arka Plan (degradeli) */
+  --chat-bg-gradient: linear-gradient(180deg,
+    rgba(243, 244, 246, 0.8) 0%,
+    rgba(229, 231, 235, 0.6) 100%
+  );
+
+  /* ===== BORDER ===== */
+
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+  --border-dark: #9ca3af;
+
+  /* ===== SPACING ===== */
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* ===== BORDER RADIUS ===== */
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* Message Bubble Radius */
+  --radius-bubble: 1.125rem;
+  --radius-bubble-own: 1.125rem 1.125rem 0.25rem 1.125rem;
+  --radius-bubble-other: 1.125rem 1.125rem 1.125rem 0.25rem;
+
+  /* ===== TRANSITION ===== */
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ===== Z-INDEX (MUI ile uyumlu) ===== */
+
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-drawer: 1200;
+  --z-modal: 1300;
+  --z-popover: 1400;
+  --z-tooltip: 1500;
+  --z-notification: 1600;
+}
+
+/* ===== DARK MODE (ileride) ===== */
+
+[data-theme="dark"] {
+  --color-primary: #3d8fd4;
+  --color-primary-light: #60a5fa;
+  --color-primary-dark: #1c61ab;
+
+  --glass-bg: rgba(30, 41, 59, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.1);
+
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+
+  --border-light: #374151;
+  --border-medium: #4b5563;
+
+  --chat-other-bg: rgba(55, 65, 81, 0.9);
+  --chat-other-text: #f9fafb;
+}

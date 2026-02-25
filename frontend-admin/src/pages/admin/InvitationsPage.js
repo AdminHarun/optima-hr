@@ -51,6 +51,7 @@ import {
   Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import invitationService from '../../services/invitationService';
+import { PUBLIC_URL } from '../../config/config';
 
 const STATUS_CONFIG = {
   active: { label: 'Aktif', color: '#2e7d32', bgColor: '#e8f5e9', icon: <ActiveIcon sx={{ fontSize: 16 }} /> },
@@ -142,7 +143,7 @@ function InvitationsPage() {
       const updatedInvitations = [newInvitation, ...invitations];
       setInvitations(updatedInvitations);
 
-      const link = `${window.location.origin}/apply/${newInvitation.token}`;
+      const link = `${PUBLIC_URL}/apply/${newInvitation.token}`;
       navigator.clipboard.writeText(link);
 
       setSuccessSnackbar({
@@ -168,7 +169,7 @@ function InvitationsPage() {
   };
 
   const copyLink = (token) => {
-    const link = `${window.location.origin}/apply/${token}`;
+    const link = `${PUBLIC_URL}/apply/${token}`;
     navigator.clipboard.writeText(link);
     setSuccessSnackbar({
       open: true,

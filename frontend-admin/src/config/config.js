@@ -36,7 +36,7 @@ export const WS_BASE_URL = isProduction
   : getEnv('VITE_WS_URL', 'REACT_APP_WS_URL', 'ws://localhost:9000');
 
 export const PUBLIC_URL = isProduction
-  ? 'https://optima-hr.net'
+  ? 'https://pub.optima-hr.net'
   : getEnv('VITE_PUBLIC_URL', 'REACT_APP_PUBLIC_URL', 'http://localhost:3000');
 
 // API Endpoints

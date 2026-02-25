@@ -23,21 +23,22 @@ const getEnv = (viteKey, craKey, defaultValue) => {
   return defaultValue;
 };
 
-// Auto-detect production environment based on hostname
-const isProduction = typeof window !== 'undefined' && window.location.hostname.endsWith('optima-hr.net');
+// Runtime detection - çalışma zamanında hostname'e bakarak production mu dev mi kontrol et
+function getBaseUrls() {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isProd = hostname.endsWith('optima-hr.net');
 
-// Base URLs - auto-detect production, fallback to env vars, then localhost for dev
-export const API_BASE_URL = isProduction
-  ? 'https://api.optima-hr.net'
-  : getEnv('VITE_API_URL', 'REACT_APP_API_URL', 'http://localhost:9000');
+  return {
+    api: isProd ? 'https://api.optima-hr.net' : (getEnv('VITE_API_URL', 'REACT_APP_API_URL', '') || 'http://localhost:9000'),
+    ws: isProd ? 'wss://api.optima-hr.net' : (getEnv('VITE_WS_URL', 'REACT_APP_WS_URL', '') || 'ws://localhost:9000'),
+    pub: isProd ? 'https://pub.optima-hr.net' : (getEnv('VITE_PUBLIC_URL', 'REACT_APP_PUBLIC_URL', '') || 'http://localhost:3000'),
+  };
+}
 
-export const WS_BASE_URL = isProduction
-  ? 'wss://api.optima-hr.net'
-  : getEnv('VITE_WS_URL', 'REACT_APP_WS_URL', 'ws://localhost:9000');
-
-export const PUBLIC_URL = isProduction
-  ? 'https://pub.optima-hr.net'
-  : getEnv('VITE_PUBLIC_URL', 'REACT_APP_PUBLIC_URL', 'http://localhost:3000');
+const _urls = getBaseUrls();
+export const API_BASE_URL = _urls.api;
+export const WS_BASE_URL = _urls.ws;
+export const PUBLIC_URL = _urls.pub;
 
 // API Endpoints
 export const API_ENDPOINTS = {

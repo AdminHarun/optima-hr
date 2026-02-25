@@ -1,5 +1,5 @@
 // Admin Login - Tamamen ayrı login sistemi
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import {
@@ -37,6 +37,46 @@ function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
+
+  // Turnstile Site Key
+  const TURNSTILE_SITE_KEY = '0x4AAAAAACh60GABJM3jjI_D';
+
+  // Turnstile widget render
+  useEffect(() => {
+    const renderTurnstile = () => {
+      if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(''),
+          theme: 'light',
+          language: 'tr'
+        });
+      }
+    };
+
+    // Script zaten yüklüyse direkt render et
+    if (window.turnstile) {
+      renderTurnstile();
+    } else {
+      // Script yüklenince render et
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.onload = () => setTimeout(renderTurnstile, 100);
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
+      }
+    };
+  }, []);
 
   // Zaten giriş yapmışsa dashboard'a yönlendir
   useEffect(() => {
@@ -58,21 +98,34 @@ function AdminLogin() {
       return;
     }
 
+    if (!turnstileToken) {
+      setError('Lütfen "Gerçek kişi olduğunuzu doğrulayın" kutucuğunu tamamlayın');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password, turnstileToken);
       
       if (result.success) {
-        // Başarılı giriş - dashboard'a yönlendir
         navigate('/admin/dashboard');
       } else {
         setError(result.error || 'Giriş başarısız');
+        // Turnstile'ı sıfırla
+        if (window.turnstile && turnstileWidgetId.current) {
+          window.turnstile.reset(turnstileWidgetId.current);
+          setTurnstileToken('');
+        }
       }
     } catch (error) {
       setError('Bir hata oluştu. Lütfen tekrar deneyin.');
       console.error('Login error:', error);
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current);
+        setTurnstileToken('');
+      }
     } finally {
       setLoading(false);
     }
@@ -222,11 +275,16 @@ function AdminLogin() {
                 }}
               />
 
+              {/* Cloudflare Turnstile Widget */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                <div ref={turnstileRef}></div>
+              </Box>
+
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
-                disabled={loading}
+                disabled={loading || !turnstileToken}
                 startIcon={<LoginIcon />}
                 sx={{
                   py: 1.5,

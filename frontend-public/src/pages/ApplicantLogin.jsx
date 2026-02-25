@@ -1,5 +1,5 @@
 // src/pages/ApplicantLogin.js - Aday Giris Sayfasi (DB-based auth)
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import sessionManager from '@shared/utils/sessionManager';
 import applicationService from '../services/applicationService';
@@ -56,11 +56,46 @@ function ApplicantLogin() {
   const [error, setError] = useState('');
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
+
+  const TURNSTILE_SITE_KEY = '0x4AAAAAACh60GABJM3jjI_D';
+
+  useEffect(() => {
+    const renderTurnstile = () => {
+      if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(''),
+          theme: 'dark',
+          language: 'tr'
+        });
+      }
+    };
+    if (window.turnstile) {
+      renderTurnstile();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.onload = () => setTimeout(renderTurnstile, 100);
+      document.head.appendChild(script);
+    }
+    return () => {
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
+      }
+    };
+  }, []);
 
   const handlePasswordLogin = async () => {
     setError('');
     if (!email.trim()) { setError('Email adresi gerekli'); return; }
     if (!password.trim()) { setError('Sifre gerekli'); return; }
+    if (!turnstileToken) { setError('Lütfen "Gerçek kişi olduğunuzu doğrulayın" kutucuğunu tamamlayın'); return; }
 
     setLoading(true);
     try {
@@ -99,6 +134,10 @@ function ApplicantLogin() {
     } catch (err) {
       setLoading(false);
       setError(err.message || 'Giris basarisiz');
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current);
+        setTurnstileToken('');
+      }
     }
   };
 
@@ -254,7 +293,12 @@ function ApplicantLogin() {
                     }}
                   />
 
-                  <Button fullWidth variant="contained" onClick={handlePasswordLogin} disabled={loading}
+                  {/* Cloudflare Turnstile */}
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                    <div ref={turnstileRef}></div>
+                  </Box>
+
+                  <Button fullWidth variant="contained" onClick={handlePasswordLogin} disabled={loading || !turnstileToken}
                     startIcon={loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : null}
                     sx={{
                       py: 1.5, borderRadius: '12px', fontWeight: 700, fontSize: '1rem',

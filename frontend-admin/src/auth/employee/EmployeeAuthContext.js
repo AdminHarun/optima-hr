@@ -138,7 +138,7 @@ export const EmployeeAuthProvider = ({ children }) => {
   };
 
   // Backend'den login - /api/auth/login
-  const login = async (email, password) => {
+  const login = async (email, password, turnstileToken) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
@@ -146,7 +146,7 @@ export const EmployeeAuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, turnstileToken })
       });
 
       const data = await response.json();

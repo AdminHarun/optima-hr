@@ -25,16 +25,58 @@ const COOKIE_NAME = 'optima_token';
 const getCookieOptions = () => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  domain: process.env.NODE_ENV === 'production' ? '.optima-hr.net' : undefined,
   maxAge: 8 * 60 * 60 * 1000, // 8 saat
   path: '/'
 });
+
+// Turnstile bot koruması
+const { verifyTurnstile } = require('../middleware/turnstile');
+
+// IP Brute Force koruması
+const loginAttempts = new Map();
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 dakika
+
+const checkBruteForce = (req, res, next) => {
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+  const now = Date.now();
+  const record = loginAttempts.get(ip);
+
+  if (record && record.count >= MAX_ATTEMPTS && (now - record.lastAttempt) < LOCKOUT_MS) {
+    const remainMin = Math.ceil((LOCKOUT_MS - (now - record.lastAttempt)) / 60000);
+    return res.status(429).json({
+      success: false,
+      error: `Çok fazla başarısız deneme. ${remainMin} dakika sonra tekrar deneyin.`
+    });
+  }
+
+  // Eski kayıtları temizle
+  if (record && (now - record.lastAttempt) >= LOCKOUT_MS) {
+    loginAttempts.delete(ip);
+  }
+
+  next();
+};
+
+const recordFailedAttempt = (ip) => {
+  const now = Date.now();
+  const record = loginAttempts.get(ip) || { count: 0, lastAttempt: now };
+  record.count++;
+  record.lastAttempt = now;
+  loginAttempts.set(ip, record);
+};
+
+const clearFailedAttempts = (ip) => {
+  loginAttempts.delete(ip);
+};
 
 /**
  * POST /api/auth/login
  * Email + şifre ile giriş yapar, JWT cookie döner
  */
-router.post('/login', async (req, res) => {
+router.post('/login', checkBruteForce, verifyTurnstile, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -56,6 +98,7 @@ router.post('/login', async (req, res) => {
     });
 
     if (!user) {
+      recordFailedAttempt(req.ip || req.headers['x-forwarded-for'] || 'unknown');
       return res.status(401).json({
         success: false,
         error: 'Geçersiz email veya şifre'
@@ -73,6 +116,7 @@ router.post('/login', async (req, res) => {
     // Şifre doğrula (bcrypt)
     const isValidPassword = await user.validatePassword(password);
     if (!isValidPassword) {
+      recordFailedAttempt(req.ip || req.headers['x-forwarded-for'] || 'unknown');
       return res.status(401).json({
         success: false,
         error: 'Geçersiz email veya şifre'
@@ -95,6 +139,9 @@ router.post('/login', async (req, res) => {
 
     // Son giriş zamanını güncelle
     await user.update({ last_login: new Date() });
+
+    // Brute force sayacını sıfırla
+    clearFailedAttempts(req.ip || req.headers['x-forwarded-for'] || 'unknown');
 
     // httpOnly cookie olarak gönder
     res.cookie(COOKIE_NAME, token, getCookieOptions());

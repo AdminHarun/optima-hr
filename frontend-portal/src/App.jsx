@@ -8,6 +8,9 @@ import Dashboard from './pages/Dashboard';
 import UsersPage from './pages/UsersPage';
 import AppsPage from './pages/AppsPage';
 import PlaceholderPage from './pages/PlaceholderPage';
+import AuthPoliciesPage from './pages/AuthPoliciesPage';
+import AuditLogPage from './pages/AuditLogPage';
+import CompanyProfilePage from './pages/CompanyProfilePage';
 import { API_BASE_URL } from './config';
 
 function App() {
@@ -92,12 +95,12 @@ function App() {
               <Route path="/apps" element={<AppsPage />} />
               <Route path="/roles" element={<PlaceholderPage title="Roller & Gruplar" description="Kullanıcı rollerini ve grup yetkilerini yönetin" />} />
               <Route path="/departments" element={<PlaceholderPage title="Departmanlar" description="Organizasyon departmanlarını yönetin" />} />
-              <Route path="/security/auth" element={<PlaceholderPage title="Kimlik Doğrulama" description="2FA politikaları ve MFA ayarları" />} />
+              <Route path="/security/auth" element={<AuthPoliciesPage />} />
               <Route path="/security/sessions" element={<PlaceholderPage title="Oturum Yönetimi" description="Aktif oturumlar ve session süreleri" />} />
               <Route path="/security/ip" element={<PlaceholderPage title="IP Whitelist" description="İzin verilen IP adresleri" />} />
-              <Route path="/security/audit" element={<PlaceholderPage title="Denetim Kayıtları" description="Kullanıcı aktivite logları" />} />
+              <Route path="/security/audit" element={<AuditLogPage />} />
               <Route path="/data" element={<PlaceholderPage title="Veri Yönetimi" description="Dosya depolama ve yedekleme" />} />
-              <Route path="/settings/company" element={<PlaceholderPage title="Şirket Profili" description="Şirket bilgileri ve ayarları" />} />
+              <Route path="/settings/company" element={<CompanyProfilePage />} />
               <Route path="/settings/branding" element={<PlaceholderPage title="Branding" description="Logo, renk teması ve görsel kimlik" />} />
               <Route path="/settings/domains" element={<PlaceholderPage title="Domain Yönetimi" description="Subdomain yapılandırması" />} />
               <Route path="*" element={<Navigate to="/" />} />

@@ -110,34 +110,41 @@ app.use('/api', sharedRouter);
 app.use('/chat/api', chatRoutes);
 
 // ============================================
-// LEGACY ROUTES - Geriye uyumluluk
-// Eski frontend hala /api/employees gibi path'ler kullanir
-// Yeni uygulamalara gecis tamamlaninca kaldirilacak
+// Auth middleware - korumalı route'lar için
 // ============================================
-app.use('/api/employees', require('./routes/employees'));
-app.use('/api/employees', require('./routes/bulk'));
+const { requireAuth } = require('./middleware/requireAuth');
+
+// ============================================
+// PUBLIC ROUTES - Auth gerektirmeyen
+// ============================================
 app.use('/api/invitations', require('./routes/invitations'));
 app.use('/api/applications', require('./routes/applications'));
-app.use('/api/recordings', require('./routes/recordings'));
-app.use('/api/management', require('./routes/management'));
-app.use('/api/roles', require('./routes/roles'));
-app.use('/api/2fa', require('./routes/twoFactor'));
 app.use('/api/sso', require('./routes/sso'));
-app.use('/api/integrations', require('./routes/integrations'));
-app.use('/api/workflows', require('./routes/workflows'));
-app.use('/api/scheduled', require('./routes/scheduled'));
-app.use('/api/tasks', require('./routes/tasks'));
-app.use('/api/calendar', require('./routes/calendar'));
-app.use('/api/files', require('./routes/files'));
-app.use('/api/channels', require('./routes/channels'));
-app.use('/api/search', require('./routes/search'));
-app.use('/api/link-preview', require('./routes/link-preview'));
-app.use('/api/media', require('./routes/media'));
-app.use('/api/voice', require('./routes/voice'));
-app.use('/api/bookmarks', require('./routes/bookmarks'));
-app.use('/api/pins', require('./routes/pins'));
-app.use('/api/read-receipts', require('./routes/read-receipts'));
-app.use('/api/screen-share', require('./routes/screen-share'));
+
+// ============================================
+// PROTECTED ROUTES - Auth gerektiren
+// ============================================
+app.use('/api/employees', requireAuth, require('./routes/employees'));
+app.use('/api/employees', requireAuth, require('./routes/bulk'));
+app.use('/api/recordings', requireAuth, require('./routes/recordings'));
+app.use('/api/management', requireAuth, require('./routes/management'));
+app.use('/api/roles', requireAuth, require('./routes/roles'));
+app.use('/api/2fa', requireAuth, require('./routes/twoFactor'));
+app.use('/api/integrations', requireAuth, require('./routes/integrations'));
+app.use('/api/workflows', requireAuth, require('./routes/workflows'));
+app.use('/api/scheduled', requireAuth, require('./routes/scheduled'));
+app.use('/api/tasks', requireAuth, require('./routes/tasks'));
+app.use('/api/calendar', requireAuth, require('./routes/calendar'));
+app.use('/api/files', requireAuth, require('./routes/files'));
+app.use('/api/channels', requireAuth, require('./routes/channels'));
+app.use('/api/search', requireAuth, require('./routes/search'));
+app.use('/api/link-preview', requireAuth, require('./routes/link-preview'));
+app.use('/api/media', requireAuth, require('./routes/media'));
+app.use('/api/voice', requireAuth, require('./routes/voice'));
+app.use('/api/bookmarks', requireAuth, require('./routes/bookmarks'));
+app.use('/api/pins', requireAuth, require('./routes/pins'));
+app.use('/api/read-receipts', requireAuth, require('./routes/read-receipts'));
+app.use('/api/screen-share', requireAuth, require('./routes/screen-share'));
 
 // Health check endpoint (Phase 4.6 - Load Balancing support)
 app.get('/health', async (req, res) => {

@@ -8,14 +8,14 @@ const router = express.Router();
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const crypto = require('crypto');
-const { authenticateToken } = require('../middleware/chatAuth');
+const { requireAuth } = require('../middleware/requireAuth');
 const AdminUser = require('../models/AdminUser');
 
 /**
  * POST /api/2fa/setup - 2FA kurulumu başlat (QR code + secret üret)
  * Requires: authenticateToken
  */
-router.post('/setup', authenticateToken, async (req, res) => {
+router.post('/setup', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
 
@@ -62,7 +62,7 @@ router.post('/setup', authenticateToken, async (req, res) => {
  * POST /api/2fa/verify-setup - İlk doğrulama ile 2FA aktifleştir
  * Body: { token: "123456" }
  */
-router.post('/verify-setup', authenticateToken, async (req, res) => {
+router.post('/verify-setup', requireAuth, async (req, res) => {
     try {
         const { token } = req.body;
         const userId = req.user.id;
@@ -184,7 +184,7 @@ router.post('/verify', async (req, res) => {
  * POST /api/2fa/disable - 2FA devre dışı bırak
  * Body: { token: "123456" }
  */
-router.post('/disable', authenticateToken, async (req, res) => {
+router.post('/disable', requireAuth, async (req, res) => {
     try {
         const { token } = req.body;
         const userId = req.user.id;
@@ -228,7 +228,7 @@ router.post('/disable', authenticateToken, async (req, res) => {
  * POST /api/2fa/backup-codes - Yeni backup codes üret
  * Body: { token: "123456" }
  */
-router.post('/backup-codes', authenticateToken, async (req, res) => {
+router.post('/backup-codes', requireAuth, async (req, res) => {
     try {
         const { token } = req.body;
         const userId = req.user.id;
@@ -280,7 +280,7 @@ router.post('/backup-codes', authenticateToken, async (req, res) => {
 /**
  * GET /api/2fa/status - Kullanıcının 2FA durumu
  */
-router.get('/status', authenticateToken, async (req, res) => {
+router.get('/status', requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await AdminUser.findByPk(userId, {

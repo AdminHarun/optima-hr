@@ -3,7 +3,6 @@ const path = require('path');
 const http = require('http');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { testConnection, sequelize } = require('./config/database');
@@ -34,34 +33,46 @@ app.use((req, res, next) => {
   next();
 });
 
-// Security Middleware
+// Security Middleware — Helmet with CSP
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://challenges.cloudflare.com", "https://static.cloudflareinsights.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https://*.cloudflare.com"],
+      connectSrc: ["'self'", "https://api.optima-hr.net", "wss://api.optima-hr.net", "https://challenges.cloudflare.com"],
+      frameSrc: ["https://challenges.cloudflare.com"],
+      fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
+// Permissions-Policy header
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  next();
+});
+
 app.use(cookieParser());
 app.use(corsMiddleware);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate Limiting - Auth
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { success: false, error: 'Cok fazla giris denemesi. 15 dakika sonra tekrar deneyin.' },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-
-// Genel API limiti
-const apiLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 100,
-  message: { success: false, error: 'Cok fazla istek. Lutfen bekleyin.' },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// Rate Limiting — katmanlı (Plans 07)
+const { apiLimiter, authLimiter, submitLimiter, adminLimiter } = require('./middleware/rateLimiters');
 app.use('/api/', apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/apply/applicant-login', authLimiter);
+app.use('/api/apply/submit', submitLimiter);
+app.use('/api/admin/', adminLimiter);
 
 // Static files for uploads with cache headers
 const staticOptions = {
@@ -117,17 +128,120 @@ const { requireAuth } = require('./middleware/requireAuth');
 // ============================================
 // PUBLIC ROUTES - Auth gerektirmeyen
 // ============================================
-app.use('/api/invitations', require('./routes/invitations'));
-app.use('/api/applications', require('./routes/applications'));
 app.use('/api/sso', require('./routes/sso'));
+app.use('/api/apply', require('./routes/applicationsPublic'));
+
+// Backward compatibility: /api/invitations/validate/:token public kalmalı
+const invitationsPublicRouter = require('express').Router();
+const { InvitationLink, ApplicantProfile, JobApplication } = require('./models/associations');
+invitationsPublicRouter.get('/validate/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const invitation = await InvitationLink.findOne({ where: { token } });
+    if (!invitation) {
+      return res.status(404).json({ error: 'Geçersiz davet linki' });
+    }
+    // IP kaydet
+    const clientIP = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    const realIP = req.query.real_ip || clientIP;
+    const updateData = {};
+    if (!invitation.first_accessed_ip) {
+      updateData.first_accessed_ip = realIP;
+      updateData.first_clicked_at = new Date();
+      updateData.status = 'clicked';
+    }
+    updateData.click_count = (invitation.click_count || 0) + 1;
+    if (Object.keys(updateData).length > 0) {
+      await invitation.update(updateData);
+    }
+
+    // Profil ve başvuru kontrol
+    if (invitation.status === 'used') {
+      const profile = await ApplicantProfile.findOne({
+        where: { invitation_link_id: invitation.id },
+        include: [{ model: JobApplication, as: 'applications', required: false }]
+      });
+      return res.status(410).json({
+        error: 'Bu davet linki daha önce kullanılmış',
+        status: 'used',
+        hasProfile: !!profile,
+        hasApplication: profile?.applications?.length > 0
+        // GÜVENLİK: sessionToken kaldırıldı
+      });
+    }
+
+    res.json({
+      valid: true,
+      email: invitation.email,
+      status: invitation.status,
+      siteCode: invitation.site_code
+    });
+  } catch (error) {
+    console.error('Error validating invitation:', error);
+    res.status(500).json({ error: 'Doğrulama başarısız' });
+  }
+});
+app.use('/api/invitations', invitationsPublicRouter);
+
+// Backward compatibility: applicant endpoints eski path'lerden de erişilebilir
+app.use('/api/applications/session', require('express').Router().get('/:sessionToken', async (req, res) => {
+  const profile = await ApplicantProfile.findOne({
+    where: { session_token: req.params.sessionToken },
+    include: [{ model: InvitationLink, as: 'invitation_link' }]
+  });
+  if (!profile) return res.status(404).json({ error: 'Geçersiz session' });
+  res.json({ id: profile.id, firstName: profile.first_name, lastName: profile.last_name, email: profile.email, phone: profile.phone, token: profile.invitation_link?.token, valid: true });
+}));
+app.use('/api/applications/chat', require('express').Router().get('/:chatToken', async (req, res) => {
+  const profile = await ApplicantProfile.findOne({
+    where: { chat_token: req.params.chatToken },
+    include: [{ model: InvitationLink, as: 'invitation_link' }, { model: JobApplication, as: 'applications' }]
+  });
+  if (!profile) return res.status(404).json({ error: 'Geçersiz chat token' });
+  res.json({ id: profile.id, firstName: profile.first_name, lastName: profile.last_name, email: profile.email, application: profile.applications?.[0] ? { id: profile.applications[0].id, status: profile.applications[0].status } : null, valid: true });
+}));
+app.use('/api/applications/applicant-login', require('express').Router().post('/', async (req, res) => {
+  // Forward to /api/apply/applicant-login
+  const applicationsPublic = require('./routes/applicationsPublic');
+  req.url = '/applicant-login';
+  applicationsPublic(req, res);
+}));
+app.use('/api/applications/get-security-question', require('express').Router().post('/', async (req, res) => {
+  const applicationsPublic = require('./routes/applicationsPublic');
+  req.url = '/get-security-question';
+  applicationsPublic(req, res);
+}));
+app.use('/api/applications/profiles', require('express').Router().post('/', async (req, res) => {
+  const applicationsPublic = require('./routes/applicationsPublic');
+  req.url = '/profiles';
+  applicationsPublic(req, res);
+}));
+app.use('/api/applications/submit', require('express').Router().post('/', async (req, res) => {
+  const applicationsPublic = require('./routes/applicationsPublic');
+  req.url = '/submit';
+  applicationsPublic(req, res);
+}));
+app.use('/api/applications/by-profile', require('express').Router().get('/:profileId', async (req, res) => {
+  const profile = await ApplicantProfile.findByPk(req.params.profileId, {
+    include: [{ model: JobApplication, as: 'applications', required: false }]
+  });
+  if (!profile) return res.status(404).json({ error: 'Profil bulunamadı' });
+  const application = profile.applications?.[0];
+  if (!application) return res.json({ hasApplication: false });
+  res.json({ hasApplication: true, application: { id: application.id, status: application.status, chatToken: application.chat_token, submittedAt: application.created_at } });
+}));
 
 // ============================================
 // PROTECTED ROUTES - Auth gerektiren
 // ============================================
+const { ipAllowlistMiddleware } = require('./middleware/ipAllowlist');
+app.use('/api/invitations', requireAuth, require('./routes/invitations'));
+app.use('/api/applications', requireAuth, require('./routes/applications'));
 app.use('/api/employees', requireAuth, require('./routes/employees'));
 app.use('/api/employees', requireAuth, require('./routes/bulk'));
 app.use('/api/recordings', requireAuth, require('./routes/recordings'));
 app.use('/api/management', requireAuth, require('./routes/management'));
+app.use('/api/admin', requireAuth, require('./routes/admin'));
 app.use('/api/roles', requireAuth, require('./routes/roles'));
 app.use('/api/2fa', requireAuth, require('./routes/twoFactor'));
 app.use('/api/integrations', requireAuth, require('./routes/integrations'));

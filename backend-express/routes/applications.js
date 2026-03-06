@@ -7,6 +7,8 @@ const bcrypt = require('bcryptjs');
 const { InvitationLink, ApplicantProfile, JobApplication } = require('../models/associations');
 const TokenService = require('../services/tokenService');
 const r2Storage = require('../services/r2StorageService');
+const { maskTC, maskToken } = require('../utils/dataMasking');
+const { generateSecureToken } = require('../utils/tokenGenerator');
 
 // IP adresi alma helper
 const getClientIP = (req) => {
@@ -50,7 +52,8 @@ const storage = r2Storage.isR2Enabled()
         cb(null, uploadDir);
       },
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const crypto = require('crypto');
+        const uniqueSuffix = Date.now() + '-' + crypto.randomBytes(8).toString('hex');
         const fileExtension = path.extname(file.originalname);
         cb(null, `${req.body.token || 'unknown'}-${file.fieldname}-${uniqueSuffix}${fileExtension}`);
       }
@@ -120,7 +123,7 @@ router.post('/profiles', async (req, res) => {
     const realIP = real_ip || clientIP;
 
     // Session token oluştur
-    const sessionToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const sessionToken = generateSecureToken('session');
 
     // Sifre ve guvenlik sorusu hash'le
     let passwordHash = null;
@@ -166,7 +169,7 @@ router.post('/profiles', async (req, res) => {
       lastName: profile.last_name,
       email: profile.email,
       phone: profile.phone,
-      sessionToken: profile.session_token,
+      // GÜVENLİK: sessionToken dönmüyoruz — requireAuth arkasında olsa bile
       token: token
     });
   } catch (error) {
@@ -219,7 +222,7 @@ router.post('/submit', upload.fields([
     let profile = invitation.profiles?.[0];
     if (!profile) {
       // Profil henuz yoksa olustur
-      const sessionToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const sessionToken = generateSecureToken('session');
       profile = await ApplicantProfile.create({
         invitation_link_id: invitation.id,
         site_code: invitation.site_code || null,
@@ -359,7 +362,7 @@ router.post('/submit', upload.fields([
     });
 
     // Chat token olustur ve chat odasi olustur
-    const chatToken = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const chatToken = generateSecureToken('chat');
     await profile.update({
       chat_token: chatToken
     });
@@ -539,10 +542,9 @@ router.get('/profile/:applicantId', async (req, res) => {
       lastName: profile.last_name,
       email: profile.email,
       phone: profile.phone,
-      sessionToken: profile.session_token,
-      chatToken: profile.chat_token,
+      // GÜVENLİK: sessionToken ve chatToken kaldırıldı — admin detayda bile gerekmez
       profileCreatedAt: profile.profile_created_at,
-      profileCreatedIp: profile.profile_created_ip,
+      profileCreatedIp: profile.profile_created_ip, // Admin fraud tespiti için kalabilir
       application: application ? {
         id: application.id,
         tcNumber: application.tc_number,
@@ -626,21 +628,13 @@ router.get('/profiles/all', async (req, res) => {
       lastName: p.last_name,
       email: p.email,
       phone: p.phone,
-      chatToken: p.chat_token,
-      sessionToken: p.session_token,
+      // GÜVENLİK: chatToken, sessionToken, IP kaldırıldı
       createdAt: p.profile_created_at,
       siteCode: p.site_code,
       invitationLink: includeAssociations ? p.invitation_link : null,
       applications: includeAssociations ? p.applications : [],
       hasApplication: includeAssociations ? (p.applications && p.applications.length > 0) : false,
       applicationStatus: includeAssociations ? (p.applications?.[0]?.status || null) : null,
-      // Cihaz ve ag bilgileri
-      profileCreatedIp: p.profile_created_ip,
-      profileCreatedLocation: p.profile_created_location,
-      deviceInfo: p.device_info,
-      vpnScore: p.vpn_score,
-      isVpn: p.is_vpn,
-      // Guvenlik sorusu (hash degil sadece soru metni)
       securityQuestion: p.security_question
     }));
 
@@ -695,7 +689,7 @@ router.get('/', async (req, res) => {
       lastName: includeAssociations ? app.applicant_profile?.last_name : null,
       email: includeAssociations ? app.applicant_profile?.email : null,
       phone: includeAssociations ? app.applicant_profile?.phone : null,
-      tcNumber: app.tc_number,
+      tcNumber: maskTC(app.tc_number),
       birthDate: app.birth_date,
       address: app.address,
       city: app.city,
@@ -721,8 +715,7 @@ router.get('/', async (req, res) => {
       kvkkApproved: app.kvkk_approved,
       status: app.status,
       submittedAt: app.submitted_at,
-      token: app.token,
-      profileId: app.profileId,
+      // GÜVENLİK: token ve profileId kaldırıldı
       invitationLink: includeAssociations ? app.invitation_link : null
     }));
 
@@ -791,15 +784,9 @@ router.get('/profiles', async (req, res) => {
       lastName: p.last_name,
       email: p.email,
       phone: p.phone,
-      chatToken: p.chat_token,
-      sessionToken: p.session_token,
+      // GÜVENLİK: chatToken, sessionToken, IP kaldırıldı
       createdAt: p.profile_created_at,
       siteCode: p.site_code,
-      profileCreatedIp: p.profile_created_ip,
-      profileCreatedLocation: p.profile_created_location,
-      deviceInfo: p.device_info,
-      vpnScore: p.vpn_score,
-      isVpn: p.is_vpn,
       securityQuestion: p.security_question
     }));
 
@@ -987,7 +974,7 @@ router.post('/applicant-login', async (req, res) => {
     }
 
     // Giris basarili - yeni session token olustur
-    const newSessionToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newSessionToken = generateSecureToken('session');
     await profile.update({ session_token: newSessionToken });
 
     const application = profile.applications?.[0];

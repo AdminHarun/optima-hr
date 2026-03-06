@@ -36,10 +36,9 @@ const corsOptions = {
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('⚠️ CORS blocked origin:', origin);
-      // In production, block unknown origins. In development, allow all.
+      console.warn(`⚠️ CORS blocked origin: ${origin}`);
       if (process.env.NODE_ENV === 'production') {
-        callback(null, false);
+        callback(new Error('CORS policy violation'));
       } else {
         callback(null, true);
       }
@@ -58,7 +57,7 @@ const corsOptions = {
     'X-Site-Id',
   ],
   exposedHeaders: ['Content-Length', 'X-Total-Count'],
-  maxAge: 86400, // 24 hours
+  maxAge: 600, // 10 dakika (güvenlik — sık yenileme)
   preflightContinue: false,
   optionsSuccessStatus: 204
 };

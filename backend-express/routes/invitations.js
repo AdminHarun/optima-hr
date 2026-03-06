@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize');
 const { InvitationLink, ApplicantProfile, JobApplication } = require('../models/associations');
+const { maskToken } = require('../utils/dataMasking');
+const { generateInvitationToken } = require('../utils/tokenGenerator');
 
 // IP adresi alma helper
 const getClientIP = (req) => {
@@ -79,33 +81,24 @@ router.get('/', async (req, res) => {
 
     console.log(`✅ Found ${invitations.length} invitations (with profiles: ${includeProfiles})`);
 
-    // LocalStorage formatına uyumlu dönüştür
+    // GÜVENLİK: Token maskelenmiş, IP adresleri kaldırılmış
     const formattedInvitations = invitations.map(inv => ({
       id: inv.id,
       email: inv.email,
-      token: inv.token,
+      token: maskToken(inv.token),
       status: inv.status,
       createdAt: inv.created_at,
       clickedAt: inv.first_clicked_at || inv.clickedAt,
       usedAt: inv.form_completed_at || inv.usedAt,
-      ipAddress: inv.first_clicked_ip ? inv.first_clicked_ip.toString() : inv.ipAddress,
       applicantName: inv.applicant_name,
       applicantPhone: inv.applicant_phone,
-
-      // Ek bilgiler
-      first_accessed_ip: inv.first_clicked_ip ? inv.first_clicked_ip.toString() : null,
-      form_submitted_at: inv.form_completed_at,
-      form_submitted_ip: inv.form_completed_ip ? inv.form_completed_ip.toString() : null,
-      click_count: inv.click_count,
 
       // Profil ve başvuru bilgileri (varsa)
       profiles: includeProfiles ? (inv.profiles || []) : [],
       applications: includeProfiles ? (inv.profiles?.flatMap(p => p.applications) || []) : []
     }));
 
-    console.log('📤 Sending response:', JSON.stringify(formattedInvitations).substring(0, 100));
     res.json(formattedInvitations);
-    console.log('✅ Response sent successfully');
   } catch (error) {
     console.error('❌ Error fetching invitations:', error);
     res.status(500).json({ error: 'Davet linkleri alınamadı', details: error.message });
@@ -123,15 +116,8 @@ router.post('/', async (req, res) => {
 
     const siteCode = req.headers['x-site-id'] || null;
 
-    // Token oluştur (Frontend ile aynı format)
-    const generateRandomToken = () => {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-      let token = '';
-      for (let i = 0; i < 32; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return token;
-    };
+    // Token oluştur — kriptografik güvenli
+    const token = generateInvitationToken();
 
     // E-posta duplicate kontrolü (site bazlı)
     const duplicateWhere = {
@@ -158,7 +144,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const token = generateRandomToken();
     const clientIP = getClientIP(req);
 
     const newInvitation = await InvitationLink.create({

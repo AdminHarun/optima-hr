@@ -18,7 +18,7 @@ const JWT_SECRET = process.env.JWT_SECRET || (() => {
   console.warn('⚠️  JWT_SECRET env var tanımlanmamış! Geçici rastgele key kullanılıyor.');
   return require('crypto').randomBytes(64).toString('hex');
 })();
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30m';
 const COOKIE_NAME = 'optima_token';
 
 // Cookie ayarları
@@ -27,7 +27,7 @@ const getCookieOptions = () => ({
   secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   domain: process.env.NODE_ENV === 'production' ? '.optima-hr.net' : undefined,
-  maxAge: 8 * 60 * 60 * 1000, // 8 saat
+  maxAge: 30 * 60 * 1000, // 30 dakika
   path: '/'
 });
 
@@ -123,14 +123,18 @@ router.post('/login', checkBruteForce, verifyTurnstile, async (req, res) => {
       });
     }
 
-    // JWT token oluştur
+    // JWT token oluştur — IP binding için IP'yi payload'a göm
+    const getClientIP = require('../utils/getClientIP');
+    const clientIP = getClientIP(req);
+    
     const tokenPayload = {
       id: user.id,
       email: user.email,
       role: user.role,
       type: user.role === 'USER' ? 'employee' : 'admin',
       site_code: user.site_code,
-      employee_id: user.employee_id || null
+      employee_id: user.employee_id || null,
+      ip: clientIP  // GÜVENLİK: IP binding (Plan 04)
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, {
@@ -142,6 +146,43 @@ router.post('/login', checkBruteForce, verifyTurnstile, async (req, res) => {
 
     // Brute force sayacını sıfırla
     clearFailedAttempts(req.ip || req.headers['x-forwarded-for'] || 'unknown');
+
+    // Audit log — başarılı giriş kaydı
+    try {
+      const AuditLog = require('../models/AuditLog');
+      await AuditLog.create({
+        action: 'login',
+        module: 'auth',
+        user_id: user.id,
+        user_email: user.email,
+        user_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        ip_address: req.ip || req.headers['x-forwarded-for'] || 'unknown',
+        user_agent: req.headers['user-agent'],
+        request_method: 'POST',
+        request_url: '/api/auth/login',
+        response_status: 200,
+        details: { origin: req.headers.origin || 'unknown' }
+      });
+    } catch (e) { /* audit log hatası login'i engellemesin */ }
+
+    // 2FA kontrolü — aktifse cookie verme, frontend /api/2fa/verify çağırsın
+    if (user.two_factor_enabled) {
+      // Brute force sayacını sıfırla
+      clearFailedAttempts(req.ip || req.headers['x-forwarded-for'] || 'unknown');
+      
+      return res.json({
+        success: true,
+        requires2FA: true,
+        userId: user.id,
+        user: {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          two_factor_enabled: true
+        }
+      });
+    }
 
     // httpOnly cookie olarak gönder
     res.cookie(COOKIE_NAME, token, getCookieOptions());

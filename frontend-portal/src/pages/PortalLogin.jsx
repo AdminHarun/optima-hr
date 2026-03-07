@@ -56,6 +56,20 @@ export default function PortalLogin({ onLogin }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!twoFAStep && turnstileRef.current && !turnstileWidgetId.current) {
+      if (window.turnstile) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(''),
+          theme: 'dark',
+          language: 'tr'
+        });
+      }
+    }
+  }, [twoFAStep]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) { setError('Tüm alanları doldurun'); return; }
@@ -151,6 +165,11 @@ export default function PortalLogin({ onLogin }) {
               </Alert>
             )}
 
+            {/* Turnstile - her zaman DOM'da, sadece CSS ile gizle */}
+            <Box sx={{ display: twoFAStep ? 'none' : 'flex', justifyContent: 'center', mb: 2 }}>
+              <div ref={turnstileRef}></div>
+            </Box>
+
             {/* Adım 1: Email + Şifre */}
             {!twoFAStep && (
               <form onSubmit={handleSubmit}>
@@ -192,9 +211,6 @@ export default function PortalLogin({ onLogin }) {
                     )
                   }}
                 />
-                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                  <div ref={turnstileRef}></div>
-                </Box>
                 <Button
                   type="submit" fullWidth variant="contained"
                   disabled={loading || !turnstileToken}

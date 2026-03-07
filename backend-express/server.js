@@ -243,7 +243,7 @@ app.use('/api/recordings', requireAuth, require('./routes/recordings'));
 app.use('/api/management', requireAuth, require('./routes/management'));
 app.use('/api/admin', requireAuth, require('./routes/admin'));
 app.use('/api/roles', requireAuth, require('./routes/roles'));
-app.use('/api/2fa', requireAuth, require('./routes/twoFactor'));
+app.use('/api/2fa', require('./routes/twoFactor')); // Auth endpoint bazlı — /verify ve /check public
 app.use('/api/integrations', requireAuth, require('./routes/integrations'));
 app.use('/api/workflows', requireAuth, require('./routes/workflows'));
 app.use('/api/scheduled', requireAuth, require('./routes/scheduled'));
@@ -388,7 +388,8 @@ const runMigrations = async () => {
       await addColumnSafe('management_admin_users', 'two_factor_secret', 'VARCHAR(500)');
       await addColumnSafe('management_admin_users', 'two_factor_enabled', 'BOOLEAN DEFAULT false');
       await addColumnSafe('management_admin_users', 'two_factor_backup_codes', 'TEXT');
-      console.log('✅ 2FA columns checked');
+      await addColumnSafe('management_admin_users', 'token_version', 'INTEGER DEFAULT 0');
+      console.log('✅ 2FA + token_version columns checked');
 
       // Audit log enhancement columns (Phase 3.3)
       console.log('🔄 Checking audit log enhancement columns...');

@@ -193,6 +193,17 @@ export default function SettingsPage() {
   // Stats state
   const [stats, setStats] = useState(null);
 
+  // 2FA state
+  const [twoFAStatus, setTwoFAStatus] = useState({ enabled: false, remainingBackupCodes: 0 });
+  const [twoFALoading, setTwoFALoading] = useState(false);
+  const [twoFASetupData, setTwoFASetupData] = useState(null);
+  const [twoFASetupStep, setTwoFASetupStep] = useState('idle'); // idle | setup | verify | backupCodes
+  const [twoFACode, setTwoFACode] = useState('');
+  const [twoFAError, setTwoFAError] = useState('');
+  const [twoFABackupCodes, setTwoFABackupCodes] = useState([]);
+  const [twoFADisableCode, setTwoFADisableCode] = useState('');
+  const [twoFADisableOpen, setTwoFADisableOpen] = useState(false);
+
   // Snackbar
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -379,6 +390,8 @@ export default function SettingsPage() {
       loadStats();
     } else if (activeSection === 'audit') {
       loadAuditLogs();
+    } else if (activeSection === 'security') {
+      fetch2FAStatus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection, useBackend]);
@@ -1805,6 +1818,80 @@ export default function SettingsPage() {
   }, [visibleSections.length]);
 
   // ============================================================
+  // 2FA API HELPERS
+  // ============================================================
+  const fetch2FAStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/2fa/status`, { credentials: 'include' });
+      const data = await res.json();
+      if (data.success) setTwoFAStatus(data.data);
+    } catch { }
+  };
+
+  const start2FASetup = async () => {
+    setTwoFALoading(true);
+    setTwoFAError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/2fa/setup`, { method: 'POST', credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        setTwoFASetupData(data.data);
+        setTwoFASetupStep('setup');
+        setTwoFACode('');
+      } else {
+        setTwoFAError(data.error || '2FA kurulumu başlatılamadı');
+      }
+    } catch { setTwoFAError('Sunucu hatası'); }
+    setTwoFALoading(false);
+  };
+
+  const verify2FASetup = async () => {
+    if (!twoFACode.trim()) { setTwoFAError('Lütfen kodu girin'); return; }
+    setTwoFALoading(true);
+    setTwoFAError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/2fa/verify-setup`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: twoFACode.replace(/\s/g, '') })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTwoFABackupCodes(data.backupCodes || []);
+        setTwoFASetupStep('backupCodes');
+        setTwoFAStatus({ enabled: true, remainingBackupCodes: data.backupCodes?.length || 10 });
+        setSnackbar({ open: true, message: '2FA başarıyla aktifleştirildi', severity: 'success' });
+      } else {
+        setTwoFAError(data.error || 'Geçersiz kod');
+      }
+    } catch { setTwoFAError('Sunucu hatası'); }
+    setTwoFALoading(false);
+  };
+
+  const disable2FA = async () => {
+    if (!twoFADisableCode.trim()) return;
+    setTwoFALoading(true);
+    setTwoFAError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/2fa/disable`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: twoFADisableCode.replace(/\s/g, '') })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTwoFAStatus({ enabled: false, remainingBackupCodes: 0 });
+        setTwoFADisableOpen(false);
+        setTwoFADisableCode('');
+        setSnackbar({ open: true, message: '2FA devre dışı bırakıldı', severity: 'info' });
+      } else {
+        setTwoFAError(data.error || 'Geçersiz kod');
+      }
+    } catch { setTwoFAError('Sunucu hatası'); }
+    setTwoFALoading(false);
+  };
+
+  // ============================================================
   // RENDER: SECURITY SECTION
   // ============================================================
   const renderSecuritySection = () => {
@@ -1948,7 +2035,15 @@ export default function SettingsPage() {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5, borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
                   <Typography sx={{ fontSize: '0.85rem', color: '#555' }}>Iki Faktorlu Dogrulama (2FA)</Typography>
-                  <Chip label="Yakin Zamanda" size="small" sx={{ fontWeight: 600, fontSize: '0.75rem', backgroundColor: 'rgba(255, 152, 0, 0.1)', color: '#f57c00' }} />
+                  <Chip
+                    label={twoFAStatus.enabled ? 'Aktif' : 'Pasif'}
+                    size="small"
+                    sx={{
+                      fontWeight: 600, fontSize: '0.75rem',
+                      backgroundColor: twoFAStatus.enabled ? 'rgba(76, 175, 80, 0.1)' : 'rgba(158, 158, 158, 0.1)',
+                      color: twoFAStatus.enabled ? '#4caf50' : '#9e9e9e'
+                    }}
+                  />
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.5 }}>
                   <Typography sx={{ fontSize: '0.85rem', color: '#555' }}>Sifre Degistirme</Typography>
@@ -1957,6 +2052,156 @@ export default function SettingsPage() {
               </Stack>
             </Paper>
           </Grid>
+
+          {/* 2FA Yönetim Kartı */}
+          <Grid item xs={12}>
+            <Paper sx={{ borderRadius: 3, p: 3, border: '1px solid rgba(28, 97, 171, 0.08)' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LockIcon sx={{ color: COLORS.primary }} />
+                  <Typography sx={{ fontWeight: 700, color: COLORS.primary, fontSize: '1rem' }}>
+                    İki Faktörlü Doğrulama (2FA)
+                  </Typography>
+                </Box>
+                <Chip
+                  label={twoFAStatus.enabled ? 'Aktif' : 'Pasif'}
+                  size="small"
+                  sx={{
+                    fontWeight: 700,
+                    backgroundColor: twoFAStatus.enabled ? 'rgba(76, 175, 80, 0.12)' : 'rgba(158,158,158,0.1)',
+                    color: twoFAStatus.enabled ? '#4caf50' : '#9e9e9e'
+                  }}
+                />
+              </Box>
+
+              {/* DURUM: Pasif */}
+              {!twoFAStatus.enabled && twoFASetupStep === 'idle' && (
+                <Box>
+                  <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                    2FA aktif değil. Hesabınızı korumak için Google Authenticator, Authy veya Microsoft Authenticator ile aktifleştirin.
+                  </Alert>
+                  <Button
+                    variant="contained"
+                    onClick={start2FASetup}
+                    disabled={twoFALoading}
+                    sx={{ borderRadius: 2, background: COLORS.gradientBlue }}
+                  >
+                    {twoFALoading ? 'Hazırlanıyor...' : '2FA\'yı Aktifleştir'}
+                  </Button>
+                </Box>
+              )}
+
+              {/* ADIM 1: QR Kod Gösterimi */}
+              {twoFASetupStep === 'setup' && twoFASetupData && (
+                <Box>
+                  <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+                    Google Authenticator, Authy veya Microsoft Authenticator uygulamanızı açın ve QR kodu tarayın.
+                  </Alert>
+                  <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <img src={twoFASetupData.qrCode} alt="2FA QR Kod" style={{ width: 200, height: 200, borderRadius: 12, border: '2px solid #eee' }} />
+                      <Typography sx={{ fontSize: '0.75rem', color: '#999', mt: 1 }}>QR kodu tarayın</Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 220 }}>
+                      <Typography sx={{ fontSize: '0.8rem', color: '#666', mb: 1 }}>
+                        QR kod tarayamıyorsanız bu kodu manuel girin:
+                      </Typography>
+                      <Paper sx={{ p: 1.5, background: '#f5f5f5', borderRadius: 2, fontFamily: 'monospace', fontSize: '0.85rem', letterSpacing: '0.15rem', wordBreak: 'break-all', mb: 2 }}>
+                        {twoFASetupData.secret}
+                      </Paper>
+                      <TextField
+                        fullWidth
+                        label="6 Haneli Doğrulama Kodu"
+                        value={twoFACode}
+                        onChange={(e) => { setTwoFACode(e.target.value); setTwoFAError(''); }}
+                        placeholder="000 000"
+                        inputProps={{ maxLength: 7, style: { textAlign: 'center', fontSize: '1.3rem', letterSpacing: '0.25rem' } }}
+                        sx={{ mb: 1.5 }}
+                        error={!!twoFAError}
+                        helperText={twoFAError}
+                      />
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button variant="contained" onClick={verify2FASetup} disabled={twoFALoading}
+                          sx={{ borderRadius: 2, background: COLORS.gradientBlue }}>
+                          {twoFALoading ? 'Doğrulanıyor...' : 'Doğrula ve Aktifleştir'}
+                        </Button>
+                        <Button variant="outlined" onClick={() => { setTwoFASetupStep('idle'); setTwoFASetupData(null); }} sx={{ borderRadius: 2 }}>
+                          İptal
+                        </Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+
+              {/* ADIM 2: Backup Kodları */}
+              {twoFASetupStep === 'backupCodes' && (
+                <Box>
+                  <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
+                    2FA başarıyla aktifleştirildi! Aşağıdaki yedek kodları güvenli bir yere kaydedin.
+                    Her kod yalnızca bir kez kullanılabilir.
+                  </Alert>
+                  <Paper sx={{ p: 2, background: '#f9f9f9', borderRadius: 2, mb: 2 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1 }}>
+                      {twoFABackupCodes.map((code, i) => (
+                        <Typography key={i} sx={{ fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 600, color: '#333', textAlign: 'center', p: 0.5, background: '#fff', borderRadius: 1, border: '1px solid #eee' }}>
+                          {code}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Paper>
+                  <Button variant="contained" onClick={() => setTwoFASetupStep('idle')}
+                    sx={{ borderRadius: 2, background: COLORS.gradientBlue }}>
+                    Kodları Kaydettim, Kapat
+                  </Button>
+                </Box>
+              )}
+
+              {/* DURUM: Aktif */}
+              {twoFAStatus.enabled && twoFASetupStep === 'idle' && (
+                <Box>
+                  <Alert severity="success" sx={{ mb: 2, borderRadius: 2 }}>
+                    Hesabınız 2FA ile korunuyor. Kalan yedek kod: <strong>{twoFAStatus.remainingBackupCodes}</strong>
+                  </Alert>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => { setTwoFADisableOpen(true); setTwoFAError(''); setTwoFADisableCode(''); }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    2FA'yı Devre Dışı Bırak
+                  </Button>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
+
+          {/* 2FA Devre Dışı Bırakma Dialog */}
+          <Dialog open={twoFADisableOpen} onClose={() => setTwoFADisableOpen(false)} maxWidth="xs" fullWidth>
+            <DialogTitle>2FA Devre Dışı Bırak</DialogTitle>
+            <DialogContent>
+              <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+                Bu işlem hesabınızın güvenliğini düşürecek.
+              </Alert>
+              <TextField
+                fullWidth
+                label="Mevcut Authenticator Kodunuz"
+                value={twoFADisableCode}
+                onChange={(e) => { setTwoFADisableCode(e.target.value); setTwoFAError(''); }}
+                placeholder="000 000"
+                inputProps={{ maxLength: 7, style: { textAlign: 'center', fontSize: '1.3rem', letterSpacing: '0.2rem' } }}
+                error={!!twoFAError}
+                helperText={twoFAError}
+                autoFocus
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setTwoFADisableOpen(false)}>İptal</Button>
+              <Button onClick={disable2FA} color="error" variant="contained" disabled={twoFALoading}>
+                {twoFALoading ? 'İşleniyor...' : 'Devre Dışı Bırak'}
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           {/* Giris Gecmisi */}
           <Grid item xs={12} md={6}>

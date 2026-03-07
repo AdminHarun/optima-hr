@@ -134,15 +134,17 @@ router.post('/login', checkBruteForce, verifyTurnstile, async (req, res) => {
       type: user.role === 'USER' ? 'employee' : 'admin',
       site_code: user.site_code,
       employee_id: user.employee_id || null,
-      ip: clientIP  // GÜVENLİK: IP binding (Plan 04)
+      ip: clientIP,  // GÜVENLİK: IP binding (Plan 04)
+      tv: (user.token_version || 0) + 1  // Token version — single-session enforcement
     };
 
     const token = jwt.sign(tokenPayload, JWT_SECRET, {
       expiresIn: JWT_EXPIRES_IN
     });
 
-    // Son giriş zamanını güncelle
-    await user.update({ last_login: new Date() });
+    // Son giriş zamanını güncelle + token_version artır (eski oturumlar geçersiz olur)
+    const newVersion = (user.token_version || 0) + 1;
+    await user.update({ last_login: new Date(), token_version: newVersion });
 
     // Brute force sayacını sıfırla
     clearFailedAttempts(req.ip || req.headers['x-forwarded-for'] || 'unknown');
@@ -219,15 +221,33 @@ router.post('/login', checkBruteForce, verifyTurnstile, async (req, res) => {
 
 /**
  * POST /api/auth/logout
- * Cookie'yi temizler
+ * Cookie'yi temizler — tüm domain/path kombinasyonları
  */
 router.post('/logout', (req, res) => {
+  // GÜVENLİK: clearCookie parametreleri setCookie ile AYNI OLMALI
+  // Aksi halde tarayıcı cookie'yi silmez!
+  const clearOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    domain: process.env.NODE_ENV === 'production' ? '.optima-hr.net' : undefined,
+    path: '/'
+  };
+
+  res.clearCookie(COOKIE_NAME, clearOptions);
+
+  // Ek güvenlik: domain'siz de temizle (subdomain farkları için)
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/'
   });
+
+  // Cache-Control: Tarayıcı auth state'i cache'lemesin
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   res.json({
     success: true,
@@ -266,6 +286,21 @@ router.get('/me', async (req, res) => {
 
     if (!user || !user.is_active) {
       res.clearCookie(COOKIE_NAME);
+      return res.status(401).json({
+        success: false,
+        error: 'Oturum geçersiz'
+      });
+    }
+
+    // Token version kontrolü — yeni login yapıldıysa eski oturumlar geçersiz olur
+    if (decoded.tv !== undefined && user.token_version !== decoded.tv) {
+      res.clearCookie(COOKIE_NAME, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        domain: process.env.NODE_ENV === 'production' ? '.optima-hr.net' : undefined,
+        path: '/'
+      });
       return res.status(401).json({
         success: false,
         error: 'Oturum geçersiz'

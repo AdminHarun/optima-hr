@@ -105,29 +105,9 @@ export const EmployeeAuthProvider = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.user) {
-          // Backend'den gelen kullanıcı verisini uyumlu formata dönüştür
-          const user = {
-            id: data.user.id,
-            email: data.user.email,
-            first_name: data.user.first_name,
-            firstName: data.user.first_name,
-            last_name: data.user.last_name,
-            lastName: data.user.last_name,
-            role: data.user.role,
-            siteId: data.user.site_code,
-            site_code: data.user.site_code,
-            avatar: data.user.avatar_url,
-            avatar_url: data.user.avatar_url,
-            phone: data.user.phone,
-            isActive: data.user.is_active,
-            is_active: data.user.is_active,
-            employee_id: data.user.employee_id,
-            two_factor_enabled: data.user.two_factor_enabled,
-            lastLogin: data.user.last_login
-          };
+          const user = formatUser(data.user);
           setCurrentUser(user);
           setIsAuthenticated(true);
-          console.log('Session restored:', user.email);
         }
       }
     } catch (error) {
@@ -137,53 +117,88 @@ export const EmployeeAuthProvider = ({ children }) => {
     }
   };
 
+  // Kullanıcı verisini uyumlu formata dönüştür
+  const formatUser = (rawUser) => ({
+    id: rawUser.id,
+    email: rawUser.email,
+    first_name: rawUser.first_name,
+    firstName: rawUser.first_name,
+    last_name: rawUser.last_name,
+    lastName: rawUser.last_name,
+    role: rawUser.role,
+    siteId: rawUser.site_code,
+    site_code: rawUser.site_code,
+    avatar: rawUser.avatar_url,
+    avatar_url: rawUser.avatar_url,
+    phone: rawUser.phone,
+    isActive: rawUser.is_active,
+    is_active: rawUser.is_active,
+    employee_id: rawUser.employee_id,
+    two_factor_enabled: rawUser.two_factor_enabled,
+    lastLogin: rawUser.last_login
+  });
+
   // Backend'den login - /api/auth/login
-  const login = async (email, password, turnstileToken) => {
+  const login = async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
-        credentials: 'include', // cookie'yi kabul et
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password, turnstileToken })
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Giriş başarısız');
+      }
+
+      // 2FA gerekli — cookie henüz verilmedi
+      if (data.requires2FA) {
+        return { success: false, requires2FA: true, userId: data.userId };
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Giriş başarısız');
+      }
+
+      const user = formatUser(data.user);
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      return { success: true };
+
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
+  // 2FA doğrulama — login sonrası TOTP kodu ile
+  const verify2FA = async (userId, token, backupCode = null) => {
+    try {
+      const body = { userId };
+      if (token) body.token = token;
+      if (backupCode) body.backupCode = backupCode;
+
+      const response = await fetch(`${API_BASE_URL}/api/2fa/verify`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Giriş başarısız');
+        throw new Error(data.error || '2FA doğrulama başarısız');
       }
 
-      // Kullanıcı bilgisini uyumlu formata dönüştür
-      const user = {
-        id: data.user.id,
-        email: data.user.email,
-        first_name: data.user.first_name,
-        firstName: data.user.first_name,
-        last_name: data.user.last_name,
-        lastName: data.user.last_name,
-        role: data.user.role,
-        siteId: data.user.site_code,
-        site_code: data.user.site_code,
-        avatar: data.user.avatar_url,
-        avatar_url: data.user.avatar_url,
-        phone: data.user.phone,
-        isActive: data.user.is_active,
-        is_active: data.user.is_active,
-        employee_id: data.user.employee_id,
-        two_factor_enabled: data.user.two_factor_enabled,
-        lastLogin: data.user.last_login
-      };
-
+      const user = formatUser(data.user);
       setCurrentUser(user);
       setIsAuthenticated(true);
-
-      console.log('Login successful:', user.email);
       return { success: true };
 
     } catch (error) {
-      console.error('Login error:', error);
       return { success: false, error: error.message };
     }
   };
@@ -235,6 +250,7 @@ export const EmployeeAuthProvider = ({ children }) => {
     isLoading,
     isAuthenticated,
     login,
+    verify2FA,
     logout,
     hasPermission,
     hasAccessToSite,

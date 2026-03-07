@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const { InvitationLink, ApplicantProfile, JobApplication } = require('../models/associations');
 const { maskToken } = require('../utils/dataMasking');
 const { generateInvitationToken } = require('../utils/tokenGenerator');
+const auditLog = require('../utils/auditLogger');
 
 // IP adresi alma helper
 const getClientIP = (req) => {
@@ -175,6 +176,13 @@ router.post('/', async (req, res) => {
       link: `${req.get('origin') || 'http://localhost:3000'}/apply/${token}`
     };
 
+    // Audit log
+    auditLog(req, 'invitation.created', 'invitations', {
+      invitationId: newInvitation.id,
+      email: email.toLowerCase(),
+      siteCode
+    });
+
     res.status(201).json(response);
   } catch (error) {
     console.error('Error creating invitation:', error);
@@ -192,7 +200,15 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Davet linki bulunamadı' });
     }
 
+    const invitationEmail = invitation.email;
     await invitation.destroy();
+
+    // Audit log
+    auditLog(req, 'invitation.deleted', 'invitations', {
+      invitationId: id,
+      email: invitationEmail
+    });
+
     res.json({ message: 'Davet linki silindi' });
   } catch (error) {
     console.error('Error deleting invitation:', error);

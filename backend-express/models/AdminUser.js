@@ -69,6 +69,13 @@ const AdminUser = sequelize.define('AdminUser', {
     allowNull: true,
     comment: 'JSON encoded hashed backup codes'
   },
+  // Session versiyonu - her login'de artar, eski token'ları geçersiz kılar
+  token_version: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0,
+    comment: 'Her login token_version artar, eski oturumlar geçersiz olur'
+  },
 }, {
   tableName: 'management_admin_users',
   timestamps: true,

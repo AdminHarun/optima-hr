@@ -9,6 +9,7 @@ const TokenService = require('../services/tokenService');
 const r2Storage = require('../services/r2StorageService');
 const { maskTC, maskToken } = require('../utils/dataMasking');
 const { generateSecureToken } = require('../utils/tokenGenerator');
+const auditLog = require('../utils/auditLogger');
 
 // IP adresi alma helper
 const getClientIP = (req) => {
@@ -500,7 +501,6 @@ router.get('/chat/:chatToken', async (req, res) => {
       lastName: profile.last_name,
       email: profile.email,
       phone: profile.phone,
-      chatToken: profile.chat_token,
       application: profile.applications?.[0] || null,
       valid: true
     });
@@ -883,6 +883,8 @@ router.put('/:id/status', async (req, res) => {
       return res.status(404).json({ error: 'Başvuru bulunamadı' });
     }
 
+    const oldStatus = application.status;
+
     // Status'u guncelle, red ise red sebebini de kaydet
     const updateData = { status };
     if (status === 'rejected' && rejectReason) {
@@ -890,6 +892,15 @@ router.put('/:id/status', async (req, res) => {
     }
 
     await application.update(updateData);
+
+    // Audit log
+    auditLog(req, 'application.status_changed', 'applications', {
+      applicationId: id,
+      oldStatus,
+      newStatus: status,
+      rejectReason: rejectReason || null
+    });
+
     res.json({ message: 'Durum güncellendi', status, rejectReason: updateData.reject_reason });
   } catch (error) {
     console.error('Error updating application status:', error);
@@ -902,12 +913,23 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const application = await JobApplication.findByPk(id);
+    const application = await JobApplication.findByPk(id, {
+      include: [{ model: ApplicantProfile, as: 'applicant_profile', attributes: ['email'] }]
+    });
     if (!application) {
       return res.status(404).json({ error: 'Başvuru bulunamadı' });
     }
 
+    const applicantEmail = application.applicant_profile?.email || null;
+
     await application.destroy();
+
+    // Audit log
+    auditLog(req, 'application.deleted', 'applications', {
+      applicationId: id,
+      applicantEmail
+    });
+
     res.json({ message: 'Başvuru silindi' });
   } catch (error) {
     console.error('Error deleting application:', error);

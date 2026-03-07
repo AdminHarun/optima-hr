@@ -52,7 +52,7 @@ const requireAuth = async (req, res, next) => {
       const maxAge = decoded.exp - decoded.iat;
       if (tokenAge > maxAge * 0.75) {
         const newToken = jwt.sign(
-          { id: decoded.id, email: decoded.email, role: decoded.role, ip: decoded.ip },
+          { id: decoded.id, email: decoded.email, role: decoded.role, ip: decoded.ip, tv: decoded.tv },
           JWT_SECRET,
           { expiresIn: SESSION_DURATION }
         );

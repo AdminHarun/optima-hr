@@ -264,6 +264,11 @@ function ApplicantLogin() {
                 </Alert>
               )}
 
+              {/* Turnstile - her zaman DOM'da, sadece CSS ile gizle */}
+              <Box sx={{ display: mode === 'password' ? 'flex' : 'none', justifyContent: 'center', mb: 2 }}>
+                <div ref={turnstileRef}></div>
+              </Box>
+
               {mode === 'password' ? (
                 <>
                   <TextField
@@ -292,11 +297,6 @@ function ApplicantLogin() {
                       )
                     }}
                   />
-
-                  {/* Cloudflare Turnstile */}
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                    <div ref={turnstileRef}></div>
-                  </Box>
 
                   <Button fullWidth variant="contained" onClick={handlePasswordLogin} disabled={loading || !turnstileToken}
                     startIcon={loading ? <CircularProgress size={20} sx={{ color: '#fff' }} /> : null}

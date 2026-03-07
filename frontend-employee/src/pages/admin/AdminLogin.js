@@ -1,5 +1,5 @@
 // Admin Login - Tamamen ayrı login sistemi
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEmployeeAuth } from '../../auth/employee/EmployeeAuthContext';
 import {
@@ -29,6 +29,8 @@ import {
   ArrowBack
 } from '@mui/icons-material';
 
+const TURNSTILE_SITE_KEY = '0x4AAAAAACh60GABJM3jjI_D';
+
 function AdminLogin() {
   const navigate = useNavigate();
   const { login, verify2FA, isLoading, isAuthenticated } = useEmployeeAuth();
@@ -38,6 +40,11 @@ function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Turnstile state
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const turnstileRef = useRef(null);
+  const turnstileWidgetId = useRef(null);
 
   // 2FA state
   const [twoFAStep, setTwoFAStep] = useState(false); // 2FA adımında mıyız?
@@ -51,6 +58,51 @@ function AdminLogin() {
     }
   }, [isAuthenticated, navigate]);
 
+  // Turnstile init
+  useEffect(() => {
+    const renderTurnstile = () => {
+      if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(''),
+          theme: 'light',
+          language: 'tr'
+        });
+      }
+    };
+    if (window.turnstile) {
+      renderTurnstile();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      script.async = true;
+      script.onload = () => setTimeout(renderTurnstile, 100);
+      document.head.appendChild(script);
+    }
+    return () => {
+      if (turnstileWidgetId.current && window.turnstile) {
+        window.turnstile.remove(turnstileWidgetId.current);
+        turnstileWidgetId.current = null;
+      }
+    };
+  }, []);
+
+  // 2FA'dan geri dönünce Turnstile'ı yeniden render et
+  useEffect(() => {
+    if (!twoFAStep && turnstileRef.current && !turnstileWidgetId.current) {
+      if (window.turnstile) {
+        turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => setTurnstileToken(token),
+          'expired-callback': () => setTurnstileToken(''),
+          theme: 'light',
+          language: 'tr'
+        });
+      }
+    }
+  }, [twoFAStep]);
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError('');
@@ -63,11 +115,15 @@ function AdminLogin() {
       setError('Lütfen tüm alanları doldurun');
       return;
     }
+    if (!turnstileToken) {
+      setError('Bot doğrulamasını tamamlayın');
+      return;
+    }
 
     setLoading(true);
     setError('');
 
-    const result = await login(formData.email, formData.password);
+    const result = await login(formData.email, formData.password, turnstileToken);
 
     if (result.success) {
       navigate('/admin/dashboard');
@@ -78,6 +134,11 @@ function AdminLogin() {
       setError('');
     } else {
       setError(result.error || 'Giriş başarısız');
+      // Turnstile'ı resetle
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current);
+        setTurnstileToken('');
+      }
     }
 
     setLoading(false);
@@ -206,6 +267,11 @@ function AdminLogin() {
               </Alert>
             )}
 
+            {/* Turnstile - her zaman DOM'da, sadece CSS ile gizle */}
+            <Box sx={{ display: twoFAStep ? 'none' : 'flex', justifyContent: 'center', mb: 2 }}>
+              <div ref={turnstileRef}></div>
+            </Box>
+
             {/* Adım 1: Email + Şifre */}
             {!twoFAStep && (
               <form onSubmit={handleSubmit}>
@@ -241,7 +307,7 @@ function AdminLogin() {
                   type="submit"
                   fullWidth
                   variant="contained"
-                  disabled={loading}
+                  disabled={loading || !turnstileToken}
                   startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <LoginIcon />}
                   sx={{
                     py: 1.5,

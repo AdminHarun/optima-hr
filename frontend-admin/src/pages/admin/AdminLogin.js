@@ -88,9 +88,9 @@ function AdminLogin() {
     };
   }, []);
 
-  // 2FA'dan geri dönünce Turnstile'ı yeniden render et
+  // isLoading bittiğinde veya 2FA'dan geri dönünce Turnstile'ı render et
   useEffect(() => {
-    if (!twoFAStep && turnstileRef.current && !turnstileWidgetId.current) {
+    if (!isLoading && !twoFAStep && turnstileRef.current && !turnstileWidgetId.current) {
       if (window.turnstile) {
         turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
           sitekey: TURNSTILE_SITE_KEY,
@@ -101,7 +101,7 @@ function AdminLogin() {
         });
       }
     }
-  }, [twoFAStep]);
+  }, [isLoading, twoFAStep]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
